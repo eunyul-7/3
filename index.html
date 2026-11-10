@@ -222,6 +222,9 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .alert.ally { color: var(--ok); border-color: var(--ok); }
 .verdict-tag.ally { color: var(--ok); }
 .answer.rebut { border-left-color: var(--ok); font-size: 15px; }
+.answer.objection { border-left-color: var(--blood); font-size: 15px; }
+.side-label { margin-top: 10px; color: var(--blood); }
+.who.foe b { color: var(--blood); }
 .dispatch { border-top: 1px dashed var(--ok); padding-top: 12px; display: grid; gap: 8px; }
 .dispatch b { font-weight: 600; color: var(--ok); }
 .act.ally:hover:not(:disabled) { border-color: var(--ok); color: var(--ok); }
@@ -624,30 +627,37 @@ const CASES = [
 },
 /* ------------------------------------------------------------------ */
 {
-  id: "museum", no: "04", title: "한빛 박물관 매병 사건", where: "시립 박물관 · 폐관 후",
+  id: "museum", no: "04", title: "한빛 박물관 사건", where: "시립 박물관 · 폐관 후",
   tag: "사건 번호 11-23 · 한빛 시립박물관 · 08:12 접수",
-  lede: "아침 개관 전, 국보급 유물 ‘청자 학무늬 매병’이 진열장 안에서 감쪽같이 복제품으로 바뀌어 있었다.",
-  brief: "살인은 없다. 하지만 진품은 사라졌다. 관장이 언론에 알리기 전까지, 누가 어떻게 바꿔치기했는지 밝혀내야 한다.",
+  lede: "아침 개관 전, 관장 고명준(61)이 지하 수장고에서 숨진 채 발견되었다. 진열장 속 국보 ‘청자 학무늬 매병’은 감쪽같이 복제품으로 바뀌어 있었다.",
+  brief: "당신은 아침 일찍 박물관을 찾은 손님이다. 사라진 진품과 관장의 죽음은 같은 밤에 일어났다. 경찰이 도착하기 전에 범인을 밝혀내야 한다.",
   floors: [
     { label: "2층", rooms: ["gallery", "office"] },
     { label: "1층", rooms: ["security", "studio", "lounge"], wide: ["lounge"] },
     { label: "지하", rooms: ["storage"], wide: ["storage"] },
   ],
   clues: {
+    body:       { name: "관장의 상처", room: "storage", text: "뒤통수에 넓고 둥근 타박상. 선반 모서리에 부딪힌 상처가 아니다. 무거운 물건에 맞았다. 체온으로 보아 사망 시각은 18:45~19:00 사이." },
+    storageLog: { name: "수장고 출입 기록", room: "storage", text: "어제 18:45 입실 민서영(카드), 18:47 입실 고명준(관장), 18:49 퇴실 민서영. 관장의 퇴실 기록은 없다." },
+    box:        { name: "반납 상자 속 매병", room: "storage", text: "‘교육용 복제품 반납’ 라벨이 붙은 상자. 뽁뽁이 속 매병은 무게, 유약, 굽의 가마 표식까지 진품이다." },
     fake:       { name: "진열장 속 복제품", room: "gallery", text: "무게가 가볍고 유약이 지나치게 맑다. 굽 안쪽 깊숙이 아주 작게 ‘표’ 자 각인. 복제품이다." },
     vitrine:    { name: "멀쩡한 진열장 자물쇠", room: "gallery", text: "억지로 연 흔적이 전혀 없다. 열쇠로 열렸다. 진열장 열쇠는 관장실과 학예실에만 있다." },
     cctv:       { name: "CCTV 기록", room: "security", text: "어제 18:40~18:42, 전시실 카메라만 2분간 꺼졌다. 비고: ‘정기 점검 — 학예실 요청’." },
-    log:        { name: "출입·순찰 일지", room: "security", text: "직원 퇴근: 민서영 18:52, 홍예진 19:12. 야간 순찰 기록은 19:00 다음이 23:00. 4시간이 비어 있다." },
+    log:        { name: "출입·순찰 일지", room: "security", text: "직원 퇴근: 민서영 18:52, 홍예진 19:12. 관장 고명준은 퇴근 기록이 없다. 야간 순찰 기록은 19:00 다음이 23:00. 4시간이 비어 있다." },
     order:      { name: "복제품 주문서", room: "studio", text: "3주 전 주문. 품목: 청자 학무늬 매병 복제품 1점. 용도: 교육용. 주문자 서명: 민서영. 메모: ‘각인 넣지 말 것. 비공개.’" },
-    catalog:    { name: "해외 경매 도록", room: "studio", text: "다음 달 런던 경매 도록. 출품 예정작 사진 중 하나가 바로 이 매병이다. 위탁자 칸: ‘비공개 기관’." },
-    storageLog: { name: "수장고 출입 기록", room: "storage", text: "어제 18:45 입실 민서영(카드). 18:49 퇴실. 그 뒤로 아침까지 출입 없음." },
-    box:        { name: "반납 상자 속 매병", room: "storage", text: "‘교육용 복제품 반납’ 라벨이 붙은 상자. 뽁뽁이 속 매병은 무게, 유약, 굽의 가마 표식까지 진품이다." },
-    mail:       { name: "관장과의 메일", room: "office", text: "프린터 옆 출력물. 민서영→관장: “그 매병의 해외 매각은 절대 안 됩니다.” 관장 답장: “이미 결정된 일이네. 자네 소관이 아니야.”" },
-    wrap:       { name: "휴지통의 뽁뽁이", room: "office", text: "민서영 책상 아래 휴지통. 반납 상자 속 것과 같은 큰 기포 뽁뽁이 조각들." },
-    gloves:     { name: "청소 카트의 면장갑", room: "lounge", text: "청소 카트 안에 유물 취급용 흰 면장갑 한 짝. 학예실 비품 번호가 찍혀 있다." },
+    catalog:    { name: "해외 경매 도록", room: "studio", text: "다음 달 런던 경매 도록. 출품 예정작 중 하나가 바로 이 매병이다. 위탁자 칸: ‘비공개 기관’. 관장의 서명이 든 위탁 확인서가 끼워져 있다." },
+    mail:       { name: "관장과의 메일", room: "office", text: "프린터 옆 출력물. 민서영→관장: “그 매병의 해외 매각은 절대 안 됩니다.” 관장 답장: “이미 결정된 일이네. 내일 아침 포장하러 수장고로 옮기겠네.”" },
+    weapon:     { name: "서랍 속 황동 문진", room: "office", text: "민서영 책상 맨 아래 서랍, 수건에 싸인 묵직한 황동 문진. 깨끗이 닦였지만 바닥면 홈에 마른 핏자국이 남아 있다." },
+    gloves:     { name: "청소 카트의 면장갑", room: "lounge", text: "청소 카트 안에 유물 취급용 흰 면장갑 한 짝. 학예실 비품 번호가 찍혀 있다. 손끝에 갈색 얼룩." },
   },
   rooms: {
-    gallery: { name: "전시실", crime: true, desc: "조명 아래 진열장 하나. 겉보기엔 어제와 똑같은 매병이 놓여 있다.",
+    storage: { name: "수장고", crime: true, desc: "지하 수장고. 온습도계가 낮게 웅웅거린다. 관장은 반납 선반 앞에 쓰러져 있다.",
+      spots: [
+        { id: "m_body", label: "시신을 살핀다", clue: "body", text: "관장 고명준. 넘어진 자세가 어딘가 부자연스럽다." },
+        { id: "m_door", label: "출입 기록을 확인한다", clue: "storageLog", text: "수장고 문은 카드로만 열리고 모든 출입이 기록된다." },
+        { id: "m_box", label: "반납 선반의 상자를 연다", clue: "box", text: "‘교육용 복제품 반납’ 상자. 테이프가 새것이다." },
+      ]},
+    gallery: { name: "전시실", desc: "조명 아래 진열장 하나. 겉보기엔 어제와 똑같은 매병이 놓여 있다.",
       spots: [
         { id: "m_fake", label: "매병을 꺼내 살핀다", clue: "fake", text: "장갑을 끼고 조심스럽게 들어 올린다. 손에 느껴지는 무게가 다르다." },
         { id: "m_lock", label: "진열장 자물쇠를 본다", clue: "vitrine", text: "돋보기로 열쇠 구멍을 살핀다." },
@@ -655,7 +665,7 @@ const CASES = [
     office: { name: "학예실", desc: "논문과 도록이 쌓인 책상들. 민서영의 자리에는 매병 사진이 액자로 걸려 있다.",
       spots: [
         { id: "m_print", label: "프린터 옆 출력물을 본다", clue: "mail", text: "급하게 뽑고 잊어버린 듯한 종이 몇 장." },
-        { id: "m_bin", label: "민서영 책상 휴지통을 본다", clue: "wrap", text: "휴지통이 이상하게 불룩하다." },
+        { id: "m_drawer", label: "민서영 책상 서랍을 연다", clue: "weapon", text: "맨 아래 서랍이 유난히 무겁다." },
       ]},
     security: { name: "경비실", desc: "모니터 열여섯 개. 의자 옆에 식은 커피.",
       spots: [
@@ -672,39 +682,37 @@ const CASES = [
         { id: "m_cart", label: "청소 카트를 뒤진다", clue: "gloves", text: "걸레와 세제 사이에 하얀 것이 보인다." },
         { id: "m_tv", label: "TV와 편성표를 본다", clue: null, text: "어젯밤 19:00~23:00 축구 결승전 중계에 동그라미가 쳐져 있다. 연장전까지 갔다고 한다." },
       ]},
-    storage: { name: "수장고", desc: "지하 수장고. 온습도계가 낮게 웅웅거린다. 반납 선반에 상자 몇 개.",
-      spots: [
-        { id: "m_door", label: "출입 기록을 확인한다", clue: "storageLog", text: "수장고 문은 카드로만 열리고 모든 출입이 기록된다." },
-        { id: "m_box", label: "반납 선반의 상자를 연다", clue: "box", text: "‘교육용 복제품 반납’ 상자. 테이프가 새것이다." },
-      ]},
   },
   suspects: {
     seoyoung: { name: "민서영", role: "학예사 · 36세", intro: "이 매병을 15년간 연구해 온 학예사. 박물관에서 매병을 가장 잘 아는 사람.",
       deflect: "그건 학예 업무의 일부예요. 이상할 게 없어요.",
       qs: [
         { id: "y1", q: "어제 언제 퇴근하셨습니까?", a: "6시 정각에 나갔어요. 그 뒤로 박물관엔 없었어요.", tl: ["18:00", "민서영 주장: 18시 퇴근", "민서영"],
-          lie: { clues: ["log", "storageLog"], reply: "…7시 조금 전에 나갔어요. 그 전에 수장고에 복제품을 반납하러 들렀고요. 업무예요. 이상할 것 없잖아요.", tl: ["18:45", "민서영, 수장고 출입 인정 (복제품 반납이라 주장)", "민서영"] } },
+          lie: { clues: ["log", "storageLog"], reply: "…7시 조금 전에 나갔어요. 그 전에 수장고에 복제품을 반납하러 들렀고요. 관장님은 못 봤어요. 정말이에요.", tl: ["18:45", "민서영, 수장고 출입 인정 (관장은 못 봤다고 주장)", "민서영"] } },
         { id: "y2", need: "order", q: "복제품은 왜 주문하셨죠?", a: "어린이 교육 프로그램용이에요. 아이들이 직접 만져 볼 수 있게요.",
-          lie: { clues: ["mail", "catalog"], reply: "…그 매병이 다음 달 런던 경매에 나가요. 관장님 혼자 결정으로요. 15년을 지켜 온 유물이 누군가의 거실 장식장으로 간다고요. …지금은 더 말하지 않겠어요." } },
+          lie: { clues: ["mail", "catalog"], reply: "…그 매병이 다음 달 런던 경매에 나가요. 관장님 혼자 결정으로요. 15년을 지켜 온 유물이 누군가의 거실 장식장으로 간다고요. …더는 말하지 않겠어요." } },
         { id: "y3", need: "cctv", q: "CCTV 점검을 학예실에서 요청했던데요.", a: "정기 점검이에요. 매달 해요. 날짜가 우연히 겹쳤을 뿐이에요." },
         { id: "y4", need: "box", q: "반납 상자 속 매병이 진품이었습니다.", a: "그럴 리가요. 제가 넣은 건 복제품이었어요. 누가 나중에 바꿔 넣었겠죠.",
-          lie: { clues: ["fake", "storageLog"], reply: "……네. 제가 바꿨어요. 훔친 게 아니에요. 지킨 거예요. 매병은 박물관 밖으로 한 발짝도 나가지 않았잖아요." } },
+          lie: { clues: ["fake", "storageLog"], reply: "……네. 제가 바꿨어요. 그런데 상자를 내려놓는 순간 관장님이 들어오셨어요. 매병을 내놓으라고… 저는 그냥…" } },
+        { id: "y5", need: "weapon", q: "책상 서랍에서 황동 문진이 나왔습니다.", a: "제 책상 물건이에요. 늘 쓰던 문진이에요. 그게 왜요?",
+          lie: { clues: ["body", "gloves"], reply: "……. 변호사를 불러 주세요. 그 전엔 아무 말도 하지 않겠어요." } },
       ]},
-    jihun: { name: "표지훈", role: "복원 전문가 · 44세", intro: "박물관 공방의 복원 전문가. 손재주로는 국내 최고라는 평.",
+    jihun: { name: "표지훈", role: "복원 전문가 · 44세", intro: "박물관 공방의 복원 전문가. 손재주로는 국내 최고라는 평. 관장과 사이가 나빴다는 소문이 있다.",
       deflect: "전 흙이랑 유약만 아는 사람이에요. 그런 건 모릅니다.",
       qs: [
         { id: "p1", q: "어제 언제 퇴근하셨습니까?", a: "6시에 공방 닫고 바로 집에 갔어요. 출입 기록 보시면 나와요.", tl: ["18:00", "표지훈 퇴근", "표지훈"] },
         { id: "p2", need: "fake", q: "전시된 매병 굽에 ‘표’ 자 각인이 있었습니다.", a: "…제가 만든 복제품이 맞아요. 하지만 납품만 했어요. 그게 왜 진열장 안에 있는지는 저도 몰라요." },
         { id: "p3", need: "fake", q: "그 복제품은 누가 주문했죠?", a: "기억이 안 나요. 주문이 워낙 많아서요.",
           lie: { clues: ["order"], reply: "…민 학예사님이요. 비밀로 해 달라고, 각인도 넣지 말라고 했어요. 그런데 30년 습관이라 굽 안쪽 깊숙이 아주 작게 넣었죠. 혹시 몰라서요." } },
-        { id: "p4", need: "catalog", q: "작업대에 경매 도록이 있더군요.", a: "관장님이 두고 가셨어요. 출품 전에 상태 점검을 해 달라고요. 그 매병이 팔린다니, 저도 기분이 좋진 않았어요." },
+        { id: "p4", q: "관장님과는 어떤 사이였습니까?", a: "그냥 상사죠. 별문제 없었어요.",
+          lie: { clues: ["catalog"], reply: "…사이 나빴어요. 제 복원 작업을 늘 깎아내렸거든요. 그 도록도 관장님이 두고 간 거예요. 팔기 전에 상태 점검이나 하라고. 화는 났지만, 저는 6시에 나갔어요." } },
       ]},
-    seungcheol: { name: "노승철", role: "야간 경비원 · 58세", intro: "야간 경비 12년 차. 아침 8시 교대 때 이상을 발견하고 신고했다.",
+    seungcheol: { name: "노승철", role: "야간 경비원 · 58세", intro: "야간 경비 12년 차. 아침 8시 교대 때 시신을 발견하고 신고했다.",
       deflect: "12년 동안 사고 한 번 없었소. 그런 걸로 날 의심하지 마시오.",
       qs: [
         { id: "n1", q: "어젯밤 순찰은 어떻게 하셨습니까?", a: "한 시간마다 꼬박꼬박 돌았지요. 아무 이상 없었소.",
-          lie: { clues: ["log"], reply: "…7시부터 11시까지 휴게실에서 축구 결승전을 봤소. 미안하오. 그런데 그 전에, 6시 40분에 CCTV를 끈 건 학예실에서 전화가 와서였소. 민 학예사 목소리였지.", tl: ["18:40", "민서영의 전화 요청으로 전시실 CCTV 2분간 정지", "노승철"] } },
-        { id: "n2", q: "어떻게 바뀐 걸 알아채셨죠?", a: "아침 교대 전에 전시실을 도는데 매병 색이 영 이상하더라고. 12년을 매일 봤는데 내 눈은 못 속이지.", tl: ["08:00", "노승철, 매병이 이상하다며 신고", "노승철"] },
+          lie: { clues: ["log"], reply: "…7시부터 11시까지 휴게실에서 축구 결승전을 봤소. 미안하오. 그 사이에 관장님이… 그런데 그 전, 6시 40분에 CCTV를 끈 건 학예실에서 전화가 와서였소. 민 학예사 목소리였지.", tl: ["18:40", "민서영의 전화 요청으로 전시실 CCTV 2분간 정지", "노승철"] } },
+        { id: "n2", q: "시신은 어떻게 발견하셨죠?", a: "아침 교대 전에 전시실을 도는데 매병 색이 영 이상하더라고. 관장님께 알리려고 찾아다니다가… 수장고에서 쓰러져 계신 걸 봤소.", tl: ["08:00", "노승철, 수장고에서 관장 시신 발견", "노승철"] },
       ]},
     yejin: { name: "홍예진", role: "청소 아르바이트 · 22세", intro: "대학생 청소 아르바이트. 폐관 후 전시실을 청소한다.",
       deflect: "저 그냥 알바예요… 그런 거 진짜 몰라요.",
@@ -712,28 +720,28 @@ const CASES = [
         { id: "e1", q: "어제 언제 퇴근했어요?", a: "6시 반에 청소 끝내고 바로 퇴근했어요.",
           lie: { clues: ["log"], reply: "…7시 넘어서 나갔어요. 휴게실에서 시험 공부하다가요. 규칙 위반이라 말을 못 했어요.", tl: ["19:12", "홍예진 퇴근 (휴게실에 남아 있었음)", "홍예진"] } },
         { id: "e2", q: "전시실을 청소할 때 이상한 건 없었나요?", a: "아뇨, 평소랑 똑같았어요.",
-          lie: { clues: ["gloves"], reply: "…바닥에 흰 장갑 한 짝이 떨어져 있었어요. 그냥 주워서 카트에 넣었어요. 아, 그리고 6시 43분쯤 민 학예사님이 수레에 상자를 싣고 엘리베이터 쪽으로 가시는 걸 봤어요. 아주 조심스럽게요.", tl: ["18:43", "홍예진, 상자를 실은 수레를 밀고 가는 민서영 목격", "홍예진"] } },
+          lie: { clues: ["gloves"], reply: "…바닥에 흰 장갑 한 짝이 떨어져 있었어요. 그냥 주워서 카트에 넣었어요. 그리고 6시 43분쯤 민 학예사님이 수레에 상자를 싣고 엘리베이터 쪽으로 가는 걸 봤어요. 조금 뒤에 관장님도 지하로 내려가셨고요.", tl: [["18:43", "홍예진, 상자를 실은 수레를 밀고 가는 민서영 목격", "홍예진"], ["18:46", "홍예진, 지하로 내려가는 관장 목격", "홍예진"]] } },
       ]},
   },
   motives: [
-    { id: "debt", text: "빚을 갚으려고 해외 수집가에게 팔기 위해" },
-    { id: "protect", text: "관장의 해외 매각을 막아 매병을 지키려고" },
-    { id: "cover", text: "근무 태만을 감추려고" },
-    { id: "skill", text: "자신의 복제 실력을 증명하려고" },
+    { id: "debt", text: "빚을 갚으려고 매병을 빼돌리다 관장에게 들켜서" },
+    { id: "protect", text: "매각을 막으려 매병을 바꿔치기하다 관장에게 들켜서" },
+    { id: "cover", text: "근무 중 축구를 본 게 드러날까 봐" },
+    { id: "skill", text: "복원 실력을 무시당한 원한" },
   ],
   methods: [
-    { id: "pick", text: "밤중에 진열장 자물쇠를 따고 훔쳤다" },
-    { id: "swap", text: "CCTV가 꺼진 2분 동안 복제품과 바꿔치기하고, 진품을 수장고 반납 상자에 숨겼다" },
-    { id: "cart", text: "청소 카트에 숨겨 박물관 밖으로 빼돌렸다" },
-    { id: "crowd", text: "관람 시간 중 관람객 틈에서 바꿔치기했다" },
+    { id: "push", text: "수장고 선반 쪽으로 밀어 넘어뜨렸다" },
+    { id: "paperweight", text: "황동 문진으로 뒤통수를 내리쳤다" },
+    { id: "poison", text: "독이 든 커피를 건넸다" },
+    { id: "strangle", text: "포장 끈으로 목을 졸랐다" },
   ],
-  key: ["order", "storageLog", "box", "fake", "mail", "catalog", "cctv", "log", "wrap", "vitrine"],
-  answer: { culprit: "seoyoung", motive: "protect", method: "swap" },
+  key: ["body", "weapon", "storageLog", "box", "fake", "order", "mail", "cctv", "log", "gloves"],
+  answer: { culprit: "seoyoung", motive: "protect", method: "paperweight" },
   truth: [
-    "관장은 재정난을 이유로 매병을 런던 경매에 몰래 내놓기로 했다. 15년간 매병을 연구해 온 민서영은 항의했지만 묵살당했다.",
-    "서영은 3주 전, 교육용이라며 표지훈에게 각인 없는 복제품을 주문했다. 지훈은 습관대로 굽 안쪽에 아주 작게 ‘표’ 자를 남겼다.",
-    "어제 18시 40분, 서영은 경비실에 전화해 ‘정기 점검’을 핑계로 전시실 CCTV를 2분간 끄게 했다. 학예실 열쇠로 진열장을 열어 복제품과 진품을 바꿨다. 서두르다 면장갑 한 짝을 떨어뜨렸다. 18시 43분, 진품을 뽁뽁이로 싸 ‘복제품 반납’ 상자에 넣고 수레로 옮겼고(홍예진이 보았다), 18시 45분 수장고 반납 선반에 두었다. 매각 서류에 있는 매병이 ‘가짜’가 되면 경매는 무산될 터였다.",
-    "노승철의 축구, 홍예진의 시험 공부, 표지훈의 복제품은 모두 의심스러워 보였지만, 매병을 옮긴 손은 하나뿐이었다.",
+    "관장 고명준은 재정난을 이유로 국보 매병을 런던 경매에 몰래 내놓기로 했다. 15년간 매병을 연구해 온 민서영은 항의했지만 묵살당했다.",
+    "서영은 3주 전 교육용이라며 표지훈에게 각인 없는 복제품을 주문했다. 어제 18시 40분, 경비실에 전화해 전시실 CCTV를 2분간 끄게 하고 진열장 속 진품을 복제품과 바꿨다. 서두르다 면장갑 한 짝을 떨어뜨렸다.",
+    "18시 45분, 서영은 진품을 ‘복제품 반납’ 상자에 넣어 수장고에 두었다. 그 순간 다음 날 포장을 위해 매병을 확인하러 온 관장이 들어왔다. 상자를 열려는 관장을 막다가, 서영은 손에 들고 있던 황동 문진으로 그의 뒤통수를 내리쳤다. 18시 49분 수장고를 빠져나와 문진을 닦아 자기 서랍에 숨겼다.",
+    "표지훈의 원한, 노승철의 축구, 홍예진의 시험 공부는 모두 의심스러워 보였지만, 그날 밤 수장고에서 관장과 마주친 사람은 민서영뿐이었다.",
   ],
 },
 ];
@@ -1002,6 +1010,7 @@ const turnsFor = c => {
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
   locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], rebutNotes: {}, lawyerUsed: 0,
+  vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [], objections: 0, objectionOn: null,
   autopsyDone: false, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
@@ -1037,6 +1046,60 @@ function callLawyer(sid) {
   const msg = `${LAWYER.title} ${LAWYER.name}: “제가 ${name} 씨 곁에 있겠습니다. 이제 말씀하셔도 됩니다.”`;
   S.events.push({ bad: false, msg });
   toast(`<b>변호사 도착</b> — ${esc(EUN(name))} 다시 입을 열었다.`); Sound.help();
+}
+
+/* 범인 편: 범인과 몰래 연락하는 변호사 + 변수 인물 2명(한 명은 공범). 보통·어려움에서만 */
+const OPP = { name: "백무결", title: "범인 측 변호사" };
+const OBJECTIONS = { normal: 1, hard: 2 };   /* 범인의 거짓말을 깨려 할 때 끼어드는 횟수 */
+const objLeft = () => (OBJECTIONS[S.diff] || 0) - S.objections;
+const VARIABLE_POOL = [
+  { role: "보일러 정비공", trace: "기름 묻은 장갑 자국", on: "장갑에 검은 기름이 잔뜩 묻어 있다" },
+  { role: "청소 용역", trace: "독한 락스 냄새", on: "옷에서 독한 락스 냄새가 난다" },
+  { role: "택배 기사", trace: "젖은 운동화 발자국", on: "운동화가 흠뻑 젖어 있다" },
+  { role: "출장 요리사", trace: "짙은 마늘 냄새", on: "앞치마에서 짙은 마늘 냄새가 난다" },
+  { role: "사진 기자", trace: "뜯긴 필름 포장지", on: "주머니에 같은 필름 포장지가 잔뜩 들어 있다" },
+  { role: "대리 운전기사", trace: "멘솔 담배꽁초", on: "귀에 멘솔 담배 한 개비를 꽂고 있다" },
+  { role: "전기 수리 기사", trace: "잘린 전선 피복 조각", on: "공구 주머니에서 전선 피복 조각이 삐져나와 있다" },
+  { role: "꽃 배달원", trace: "짓밟힌 장미 꽃잎", on: "소매에 장미 꽃잎이 붙어 있다" },
+];
+const VAR_NAMES = ["구해람", "탁준기", "엄소율", "하도겸", "봉지우", "편세아", "길태환", "마여름", "석동주", "원채이"];
+function makeVars() {
+  const taken = Object.values(C().suspects).map(p => p.name);
+  const roles = RND.shuffle(VARIABLE_POOL).slice(0, 2);
+  const names = RND.shuffle(VAR_NAMES.filter(n => !taken.includes(n))).slice(0, 2);
+  const acc = RND.int(0, 1);
+  return roles.map((r, i) => ({ ...r, name: names[i], acc: i === acc }));
+}
+const accomplice = () => S.vars.find(v => v.acc);
+function talkVar(i) {
+  const v = S.vars[i]; if (!v || has(S.varTalked, i) || S.turns <= 0) return;
+  S.varTalked.push(i);
+  let note;
+  if (v.acc) {
+    note = `“저는 아무것도 몰라요. 제 일만 했어요.” 대답이 너무 빠르다. 자세히 보니 ${v.on}.`;
+  } else {
+    const c = C(), spots = Object.entries(c.rooms).flatMap(([rid, r]) => r.spots.map(sp => ({ ...sp, rid })))
+      .filter(sp => sp.clue && !has(S.searched, sp.id));
+    const keyS = spots.filter(sp => c.key.includes(sp.clue)), sp = RND.pick(keyS.length ? keyS : spots.length ? spots : [null]);
+    if (sp) {
+      S.searched.push(sp.id); if (!has(S.found, sp.clue)) S.found.push(sp.clue);
+      note = `“아까 ${c.rooms[sp.rid].name}에서 이상한 걸 봤어요.” 덕분에 ‘${c.clues[sp.clue].name}’ 단서를 얻었다. 자세히 보니 ${v.on}.`;
+    } else note = `“딱히 본 건 없어요. 힘내세요.” 자세히 보니 ${v.on}.`;
+  }
+  S.varNotes[i] = note; Sound.ask(); spend();
+}
+function accuseVar(i) {
+  const v = S.vars[i]; if (!v || S.accCaught || has(S.accWrong, i) || S.turns <= 0) return;
+  if (v.acc) {
+    S.accCaught = true; S.locks = {};
+    const msg = `공범 체포 — ${v.role} ${I(v.name)} 범인의 부탁으로 증거를 망치고 문을 잠갔다고 털어놨다. 누구의 부탁인지는 끝까지 말하지 않는다.`;
+    S.events.push({ bad: false, msg });
+    toast(`<b>공범 체포!</b> 이제 증거 훼손과 방 잠김이 멈춘다.`); Sound.lie(); flash();
+  } else {
+    S.accWrong.push(i);
+    toast(`헛짚었다. ${esc(EUN(v.name))} 공범이 아니다. (−2턴)`, true); Sound.wrong();
+    spend(2);
+  }
 }
 
 /* 반박 횟수: 보통은 프로파일러 1번·심리 탐정 2번, 어려움은 2번·2번, 쉬움은 없음 */
@@ -1075,6 +1138,7 @@ function beginCase() {
   const d = DIFF[S.diff], t = d.turns;
   S.turns = S.maxTurns = t;
   S.timeLeft = S.timeMax = S.timed ? d.time : 0;
+  S.vars = S.diff === "easy" ? [] : makeVars();
   S.screen = "game";
 }
 function nextCaseId() {
@@ -1256,8 +1320,9 @@ function sabotage(late) {
   const lockable = Object.keys(c.rooms).filter(rid => !S.locks[rid] && c.rooms[rid].spots.some(s => !has(S.searched, s.id)));
   const silenceable = Object.entries(c.suspects).filter(([sid, p]) => !S.silence[sid] &&
     p.qs.some(q => (!q.need || has(S.found, q.need)) && (!has(S.asked, q.id) || (q.lie && !has(S.broken, q.id)))));
-  if (tamperable.length) opts.push("tamper");
-  if (lockable.length) opts.push("lock");
+  const accFree = !S.accCaught && accomplice();   /* 공범이 잡히면 훼손·잠금이 멈춘다 */
+  if (tamperable.length && accFree) opts.push("tamper");
+  if (lockable.length && accFree) opts.push("lock");
   if (silenceable.length) opts.push("silence");
   if (late && S.turns > 4) opts.push("police");
   if (!opts.length) return;
@@ -1266,13 +1331,13 @@ function sabotage(late) {
   let msg = "";
   if (kind === "tamper") {
     const s = pickOne(tamperable); S.tampered.push(s.id);
-    msg = `누군가 ${c.rooms[s.rid].name}에 다녀갔다. 흔적이 흐트러져 ‘${s.label}’ 조사에 2턴이 든다.`;
+    msg = `누군가 ${c.rooms[s.rid].name}에 다녀갔다. 흔적이 흐트러져 ‘${s.label}’ 조사에 2턴이 든다. 현장에 ${I(accomplice().trace)} 남아 있었다.`;
   } else if (kind === "lock") {
     const rid = pickOne(lockable); S.locks[rid] = dur;
-    msg = `${josa(c.rooms[rid].name, "이", "가")} 안쪽에서 잠겼다. 열쇠를 찾는 동안 ${dur}턴 들어갈 수 없다.`;
+    msg = `${josa(c.rooms[rid].name, "이", "가")} 잠겼다. 열쇠를 찾는 동안 ${dur}턴 들어갈 수 없다. 문 앞에 ${I(accomplice().trace)} 남아 있었다.`;
   } else if (kind === "silence") {
     const [sid, sp] = pickOne(silenceable); S.silence[sid] = dur;
-    msg = `${josa(sp.name, "이", "가")} “변호사가 오기 전엔 아무 말도 안 하겠다”며 입을 닫았다. ${dur}턴 동안 심문할 수 없다.${lawyerLeft() > 0 ? " 심문 화면에서 변호사를 부를 수 있다." : ""}`;
+    msg = `${OPP.title} ${OPP.name}이 ${sp.name}에게 귓속말을 하고 갔다. ${josa(sp.name, "이", "가")} “변호사가 오기 전엔 아무 말도 안 하겠다”며 입을 닫았다. ${dur}턴 동안 심문할 수 없다.${lawyerLeft() > 0 ? " 심문 화면에서 변호사를 부를 수 있다." : ""}`;
   } else {
     S.turns -= 1;
     msg = "무전: “지름길을 찾았다.” 경찰 도착이 1턴 앞당겨졌다.";
@@ -1470,6 +1535,7 @@ function renderTitle() {
         <div><b><span class="k">출동</span>탐정 출동</b><p>장소 화면 아래 ‘탐정 출동’ 버튼을 누르면 탐정이 그 장소를 대신 조사하고 2턴 뒤에 알려 줘요. 턴은 안 줄어요. 보통은 윤도경·서하루를 2번씩(모두 4번), 어려움은 세 명 모두 3번씩 쓸 수 있어요.</p></div>
         <div><b><span class="k">난이도</span>쉬움 → 어려움</b><p>첫 사건은 쉬움, 뒤로 갈수록 어려워진다. 사건을 열 때 난이도와 시간 제한 모드를 직접 고를 수도 있다.</p></div>
         <div><b><span class="k">변호사</span>변호사 차도율</b><p>용의자가 “변호사가 오기 전엔 말 안 해요”라며 입을 닫으면, 심문 화면에서 변호사를 불러 바로 다시 말하게 할 수 있어요. 턴은 안 줄어요. 보통 2번, 어려움 3번.</p></div>
+        <div class="warn"><b><span class="k">범인 편</span>범인 측 변호사 · 공범</b><p>보통·어려움에는 범인 편이 있어요. 범인 측 변호사 백무결은 범인과 몰래 연락하며 용의자 입을 막고, 범인의 거짓말을 깨려 하면 “이의 있습니다!”라고 끼어들어요. 변수 인물 두 명 중 한 명은 공범이라 증거를 망치고 문을 잠가요. 흔적을 비교해 공범을 잡으면 방해가 멈춰요.</p></div>
         <div><b><span class="k">반박</span>프로파일러 한서진 · 심리 탐정 모은재</b><p>들은 말 아래 ‘반박’ 버튼을 누르면 탐정이 대신 따져 줘요. 거짓말이면 바로 무너지고, 사실이면 사실이라고 알려 줘요. 턴은 안 줄어요. 보통은 프로파일러 1번·심리 탐정 2번, 어려움은 2번·2번.</p></div>
         <div class="warn"><b><span class="k">시간</span>시간 제한 모드</b><p>실제 시계가 흐른다. 쉬움 12분, 보통 9분, 어려움 6분. 마지막 30초엔 초침 소리가 들린다.</p></div>
         <div><b><span class="k">무한</span>무작위 사건</b><p>무대·용의자·동기·수법·범인이 매번 새로 정해진다. 같은 사건은 두 번 나오지 않는다.</p></div>
@@ -1603,6 +1669,7 @@ function renderQ(q, p, outRaw) {
       html += `<span class="verdict-tag">진술 번복</span><p class="answer broken">${esc(q.lie.reply)}</p>`;
     } else {
       if (S.deflectOn === q.id) html += `<p class="answer deflect">${esc(p.deflect)}</p>`;
+      if (S.objectionOn === q.id) html += `<span class="verdict-tag">이의 제기</span><p class="answer objection">${OPP.title} ${OPP.name}: “이의 있습니다! 그 단서 하나로 제 의뢰인을… 아니, 이분을 몰아세울 수는 없습니다.”</p>`;
       if (S.challenge === q.id) {
         const opts = S.found.map(id => `<option value="${id}" ${S.present === id ? "selected" : ""}>${esc(c.clues[id].name)}</option>`).join("");
         html += `<div class="present">
@@ -1631,11 +1698,17 @@ function renderPeople(out) {
     return `<button class="who${sl ? " is-silent" : ""}" aria-pressed="${S.suspect === id}" data-suspect="${id}">
       <b>${p.name}</b><span>${p.role}</span><span class="mono">${sl ? `침묵 ${sl}턴` : `새 질문 ${left}${nb ? ` · 번복 ${nb}` : ""}`}</span></button>`;
   }).join("");
+  const side = S.vars.length ? `<span class="label side-label">범인 편 · 변수 인물</span>
+    <button class="who foe" aria-pressed="${S.suspect === "opp"}" data-suspect="opp"><b>${OPP.name}</b><span>${OPP.title}</span><span class="mono">이의 제기 ${Math.max(0, objLeft())}번 남음</span></button>
+    ${S.vars.map((v, i) => `<button class="who" aria-pressed="${S.suspect === "v" + i}" data-suspect="v${i}"><b>${v.name}</b><span>${v.role} · 변수 인물</span>
+      <span class="mono">${S.accCaught && v.acc ? "공범 체포" : has(S.accWrong, i) ? "공범 아님" : has(S.varTalked, i) ? "이야기 나눔" : "아직 모름"}</span></button>`).join("")}` : "";
+  const extra = S.suspect === "opp" ? renderOpp() : /^v\d$/.test(S.suspect) ? renderVar(+S.suspect[1], out) : "";
+  if (extra) return `<div class="split"><div class="people">${list}${side}</div>${extra}</div>`;
   const p = c.suspects[S.suspect], sl = S.silence[S.suspect];
   let locked = 0;
   const qs = p.qs.map(q => { if (q.need && !has(S.found, q.need)) { locked++; return ""; } return renderQ(q, p, out); }).join("");
   return `<div class="split">
-    <div class="people">${list}</div>
+    <div class="people">${list}${side}</div>
     <section class="panel" aria-live="polite">
       <div><span class="label">${p.role}</span><h3 style="font-size:24px">${p.name}</h3></div>
       <p class="desc">${p.intro}</p>
@@ -1646,6 +1719,27 @@ function renderPeople(out) {
       ${S.found.length ? "" : `<p class="locked">단서를 하나라도 찾으면 진술의 모순을 지적할 수 있다.</p>`}
     </section>
   </div>`;
+}
+
+function renderOpp() {
+  return `<section class="panel" aria-live="polite">
+    <div><span class="label">${OPP.title}</span><h3 style="font-size:24px">${OPP.name}</h3></div>
+    <p class="desc">사건이 알려지자마자 나타난 변호사. 누구의 의뢰를 받았는지는 끝까지 밝히지 않는다. 용의자들에게 귓속말을 하고 다니며, 모순 지적에 “이의 있습니다!”라고 끼어든다.</p>
+    <p class="hint">이 변호사는 범인과 몰래 연락하고 있다. 이의 제기는 범인의 진술에만 한다. 누구를 감싸는지 잘 보자. 남은 이의 제기: ${Math.max(0, objLeft())}번.</p>
+    <p class="hint">이 변호사 때문에 용의자가 입을 닫으면, 우리 쪽 변호사 ${EUL(LAWYER.name)} 불러 다시 말하게 할 수 있다.</p>
+  </section>`;
+}
+function renderVar(i, out) {
+  const v = S.vars[i]; if (!v) return "";
+  const talked = has(S.varTalked, i), wrong = has(S.accWrong, i), caught = S.accCaught && v.acc;
+  return `<section class="panel" aria-live="polite">
+    <div><span class="label">${v.role} · 변수 인물</span><h3 style="font-size:24px">${v.name}</h3></div>
+    <p class="desc">사건이 난 밤 이곳에 있던 ${v.role}. 용의자는 아니지만, 두 변수 인물 중 한 명은 범인 편 공범이다. 공범은 증거를 망치고 문을 잠그며 현장에 흔적을 남긴다.</p>
+    ${talked ? `<p class="answer">${esc(S.varNotes[i])}</p>` : `<div class="q-actions"><button class="act" data-vtalk="${i}" ${out ? "disabled" : ""}>이야기한다<span class="cost">−1턴</span></button></div>`}
+    ${caught ? `<p class="locked-room">공범으로 체포되었다.</p>` : wrong ? `<p class="locked">공범이 아니었다.</p>`
+      : !S.accCaught ? `<div class="q-actions"><button class="act press" data-vaccuse="${i}" ${out ? "disabled" : ""}>공범으로 지목<span class="cost">틀리면 −2턴</span></button></div>
+        <p class="hint">수첩의 ‘훼방과 도움’에 적힌 흔적과 이 사람의 모습을 비교해 보자.</p>` : ""}
+  </section>`;
 }
 
 function renderNotes() {
@@ -1690,7 +1784,7 @@ function judge() {
   const evGood = pk.evidence.filter(e => c.key.includes(e)).length;
   let score = 0;
   if (ok.c) score = 40 + (ok.m ? 15 : 0) + (ok.w ? 15 : 0) + Math.min(evGood, 3) * 5 + Math.min(S.broken.length, 3) * 3 + Math.min(S.turns, 6) - S.wrong * 2
-    + DIFF[S.diff].bonus + (S.timed ? 5 : 0);
+    + DIFF[S.diff].bonus + (S.timed ? 5 : 0) + (S.accCaught ? 4 : 0);
   score = Math.max(0, Math.min(100, score));
   const grade = !ok.c ? "F" : score >= 92 ? "S" : score >= 78 ? "A" : score >= 62 ? "B" : "C";
   S.result = { ...ok, evGood, score, grade };
@@ -1719,6 +1813,7 @@ function renderResult() {
       ${row("무너뜨린 거짓말", S.broken.length > 0, `${S.broken.length}개`)}
       ${row("헛짚은 지적", S.wrong === 0, `${S.wrong}회`)}
       ${row("받은 훼방", !S.events.some(e => e.bad), `${S.events.filter(e => e.bad).length}회`)}
+      ${S.vars.length ? row("공범 체포", S.accCaught, S.accCaught ? `성공 (+4) · ${accomplice().name}` : `못 잡음 · 공범은 ${accomplice().name}(${accomplice().role})`) : ""}
       ${row("동료 탐정의 도움", true, `${S.helps + S.dispatched.length + S.rebuts.length + S.lawyerUsed}회`)}
       ${row("남은 턴", S.turns > 0, `${S.turns}`)}
       ${row("난이도", true, `${DIFF[S.diff].label}${DIFF[S.diff].bonus ? ` (+${DIFF[S.diff].bonus})` : ""}`)}
@@ -1757,6 +1852,8 @@ app.addEventListener("click", e => {
   else if (d.dispatch) { dispatch(d.dispatch); }
   else if (d.rebut) { rebut(d.rebut, d.q); }
   else if (d.lawyer) { callLawyer(d.lawyer); }
+  else if (d.vtalk) { talkVar(+d.vtalk); }
+  else if (d.vaccuse) { accuseVar(+d.vaccuse); }
   else if (d.suspect) { S.suspect = d.suspect; S.challenge = null; S.deflectOn = null; }
   else if (d.search) {
     const sp = Object.values(C().rooms).flatMap(r => r.spots).find(s => s.id === d.search);
@@ -1773,7 +1870,11 @@ app.addEventListener("click", e => {
     const { q, p, sid } = findQ(d.confront);
     if (S.turns <= 0 || has(S.broken, q.id) || !S.present || S.silence[sid]) return;
     S.challenge = null;
-    if (q.lie && q.lie.clues.includes(S.present)) {
+    if (q.lie && q.lie.clues.includes(S.present) && sid === C().answer.culprit && objLeft() > 0) {
+      S.objections += 1; S.objectionOn = q.id;
+      S.events.push({ bad: true, msg: `${OPP.title} ${OPP.name}이 ${p.name}의 진술에 이의를 제기했다. 왜 하필 이 사람을 감쌀까?` });
+      toast(`<b>이의 있습니다!</b> — ${OPP.title} ${OPP.name}이 끼어들었다. 다시 들이밀어 보자.`, true); Sound.wrong(); flash();
+    } else if (q.lie && q.lie.clues.includes(S.present)) {
       S.broken.push(q.id); addTl(q.lie.tl);
       toast(`<b>모순!</b> ${esc(p.name)}의 진술이 무너졌다.`); Sound.lie(); flash();
     } else {
