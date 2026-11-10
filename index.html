@@ -220,6 +220,8 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .event-log p.good { border-left-color: var(--ok); }
 .setup { max-width: 640px; }
 .alert.ally { color: var(--ok); border-color: var(--ok); }
+.verdict-tag.ally { color: var(--ok); }
+.answer.rebut { border-left-color: var(--ok); font-size: 15px; }
 .dispatch { border-top: 1px dashed var(--ok); padding-top: 12px; display: grid; gap: 8px; }
 .dispatch b { font-weight: 600; color: var(--ok); }
 .act.ally:hover:not(:disabled) { border-color: var(--ok); color: var(--ok); }
@@ -999,7 +1001,7 @@ const turnsFor = c => {
 };
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
-  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null,
+  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], rebutNotes: {},
   autopsyDone: false, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
@@ -1014,6 +1016,19 @@ const PARTNERS = [
     report: (room, list) => list ? `“선배님! ${room} 싹 다 뒤져 봤어요. ${list}!”` : `“${room}은 이미 다 조사돼 있던데요?”` },
 ];
 const partner = id => PARTNERS.find(x => x.id === id);
+
+/* 반박 탐정: 들은 말이 거짓이면 대신 반박해서 무너뜨린다 */
+const REBUTTERS = [
+  { id: "prof", name: "한서진", title: "프로파일러",
+    hit: clue => `“이 사람 말은 행동 패턴과 안 맞아요. ${clue ? `‘${clue}’만 봐도 ` : ""}이 말은 성립하지 않아요.”`,
+    miss: "“기록과도 맞고 행동 패턴도 일관돼요. 이 말은 사실로 보여요.”" },
+  { id: "psy", name: "모은재", title: "심리 탐정",
+    hit: () => "“방금 시선이 아래로 떨어지고 말이 빨라졌어요. 거짓말할 때 나오는 반응이에요. 솔직하게 말씀하시죠.”",
+    miss: "“목소리도 표정도 흔들림이 없어요. 거짓말은 아닌 것 같아요.”" },
+];
+/* 반박 횟수: 보통은 프로파일러 1번·심리 탐정 2번, 어려움은 2번·2번, 쉬움은 없음 */
+const REBUT = { normal: { prof: 1, psy: 2 }, hard: { prof: 2, psy: 2 } };
+const rebutLeft = id => ((REBUT[S.diff] || {})[id] || 0) - S.rebuts.filter(x => x === id).length;
 const pfull = x => `${x.title} ${x.name}`;
 const MISSION_DELAY = 2;
 
@@ -1022,9 +1037,9 @@ const DIFF = {
   easy:   { label: "쉬움",   turns: 30, time: 720, bonus: 0, sab: null,
             desc: "방해가 없어요. 처음 하는 사람에게 추천!" },
   normal: { label: "보통",   turns: 35, time: 540, bonus: 3, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 },
-            desc: "중간쯤부터 가끔 방해가 들어와요. 윤도경이 알아서 시신을 살피고 단서를 찾아 주고, 서하루가 거짓말을 알려 줘요. 두 사람을 2번씩 출동시킬 수 있어요." },
+            desc: "중간쯤부터 가끔 방해가 들어와요. 윤도경이 알아서 시신을 살피고 단서를 찾아 주고, 서하루가 거짓말을 알려 줘요. 두 사람을 2번씩 출동시킬 수 있고, 프로파일러 1번·심리 탐정 2번 반박을 맡길 수 있어요." },
   hard:   { label: "어려움", turns: 45, time: 360, bonus: 6, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 },
-            desc: "일찍부터 방해가 자주 들어와요. 탐정 세 명이 모두 돕고, 탐정마다 3번씩 출동시킬 수 있어요." },
+            desc: "일찍부터 방해가 자주 들어와요. 탐정 세 명이 모두 돕고, 탐정마다 3번씩 출동시킬 수 있어요. 프로파일러·심리 탐정 반박은 2번씩." },
 };
 const mmss = sec => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 let PLAYER = ""; try { PLAYER = localStorage.getItem("midnight-player") || ""; } catch {}
@@ -1119,6 +1134,25 @@ function help() {
   S.helps += 1; S.sinceHelp = 0;
   S.events.push({ bad: false, msg });
   toast(`<b>동료 탐정</b> — ${esc(msg)}`); Sound.help();
+}
+
+/* ---------- 반박 탐정: 턴을 쓰지 않고 대신 반박 ---------- */
+function rebut(rid, qid) {
+  const f = findQ(qid); if (!f) return;
+  const { q, p, sid } = f, x = REBUTTERS.find(r => r.id === rid);
+  if (!x || rebutLeft(rid) <= 0 || S.turns <= 0 || S.silence[sid] || !has(S.asked, qid) || has(S.broken, qid) || S.rebutNotes[qid]) return;
+  S.rebuts.push(rid); S.challenge = null; S.deflectOn = null;
+  const who = `${x.title} ${x.name}`;
+  if (q.lie) {
+    const clue = q.lie.clues.map(id => C().clues[id]).find(Boolean);
+    S.rebutNotes[qid] = { who, text: x.hit(clue && clue.name) };
+    S.broken.push(qid); addTl(q.lie.tl);
+    S.events.push({ bad: false, msg: `${I(who)} ${p.name}의 거짓말을 대신 반박했다.` });
+    toast(`<b>${esc(who)}</b> — ${esc(EUN(p.name))} 말을 바꿨다!`); Sound.lie(); flash();
+  } else {
+    S.rebutNotes[qid] = { who, text: x.miss };
+    toast(`<b>${esc(who)}</b> — 이 말은 사실로 보인다.`); Sound.help();
+  }
 }
 
 /* ---------- 어려움: 동료 탐정을 현장에 보내 직접 조사시키기 ---------- */
@@ -1422,6 +1456,7 @@ function renderTitle() {
         <div><b><span class="k">도움</span>동료 탐정</b><p>훼방이 심해지면 동료 탐정들이 달려온다. 보통·어려움에서는 법의학 탐정 윤도경(수사 초반 시신 감식, 단서 찾기)과 견습 탐정 서하루(수상한 진술 귀띔)가, 어려움에서는 베테랑 탐정 강무열(잠긴 문 열기·시간 벌기)까지 나온다.</p></div>
         <div><b><span class="k">출동</span>탐정 출동</b><p>장소 화면 아래 ‘탐정 출동’ 버튼을 누르면 탐정이 그 장소를 대신 조사하고 2턴 뒤에 알려 줘요. 턴은 안 줄어요. 보통은 윤도경·서하루를 2번씩(모두 4번), 어려움은 세 명 모두 3번씩 쓸 수 있어요.</p></div>
         <div><b><span class="k">난이도</span>쉬움 → 어려움</b><p>첫 사건은 쉬움, 뒤로 갈수록 어려워진다. 사건을 열 때 난이도와 시간 제한 모드를 직접 고를 수도 있다.</p></div>
+        <div><b><span class="k">반박</span>프로파일러 · 심리 탐정</b><p>들은 말 아래 ‘반박’ 버튼을 누르면 탐정이 대신 따져 줘요. 거짓말이면 바로 무너지고, 사실이면 사실이라고 알려 줘요. 턴은 안 줄어요. 보통은 프로파일러 1번·심리 탐정 2번, 어려움은 2번·2번.</p></div>
         <div class="warn"><b><span class="k">시간</span>시간 제한 모드</b><p>실제 시계가 흐른다. 쉬움 12분, 보통 9분, 어려움 6분. 마지막 30초엔 초침 소리가 들린다.</p></div>
         <div><b><span class="k">무한</span>무작위 사건</b><p>무대·용의자·동기·수법·범인이 매번 새로 정해진다. 같은 사건은 두 번 나오지 않는다.</p></div>
       </div>
@@ -1548,6 +1583,8 @@ function renderQ(q, p, outRaw) {
     ${has(S.hints, q.id) && !broken ? `<span class="verdict-tag">조력자 귀띔 · 이 대답은 앞뒤가 맞지 않는다</span>` : ""}`;
   if (asked) {
     html += `<p class="answer${broken ? " retracted" : ""}">${esc(q.a)}</p>`;
+    const note = S.rebutNotes[q.id];
+    if (note) html += `<span class="verdict-tag ally">${esc(note.who)}의 반박</span><p class="answer rebut">${esc(note.text)}</p>`;
     if (broken) {
       html += `<span class="verdict-tag">진술 번복</span><p class="answer broken">${esc(q.lie.reply)}</p>`;
     } else {
@@ -1560,8 +1597,11 @@ function renderQ(q, p, outRaw) {
           <button class="act press" data-confront="${q.id}" ${out ? "disabled" : ""}>들이민다<span class="cost">−1턴</span></button>
           <button class="act" data-act="cancel">취소</button>
         </div>`;
-      } else if (S.found.length) {
-        html += `<div class="q-actions"><button class="act press" data-challenge="${q.id}" ${out ? "disabled" : ""}>모순 지적</button></div>`;
+      } else {
+        const rb = note ? "" : REBUTTERS.filter(x => rebutLeft(x.id) > 0)
+          .map(x => `<button class="act ally" data-rebut="${x.id}" data-q="${q.id}" ${out ? "disabled" : ""}>${x.title} 반박<span class="cost">${rebutLeft(x.id)}번 남음</span></button>`).join("");
+        const ch = S.found.length ? `<button class="act press" data-challenge="${q.id}" ${out ? "disabled" : ""}>모순 지적</button>` : "";
+        if (ch || rb) html += `<div class="q-actions">${ch}${rb}</div>`;
       }
     }
   }
@@ -1664,7 +1704,7 @@ function renderResult() {
       ${row("무너뜨린 거짓말", S.broken.length > 0, `${S.broken.length}개`)}
       ${row("헛짚은 지적", S.wrong === 0, `${S.wrong}회`)}
       ${row("받은 훼방", !S.events.some(e => e.bad), `${S.events.filter(e => e.bad).length}회`)}
-      ${row("동료 탐정의 도움", true, `${S.helps + S.dispatched.length}회`)}
+      ${row("동료 탐정의 도움", true, `${S.helps + S.dispatched.length + S.rebuts.length}회`)}
       ${row("남은 턴", S.turns > 0, `${S.turns}`)}
       ${row("난이도", true, `${DIFF[S.diff].label}${DIFF[S.diff].bonus ? ` (+${DIFF[S.diff].bonus})` : ""}`)}
       ${S.timed ? row("시간 제한", S.timeLeft > 0, S.timeLeft > 0 ? `${mmss(S.timeLeft)} 남김 (+5)` : "시간 초과 (+5)") : ""}
@@ -1700,6 +1740,7 @@ app.addEventListener("click", e => {
   else if (d.tab) { S.tab = d.tab; S.challenge = null; }
   else if (d.room) { S.room = d.room; }
   else if (d.dispatch) { dispatch(d.dispatch); }
+  else if (d.rebut) { rebut(d.rebut, d.q); }
   else if (d.suspect) { S.suspect = d.suspect; S.challenge = null; S.deflectOn = null; }
   else if (d.search) {
     const sp = Object.values(C().rooms).flatMap(r => r.spots).find(s => s.id === d.search);
