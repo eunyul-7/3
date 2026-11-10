@@ -996,7 +996,7 @@ const GENDER = {
   /* 달빛극장 */ 문태준: "m", 오세나: "f", 강민혁: "m", 장경수: "m",
   /* 야간열차 */ 이현우: "m", 김도겸: "m", 류미선: "f", 정유나: "f",
   /* 박물관 */ 민서영: "f", 표지훈: "m", 노승철: "m", 홍예진: "f",
-  /* 수사팀 */ 강무열: "m", 윤도경: "m", 서하루: "f", 한서진: "f", 모은재: "f", 차도율: "m",
+  /* 수사팀 */ 강무열: "m", 윤도경: "m", 변주원: "m", 공태하: "m", 서하루: "f", 한서진: "f", 모은재: "f", 차도율: "m",
   /* 무작위 사건 이름 */ 서도윤: "m", 한예린: "f", 박준서: "m", 김하율: "f", 이서진: "f", 정민재: "m", 최유나: "f", 오태경: "m",
   윤소이: "f", 강지후: "m", 문채원: "f", 배성훈: "m", 임가온: "f", 장우빈: "m", 송다인: "f", 홍재민: "m", 류시아: "f", 권태오: "m",
   신보람: "f", 차은호: "m", 백지안: "f", 노현우: "m", 유해원: "f", 표나래: "f",
@@ -1104,6 +1104,8 @@ const Face = (() => {
     서하루: { g: "f", age: 24, style: "bun", glasses: null, top: "knit", cloth: "#4f6a7c", hair: "#3b2a20" },
     한서진: { g: "f", age: 37, style: "bob", glasses: "round", top: "jacket", cloth: "#2b3540", hair: "#1b1716" },
     모은재: { g: "f", age: 33, style: "wave", glasses: null, top: "cardigan", cloth: "#9a7f6a", hair: "#46332a" },
+    변주원: { g: "m", age: 31, style: "short", glasses: "round", facial: null, top: "shirt", cloth: "#dfe3e6", hair: "#2a201b" },
+    공태하: { g: "m", age: 27, style: "crew", glasses: null, facial: null, top: "suit", cloth: "#1f2c44", hair: "#1b1716" },
     차도율: { g: "m", age: 45, style: "side", glasses: "rect", facial: null, top: "suit", cloth: "#1f2530", hair: "#241c18" },
   };
   const fn = (name, size = 40, cls = "", age = 0) => {
@@ -1380,7 +1382,7 @@ const turnsFor = c => {
 };
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
-  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], reads: {}, counter: {}, introDone: false,
+  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], reads: {}, counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
   chances: 1, penalties: 0, decided: false, advice: {}, cleared: [], persona: {}, heart: {}, secrets: [], lastLine: null, dlg: null, wrongAccuse: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
   mode: "pixel", pos: null, dir: null, autopsyDone: false, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
@@ -1393,6 +1395,10 @@ const PARTNERS = [
     report: (room, list) => list ? `“자물쇠쯤이야. ${room}에서 이런 걸 건졌네. ${list}.”` : `“${room}엔 더 볼 게 없더군.”` },
   { id: "yoon", name: "윤도경", title: "과학수사 경사", rank: "경사", skill: "현장 감식",
     report: (room, list) => list ? `“${room} 감식 끝났습니다. 나온 건 ${list}입니다.”` : `“${room}에서는 새로 나온 게 없습니다.”` },
+  { id: "byun", name: "변주원", title: "과학수사 경장", rank: "경장", skill: "현장 감식",
+    report: (room, list) => list ? `“${room} 감식 마쳤습니다. 채취한 건 ${list}입니다.”` : `“${room}에선 더 나올 게 없습니다.”` },
+  { id: "gong", name: "공태하", title: "강력계 순경", rank: "순경", skill: "쓸데없는 물건 치우기·압박", noDispatch: true,
+    report: (room) => `“경감님 따라 ${room} 한 바퀴 돌았습니다. 사건이랑 상관없는 건 싹 치워 뒀습니다.”` },
   { id: "seo", name: "서하루", title: "순경", rank: "순경", skill: "현장 수색",
     report: (room, list) => list ? `“선배님! ${room} 싹 다 뒤져 봤어요. ${list}!”` : `“${room}은 이미 다 조사돼 있던데요?”` },
 ];
@@ -1505,12 +1511,66 @@ const DIFF = {
   easy:   { label: "쉬움", turns: 24, time: 240, bonus: 0, chances: 1, fakes: 0, sab: null, villains: false, persona: "show", lieTags: true, helpMax: 0,
             desc: "아주 쉬워요. 가짜 물건·방해·공범이 없고, 내 판단도 조금 더 정확해요. 대신 시간이 4분뿐이고 윤도경 경사 출동 한 번, 한서진 간파 한 번, 모은재 분석 두 번뿐이에요." },
   normal: { label: "보통", turns: 34, time: 420, bonus: 3, chances: 1, fakes: 1, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 }, villains: true, persona: "show", lieTags: false, helpMax: 3,
-            desc: "가짜 물건과 방해, 공범이 있어요. 시간은 7분. 윤도경·서하루를 2번씩 출동시킬 수 있고, 한서진 간파 1번·모은재 분석 3번이에요." },
+            desc: "가짜 물건과 방해, 공범이 있어요. 시간은 7분. 윤도경·변주원·서하루를 2번씩 출동시킬 수 있고, 공태하 순경이 쓸데없는 물건을 한 번 치워 줘요. 한서진 간파 1번·모은재 분석 3번이에요." },
   hard:   { label: "어려움", turns: 50, time: 720, bonus: 6, chances: 2, fakes: 2, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 }, villains: true, persona: "hint", lieTags: false, helpMax: 6,
-            desc: "아주 어려워요. 가짜 물건이 많고 방해가 거세며, 용의자 성격도 눈치로 알아내야 해요. 대신 시간 12분, 지목 기회 2번, 동료 셋 다 3번씩 출동하고, 한서진 간파 2번·모은재 분석 5번이에요." },
+            desc: "아주 어려워요. 가짜 물건이 많고 방해가 거세며, 용의자 성격도 눈치로 알아내야 해요. 대신 시간 12분, 지목 기회 2번, 동료 넷이 3번씩 출동하고(강무열과 함께 공태하도 따라와요), 공태하가 물건을 두 번 치워 줘요. 한서진 간파 2번·모은재 분석 5번이에요." },
 };
 /* 팀원 출동 횟수 */
-const DISPATCH = { easy: { each: 1, who: ["yoon"] }, normal: { each: 2, who: ["yoon", "seo"] }, hard: { each: 3 } };
+const DISPATCH = { easy: { each: 1, who: ["yoon"] }, normal: { each: 2, who: ["yoon", "byun", "seo"] }, hard: { each: 3, who: ["kang", "yoon", "byun", "seo"] } };
+/* 강력계 순경 공태하: 강무열과 다니며 쓸데없는 물건을 치우고, 비협조적인 용의자를 압박한다 */
+const GONG = { normal: { clear: 1 }, hard: { clear: 2 } };
+const PRESS_RISK = [0, 0.15, 0.5, 0.85];   /* 같은 사람을 몇 번째로 압박하나 → 역효과 확률 */
+const gongOn = () => !!GONG[S.diff];
+const clearLeft = () => gongOn() ? GONG[S.diff].clear - (S.cleared2 || 0) : 0;
+const pressOpen = q => has(S.pressOpen || [], q.id);
+const qOpen = q => !q.need || has(S.found, q.need) || pressOpen(q);
+function clearFakes() {
+  if (clearLeft() <= 0 || S.turns <= 0 || S.decided || S.locks[S.room]) return;
+  S.cleared2 = (S.cleared2 || 0) + 1;
+  const fakes = ((S.fakes || {})[S.room] || []).filter(f => !has(S.searched, f.id)), rn = C().rooms[S.room].name;
+  fakes.forEach(f => S.searched.push(f.id));
+  const said = fakes.length
+    ? `“${rn}에 사건이랑 상관없는 게 ${fakes.length}개 있길래 치워 뒀습니다.”`
+    : `“${rn}엔 치울 만한 게 없네요. 전부 사건이랑 관계있어 보입니다.”`;
+  S.events.push({ bad: false, msg: `강력계 순경 공태하 — ${said}` });
+  toast(`<b>공태하 순경</b> — ${esc(said)}`); Sound.door(); PX.prune();
+}
+function pressure(sid) {
+  const c = C(), p = c.suspects[sid];
+  if (!gongOn() || !p || S.turns <= 0 || S.decided) return;
+  S.press = S.press || {}; S.pressOpen = S.pressOpen || [];
+  const n = (S.press[sid] || 0) + 1; S.press[sid] = n;
+  const who = "강력계 순경 공태하";
+  S.dlg = null;
+  if (Math.random() < PRESS_RISK[Math.min(n, 3)]) {
+    /* 너무 몰아붙였다: 입을 닫고, 그사이 단서 하나를 놓친다 */
+    S.silence[sid] = 4; if (S.counter) delete S.counter[sid];   /* spend() 뒤 3턴 침묵 */
+    const spots = Object.entries(c.rooms).flatMap(([rid, r]) => r.spots.map(sp => ({ ...sp, rid })))
+      .filter(sp => sp.clue && !has(S.searched, sp.id) && !has(S.found, sp.clue) && !has(S.lost || [], sp.id));
+    const soft = spots.filter(sp => !c.key.includes(sp.clue)), pool = soft.length ? soft : spots, lost = pool.length ? RND.pick(pool) : null;
+    let extra = "";
+    if (lost) { S.lost = (S.lost || []).concat(lost.id); extra = ` 그 소란 사이에 ${c.rooms[lost.rid].name}의 단서 하나가 사라졌다.`; }
+    else if (!S.heart[sid]) { S.heart[sid] = "closed"; extra = " 마음도 완전히 닫혀 버렸다."; }
+    S.lastLine = { sid, who, q: "“좋은 말로 할 때 말씀하시죠. 계속 이러시면 곤란해집니다.”", a: "“…이건 협박이잖아요! 더는 아무 말도 안 해요!”", kind: "deflect" };
+    S.events.push({ bad: true, msg: `${who}의 압박이 지나쳤다. ${I(p.name)} 입을 닫았다.${extra}` });
+    toast(`<b>압박 역효과</b> — ${esc(EUN(p.name))} 입을 닫았다.${esc(extra)}`, true); Sound.wrong();
+  } else if (S.silence[sid]) {
+    delete S.silence[sid];
+    S.lastLine = { sid, who, q: "“입 다물고 있으면 서로 피곤해집니다. 지금 말씀하시죠.”", a: "“…아, 알았어요. 물어보세요.”", kind: "answer" };
+    toast(`<b>공태하 순경</b> — ${esc(EUN(p.name))} 다시 입을 열었다.`); Sound.help();
+  } else {
+    const q = p.qs.find(q => !qOpen(q) && !has(S.asked, q.id));
+    if (q) {
+      S.pressOpen.push(q.id);
+      S.lastLine = { sid, who, q: "“숨기는 게 있으면 지금 털어놓는 게 좋을 겁니다.”", a: "“아, 알았어요… 사실 하나 더 할 말이 있긴 해요.”", kind: "answer" };
+      toast(`<b>공태하 순경</b> — ${esc(p.name)}에게 물어볼 것이 하나 늘었다.`); Sound.help();
+    } else {
+      S.lastLine = { sid, who, q: "“더 아는 거 없습니까?”", a: "“정말 아는 건 다 말했어요!”", kind: "answer" };
+      toast(`${esc(p.name)}에게서 더 짜낼 것은 없다.`);
+    }
+  }
+  spend();
+}
 /* 반박 횟수 */
 const REBUT = { easy: { prof: 1, psy: 2 }, normal: { prof: 1, psy: 3 }, hard: { prof: 2, psy: 5 } };
 const rebutLeft = id => ((REBUT[S.diff] || {})[id] || 0) - S.rebuts.filter(x => x === id).length;
@@ -1720,6 +1780,10 @@ function dispatch(pid) {
   S.dispatched.push(pid);
   S.missions.push({ pid, room: S.room, due: S.actions + MISSION_DELAY, only: null });
   PX.helperEnter(S.missions[S.missions.length - 1]);
+  if (pid === "kang" && gongOn() && !S.missions.some(m => m.pid === "gong")) {
+    S.missions.push({ pid: "gong", room: S.room, due: S.actions + MISSION_DELAY, only: "-", clear: true });
+    PX.helperEnter(S.missions[S.missions.length - 1]);
+  }
   const x = partner(pid), rn = C().rooms[S.room].name;
   toast(`<b>${esc(x.title)} ${esc(x.name)}</b> — “${esc(EUN(rn))} 제게 맡기십시오. ${MISSION_DELAY}턴 뒤에 보고하겠습니다.”`);
   Sound.door();
@@ -1742,10 +1806,11 @@ function resolveMissions() {
   S.missions = S.missions.filter(m => S.actions < m.due);
   for (const m of done) {
     const x = partner(m.pid), r = c.rooms[m.room], names = [];
+    if (m.clear) for (const f of (S.fakes || {})[m.room] || []) if (!has(S.searched, f.id)) S.searched.push(f.id);
     for (const sp of allSpots(m.room)) {
       if (has(S.searched, sp.id) || (m.only && sp.id !== m.only)) continue;
       S.searched.push(sp.id);
-      if (sp.clue && !has(S.found, sp.clue)) { S.found.push(sp.clue); names.push(c.clues[sp.clue].name); }
+      if (sp.clue && !has(S.found, sp.clue) && !has(S.lost || [], sp.id)) { S.found.push(sp.clue); names.push(c.clues[sp.clue].name); }
     }
     const msg = `${pfull(x)}의 보고 — ${x.report(r.name, names.join(", "))}`;
     S.events.push({ bad: false, msg });
@@ -1802,7 +1867,7 @@ function sabotage(late) {
   const tamperable = spots.filter(s => s.clue && !has(S.searched, s.id) && !has(S.tampered, s.id));
   const lockable = Object.keys(c.rooms).filter(rid => !S.locks[rid] && c.rooms[rid].spots.some(s => !has(S.searched, s.id)));
   const silenceable = Object.entries(c.suspects).filter(([sid, p]) => !S.silence[sid] &&
-    p.qs.some(q => (!q.need || has(S.found, q.need)) && (!has(S.asked, q.id) || (q.lie && !has(S.broken, q.id)))));
+    p.qs.some(q => qOpen(q) && (!has(S.asked, q.id) || (q.lie && !has(S.broken, q.id)))));
   const accFree = !S.accCaught && accomplice();   /* 공범이 잡히면 훼손·잠금이 멈춘다 */
   if (tamperable.length && accFree) opts.push("tamper");
   if (lockable.length && accFree) opts.push("lock");
@@ -2039,6 +2104,7 @@ function renderTitle() {
         <div class="warn"><b><span class="k">호감도</span>마음 열기</b><p>용의자마다 성격이 있어요. ‘마음을 연다’에서 성격에 맞는 말투를 고르면 숨은 증언을 들려줘요. 잘못 고르면 그 증언은 영영 들을 수 없어요.</p></div>
         <div><b><span class="k">04</span>수사 수첩</b><p>찾은 단서, 시간표, 숨은 증언이 모여요. 거짓으로 밝혀진 진술에는 줄이 그어져요.</p></div>
         <div class="warn"><b><span class="k">05</span>결단의 시간</b><p>턴이나 시간이 다 되면 증거가 부족해도 범인을 골라야 해요. 범인을 놓치면 그대로 게임 오버예요.</p></div>
+        <div class="warn"><b><span class="k">압박</span>강력계 순경 공태하</b><p>보통·어려움에서 강무열 경감과 함께 다녀요. 방에서 사건과 상관없는 물건을 치워 주고, 비협조적인 용의자에게 겁을 줘서 입을 열게 해요. 하지만 같은 사람을 너무 몰아붙이면 입을 닫고, 그 소란에 단서를 놓쳐요.</p></div>
         <div><b><span class="k">출동</span>팀원 출동</b><p>장소에서 팀원을 보내면 문으로 들어와 대신 조사하고 2턴 뒤에 보고해요. 턴은 안 줄어요.</p></div>
         <div><b><span class="k">판단</span>진실일까, 거짓일까</b><p>용의자가 대답하면 주인공이 모은 증거를 토대로 ‘사실 같다/거짓말 같다’를 판단해요. 증거를 적게 모으면 판단도 엉성해요.</p></div>
         <div><b><span class="k">심문</span>프로파일러</b><p>심문은 주인공과 프로파일러만 해요. 한서진 경위는 거짓말을 바로 알아채지만 몇 번 못 불러요. 용의자가 입을 다물면 한서진이 대신 나서서 반격해요. 단, 실패하면 30초와 3턴을 잃어요. 모은재 경사는 더 자주 부를 수 있지만, 증거를 많이 모아야 정확해요.</p></div>
@@ -2091,6 +2157,8 @@ const INTRO = (() => {
     { id: "han", name: "한서진", x: 6, y: 2, dir: "up" },
     { id: "mo", name: "모은재", x: 5, y: 2, dir: "right" },
     { id: "yoon", name: "윤도경", x: 9, y: 4, dir: "up" },
+    { id: "gong", name: "공태하", x: 8, y: 5, dir: "up" },
+    { id: "byun", name: "변주원", x: 10, y: 4, dir: "left" },
   ];
   /* 신고 접수 시각은 사건 정보(“22:41 접수”)를 그대로 읽는다 */
   const callTime = () => {
@@ -2205,7 +2273,7 @@ const INTRO = (() => {
 const ENDING = (() => {
   const TS = 16, W = 176, H = 128;
   let cv = null, g = null, raf = 0, t0 = 0, kind = "", capKey = "", rang = [];
-  const TITLE = { 서하루: "순경", 강무열: "경감", 한서진: "경위", 모은재: "경사", 윤도경: "경사" };
+  const TITLE = { 서하루: "순경", 강무열: "경감", 한서진: "경위", 모은재: "경사", 윤도경: "경사", 변주원: "경장", 공태하: "순경" };
   function spec() {
     const c = C(), me = pname();
     if (kind === "win") {
@@ -2219,6 +2287,8 @@ const ENDING = (() => {
           { id: "seo", name: "서하루", x: 3, y: 5.6, dir: "up" },
           { id: "han", name: "한서진", x: 8, y: 5, dir: "left" },
           { id: "mo", name: "모은재", x: 9, y: 5.6, dir: "left" },
+          { id: "gong", name: "공태하", x: 1, y: 5.6, dir: "right" },
+          { id: "byun", name: "변주원", x: 10, y: 5, dir: "left" },
         ],
         beats: [
           { t: 0, who: "", text: "경찰서로 돌아온 강력팀." },
@@ -2242,6 +2312,8 @@ const ENDING = (() => {
         { id: "han", name: "한서진", x: 6, y: 2.6, dir: "down" },
         { id: "kang", name: "강무열", x: 8, y: 4.8, dir: "down" },
         { id: "yoon", name: "윤도경", x: 9, y: 4.6, dir: "down" },
+        { id: "byun", name: "변주원", x: 10, y: 4.8, dir: "down" },
+        { id: "gong", name: "공태하", x: 7, y: 6, dir: "down" },
       ],
       beats: [
         { t: 0, who: "", text: "범인은 혼란을 틈타 사라졌다. 비가 그치지 않는 밤." },
@@ -2524,7 +2596,9 @@ function doSearch(id) {
   const rid = Object.keys(C().rooms).find(k => allSpots(k).some(s => s.id === id));
   const sp = rid && allSpots(rid).find(s => s.id === id);
   if (!sp || S.turns <= 0 || has(S.searched, sp.id) || S.locks[rid]) return false;
-  Sound.step(); S.searched.push(sp.id); addClue(sp.clue);
+  Sound.step(); S.searched.push(sp.id);
+  if (has(S.lost || [], sp.id)) toast("한발 늦었다 — 누군가 이미 치워 버렸다. 단서를 놓쳤다.", true);
+  else addClue(sp.clue);
   if (sp.fake) toast("헛수고 — 사건과 관계없는 물건이었다.", true);
   spend(has(S.tampered, sp.id) ? 2 : 1);
   return true;
@@ -2573,6 +2647,8 @@ const LOOK_OVERRIDE = {
   강무열: { cloth: "#7a5a3a", top: "coat" },
   윤도경: { cloth: "#e6e3dc", pants: "#c9c4b9", top: "shirt" },
   서하루: { cloth: "#22314f", pants: "#1b2335", top: "suit", cap: true },
+  변주원: { cloth: "#dfe3e6", pants: "#c3c8cc", top: "shirt", glasses: "round" },
+  공태하: { cloth: "#1f2c44", pants: "#171f30", top: "suit", cap: true, style: "crew" },
   한서진: { cloth: "#2b3540", top: "suit" },
   모은재: { cloth: "#9a7f6a", top: "cardigan" },
 };
@@ -3107,19 +3183,34 @@ function renderPixel(out) {
     </div>
     ${lk ? `<p class="locked-room">이 방이 잠겼다. 문으로 나가서 ${lk}턴 뒤에 다시 오자.</p>` : ""}
     <div class="room-nav"><span class="label">방 이동 · 이름을 누르면 바로 가요</span>${roomNav}</div>
-    ${!out ? renderDispatch(r) : ""}
+    ${!out ? renderDispatch(r) + renderGong() : ""}
     <p class="desc">${r.desc}</p>
     ${results ? `<details class="found-list"><summary>이 방에서 찾은 것 (${found.length})</summary><div class="spots">${results}</div></details>` : ""}
   </div>`;
 }
 
+function renderGong() {
+  if (!gongOn() || !allSpots(S.room).some(sp => !has(S.searched, sp.id))) return "";
+  const can = clearLeft() > 0 && S.turns > 0 && !S.locks[S.room];
+  return `<div class="dispatch">
+    <b>강력계 순경 공태하</b>
+    <p class="hint">강무열 경감과 다니며 사건과 상관없어 보이는 물건을 치워요. 가짜 물건이 사라지고, 턴은 안 줄어요.</p>
+    <div class="q-actions"><button class="act ally with-face" data-clearfakes="1" ${can ? "" : "disabled"}>${pixelFace("공태하", 24)}이 방 쓸데없는 물건 치우기<span class="cost">${clearLeft() > 0 ? `${clearLeft()}번 남음` : "끝"}</span></button></div>
+  </div>`;
+}
+function pressBtn(sid) {
+  if (!gongOn()) return "";
+  const n = (S.press || {})[sid] || 0, risk = PRESS_RISK[Math.min(n + 1, 3)];
+  const lv = risk < .3 ? "조금 위험" : risk < .7 ? "위험 — 역효과 날 수 있음" : "매우 위험 — 거의 역효과";
+  return `<button class="choice press with-face" data-press="${sid}"><span class="ck">압박</span><span>${pixelFace("공태하", 22)} 공태하 순경이 겁을 준다${n ? ` <small class="hint">(${n}번 압박함)</small>` : ""}</span><span class="cost">−1턴 · ${lv}</span></button>`;
+}
 function renderDispatch(r) {
   const rule = DISPATCH[S.diff];
   if (!rule) return "";
   const left = allSpots(S.room).some(sp => !has(S.searched, sp.id));
   const busy = S.missions.find(m => m.room === S.room);
   if (!left && !busy) return "";
-  const btns = PARTNERS.filter(x => !rule.who || rule.who.includes(x.id)).map(x => {
+  const btns = PARTNERS.filter(x => !x.noDispatch && (!rule.who || rule.who.includes(x.id))).map(x => {
     const left = dispatchLeft(x.id), away = S.missions.some(m => m.pid === x.id);
     const tag = away ? "출동 중" : left <= 0 ? "끝" : `${left}번 남음`;
     return `<button class="act ally with-face" data-dispatch="${x.id}" ${canDispatch(x.id) ? "" : "disabled"}>
@@ -3184,7 +3275,7 @@ function renderPeople(out) {
   const c = C();
   const heartLabel = sid => S.heart[sid] === "open" ? `<span class="heart open">♥ 마음 열림</span>` : S.heart[sid] === "closed" ? `<span class="heart closed">♡ 닫힘</span>` : "";
   const list = Object.entries(c.suspects).map(([id, p]) => {
-    const open = p.qs.filter(q => !q.need || has(S.found, q.need));
+    const open = p.qs.filter(q => qOpen(q));
     const left = open.filter(q => !has(S.asked, q.id)).length;
     const nb = p.qs.filter(q => has(S.broken, q.id)).length, sl = S.silence[id];
     return `<button class="who has-face${sl ? " is-silent" : ""}" aria-pressed="${S.suspect === id}" data-suspect="${id}">${pixelFace(p.name, 44, p.role)}
@@ -3210,12 +3301,13 @@ function renderPeople(out) {
   else if (sl) choices = `<p class="locked-room">“더는 아무 말도 안 하겠어요.” ${sl}턴 동안 대화할 수 없다.</p>`
     + ((S.counter || {})[sid]
       ? `<p class="locked">한서진의 반격도 통하지 않았다. 입이 풀릴 때까지 기다려야 한다.</p>`
-      : `<button class="choice press with-face" data-counter="${sid}"><span class="ck">반격</span><span>${pixelFace("한서진", 22)} 한서진 경위가 대신 나서서 반격한다<br><small class="hint">${counterLie(sid) ? "찌를 증거가 있다. 잘 통할 것 같다." : "찌를 증거가 없다. 통할지 모르겠다."}</small></span><span class="cost">실패하면 −${COUNTER_SEC}초 · −${COUNTER_TURNS}턴</span></button>`);
+      : pressBtn(sid) + `<button class="choice press with-face" data-counter="${sid}"><span class="ck">반격</span><span>${pixelFace("한서진", 22)} 한서진 경위가 대신 나서서 반격한다<br><small class="hint">${counterLie(sid) ? "찌를 증거가 있다. 잘 통할 것 같다." : "찌를 증거가 없다. 통할지 모르겠다."}</small></span><span class="cost">실패하면 −${COUNTER_SEC}초 · −${COUNTER_TURNS}턴</span></button>`);
   else if (!D) {
-    const avail = p.qs.filter(q => (!q.need || has(S.found, q.need)) && !has(S.asked, q.id));
-    const locked = p.qs.filter(q => q.need && !has(S.found, q.need)).length;
+    const avail = p.qs.filter(q => qOpen(q) && !has(S.asked, q.id));
+    const locked = p.qs.filter(q => !qOpen(q)).length;
     choices = avail.map(q => `<button class="choice" data-ask="${q.id}"><span class="ck">질문</span><span>“${esc(q.q)}”</span><span class="cost">−1턴</span></button>`).join("")
       + (statements.length && S.found.length ? `<button class="choice press" data-dlg="contradict"><span class="ck">추리</span><span>모순을 지적한다</span><span class="cost">틀리면 −10초</span></button>` : "")
+      + (p.qs.some(q => has(S.asked, q.id)) ? pressBtn(sid) : "")
       + (!S.heart[sid] && p.qs.some(q => has(S.asked, q.id)) ? `<button class="choice heart" data-dlg="heart"><span class="ck">호감</span><span>마음을 열게 한다</span><span class="cost">한 번뿐 · −1턴</span></button>` : "")
       + (locked ? `<p class="locked">단서를 더 찾으면 물어볼 것이 ${locked}개 더 생긴다.</p>` : "")
       + (!avail.length && !statements.length ? `<p class="locked">지금은 더 물어볼 것이 없다.</p>` : "");
@@ -3464,6 +3556,8 @@ app.addEventListener("click", e => {
   else if (d.tone) { openHeart(S.suspect, d.tone); }
   else if (d.read) { doRead(d.read, d.q); }
   else if (d.counter) { counterattack(d.counter); }
+  else if (d.press) { pressure(d.press); }
+  else if (d.clearfakes) { clearFakes(); }
   else return;
   render();
   if (top) window.scrollTo(0, 0);
