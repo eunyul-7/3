@@ -1001,7 +1001,7 @@ const turnsFor = c => {
 };
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
-  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], rebutNotes: {},
+  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], rebutNotes: {}, lawyerUsed: 0,
   autopsyDone: false, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
@@ -1026,6 +1026,19 @@ const REBUTTERS = [
     hit: () => "“방금 시선이 아래로 떨어지고 말이 빨라졌어요. 거짓말할 때 나오는 반응이에요. 솔직하게 말씀하시죠.”",
     miss: "“목소리도 표정도 흔들림이 없어요. 거짓말은 아닌 것 같아요.”" },
 ];
+/* 우리 쪽 변호사: 입을 닫은 용의자를 다시 말하게 한다. 보통 2번, 어려움 3번 */
+const LAWYER = { name: "차도율", title: "변호사" };
+const LAWYER_USES = { normal: 2, hard: 3 };
+const lawyerLeft = () => (LAWYER_USES[S.diff] || 0) - S.lawyerUsed;
+function callLawyer(sid) {
+  if (!S.silence[sid] || lawyerLeft() <= 0 || S.turns <= 0) return;
+  delete S.silence[sid]; S.lawyerUsed += 1;
+  const name = C().suspects[sid].name;
+  const msg = `${LAWYER.title} ${LAWYER.name}: “제가 ${name} 씨 곁에 있겠습니다. 이제 말씀하셔도 됩니다.”`;
+  S.events.push({ bad: false, msg });
+  toast(`<b>변호사 도착</b> — ${esc(EUN(name))} 다시 입을 열었다.`); Sound.help();
+}
+
 /* 반박 횟수: 보통은 프로파일러 1번·심리 탐정 2번, 어려움은 2번·2번, 쉬움은 없음 */
 const REBUT = { normal: { prof: 1, psy: 2 }, hard: { prof: 2, psy: 2 } };
 const rebutLeft = id => ((REBUT[S.diff] || {})[id] || 0) - S.rebuts.filter(x => x === id).length;
@@ -1037,9 +1050,9 @@ const DIFF = {
   easy:   { label: "쉬움",   turns: 30, time: 720, bonus: 0, sab: null,
             desc: "방해가 없어요. 처음 하는 사람에게 추천!" },
   normal: { label: "보통",   turns: 35, time: 540, bonus: 3, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 },
-            desc: "중간쯤부터 가끔 방해가 들어와요. 윤도경이 알아서 시신을 살피고 단서를 찾아 주고, 서하루가 거짓말을 알려 줘요. 두 사람을 2번씩 출동시킬 수 있고, 프로파일러 1번·심리 탐정 2번 반박을 맡길 수 있어요." },
+            desc: "중간쯤부터 가끔 방해가 들어와요. 윤도경이 알아서 시신을 살피고 단서를 찾아 주고, 서하루가 거짓말을 알려 줘요. 두 사람을 2번씩 출동시킬 수 있고, 프로파일러 1번·심리 탐정 2번 반박을 맡길 수 있어요. 변호사는 2번." },
   hard:   { label: "어려움", turns: 45, time: 360, bonus: 6, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 },
-            desc: "일찍부터 방해가 자주 들어와요. 탐정 세 명이 모두 돕고, 탐정마다 3번씩 출동시킬 수 있어요. 프로파일러·심리 탐정 반박은 2번씩." },
+            desc: "일찍부터 방해가 자주 들어와요. 탐정 세 명이 모두 돕고, 탐정마다 3번씩 출동시킬 수 있어요. 프로파일러·심리 탐정 반박은 2번씩, 변호사는 3번." },
 };
 const mmss = sec => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 let PLAYER = ""; try { PLAYER = localStorage.getItem("midnight-player") || ""; } catch {}
@@ -1259,7 +1272,7 @@ function sabotage(late) {
     msg = `${josa(c.rooms[rid].name, "이", "가")} 안쪽에서 잠겼다. 열쇠를 찾는 동안 ${dur}턴 들어갈 수 없다.`;
   } else if (kind === "silence") {
     const [sid, sp] = pickOne(silenceable); S.silence[sid] = dur;
-    msg = `${josa(sp.name, "이", "가")} “변호사가 오기 전엔 아무 말도 안 하겠다”며 입을 닫았다. ${dur}턴 동안 심문할 수 없다.`;
+    msg = `${josa(sp.name, "이", "가")} “변호사가 오기 전엔 아무 말도 안 하겠다”며 입을 닫았다. ${dur}턴 동안 심문할 수 없다.${lawyerLeft() > 0 ? " 심문 화면에서 변호사를 부를 수 있다." : ""}`;
   } else {
     S.turns -= 1;
     msg = "무전: “지름길을 찾았다.” 경찰 도착이 1턴 앞당겨졌다.";
@@ -1456,7 +1469,8 @@ function renderTitle() {
         <div><b><span class="k">도움</span>동료 탐정</b><p>훼방이 심해지면 동료 탐정들이 달려온다. 보통·어려움에서는 법의학 탐정 윤도경(수사 초반 시신 감식, 단서 찾기)과 견습 탐정 서하루(수상한 진술 귀띔)가, 어려움에서는 베테랑 탐정 강무열(잠긴 문 열기·시간 벌기)까지 나온다.</p></div>
         <div><b><span class="k">출동</span>탐정 출동</b><p>장소 화면 아래 ‘탐정 출동’ 버튼을 누르면 탐정이 그 장소를 대신 조사하고 2턴 뒤에 알려 줘요. 턴은 안 줄어요. 보통은 윤도경·서하루를 2번씩(모두 4번), 어려움은 세 명 모두 3번씩 쓸 수 있어요.</p></div>
         <div><b><span class="k">난이도</span>쉬움 → 어려움</b><p>첫 사건은 쉬움, 뒤로 갈수록 어려워진다. 사건을 열 때 난이도와 시간 제한 모드를 직접 고를 수도 있다.</p></div>
-        <div><b><span class="k">반박</span>프로파일러 · 심리 탐정</b><p>들은 말 아래 ‘반박’ 버튼을 누르면 탐정이 대신 따져 줘요. 거짓말이면 바로 무너지고, 사실이면 사실이라고 알려 줘요. 턴은 안 줄어요. 보통은 프로파일러 1번·심리 탐정 2번, 어려움은 2번·2번.</p></div>
+        <div><b><span class="k">변호사</span>변호사 차도율</b><p>용의자가 “변호사가 오기 전엔 말 안 해요”라며 입을 닫으면, 심문 화면에서 변호사를 불러 바로 다시 말하게 할 수 있어요. 턴은 안 줄어요. 보통 2번, 어려움 3번.</p></div>
+        <div><b><span class="k">반박</span>프로파일러 한서진 · 심리 탐정 모은재</b><p>들은 말 아래 ‘반박’ 버튼을 누르면 탐정이 대신 따져 줘요. 거짓말이면 바로 무너지고, 사실이면 사실이라고 알려 줘요. 턴은 안 줄어요. 보통은 프로파일러 1번·심리 탐정 2번, 어려움은 2번·2번.</p></div>
         <div class="warn"><b><span class="k">시간</span>시간 제한 모드</b><p>실제 시계가 흐른다. 쉬움 12분, 보통 9분, 어려움 6분. 마지막 30초엔 초침 소리가 들린다.</p></div>
         <div><b><span class="k">무한</span>무작위 사건</b><p>무대·용의자·동기·수법·범인이 매번 새로 정해진다. 같은 사건은 두 번 나오지 않는다.</p></div>
       </div>
@@ -1599,7 +1613,7 @@ function renderQ(q, p, outRaw) {
         </div>`;
       } else {
         const rb = note ? "" : REBUTTERS.filter(x => rebutLeft(x.id) > 0)
-          .map(x => `<button class="act ally" data-rebut="${x.id}" data-q="${q.id}" ${out ? "disabled" : ""}>${x.title} 반박<span class="cost">${rebutLeft(x.id)}번 남음</span></button>`).join("");
+          .map(x => `<button class="act ally" data-rebut="${x.id}" data-q="${q.id}" ${out ? "disabled" : ""}>${x.name}(${x.title}) 반박<span class="cost">${rebutLeft(x.id)}번 남음</span></button>`).join("");
         const ch = S.found.length ? `<button class="act press" data-challenge="${q.id}" ${out ? "disabled" : ""}>모순 지적</button>` : "";
         if (ch || rb) html += `<div class="q-actions">${ch}${rb}</div>`;
       }
@@ -1625,7 +1639,8 @@ function renderPeople(out) {
     <section class="panel" aria-live="polite">
       <div><span class="label">${p.role}</span><h3 style="font-size:24px">${p.name}</h3></div>
       <p class="desc">${p.intro}</p>
-      ${sl ? `<p class="locked-room">“변호사가 오기 전엔 아무 말도 안 하겠어요.” ${sl}턴 동안 심문할 수 없다.</p>` : ""}
+      ${sl ? `<p class="locked-room">“변호사가 오기 전엔 아무 말도 안 하겠어요.” ${sl}턴 동안 심문할 수 없다.</p>
+        ${lawyerLeft() > 0 && !out ? `<div class="q-actions"><button class="act ally" data-lawyer="${S.suspect}">${LAWYER.title} ${LAWYER.name} 부르기<span class="cost">${lawyerLeft()}번 남음</span></button></div>` : ""}` : ""}
       <div class="qa">${qs}</div>
       ${locked ? `<p class="locked">단서를 더 찾으면 물어볼 것이 ${locked}개 더 생긴다.</p>` : ""}
       ${S.found.length ? "" : `<p class="locked">단서를 하나라도 찾으면 진술의 모순을 지적할 수 있다.</p>`}
@@ -1704,7 +1719,7 @@ function renderResult() {
       ${row("무너뜨린 거짓말", S.broken.length > 0, `${S.broken.length}개`)}
       ${row("헛짚은 지적", S.wrong === 0, `${S.wrong}회`)}
       ${row("받은 훼방", !S.events.some(e => e.bad), `${S.events.filter(e => e.bad).length}회`)}
-      ${row("동료 탐정의 도움", true, `${S.helps + S.dispatched.length + S.rebuts.length}회`)}
+      ${row("동료 탐정의 도움", true, `${S.helps + S.dispatched.length + S.rebuts.length + S.lawyerUsed}회`)}
       ${row("남은 턴", S.turns > 0, `${S.turns}`)}
       ${row("난이도", true, `${DIFF[S.diff].label}${DIFF[S.diff].bonus ? ` (+${DIFF[S.diff].bonus})` : ""}`)}
       ${S.timed ? row("시간 제한", S.timeLeft > 0, S.timeLeft > 0 ? `${mmss(S.timeLeft)} 남김 (+5)` : "시간 초과 (+5)") : ""}
@@ -1741,6 +1756,7 @@ app.addEventListener("click", e => {
   else if (d.room) { S.room = d.room; }
   else if (d.dispatch) { dispatch(d.dispatch); }
   else if (d.rebut) { rebut(d.rebut, d.q); }
+  else if (d.lawyer) { callLawyer(d.lawyer); }
   else if (d.suspect) { S.suspect = d.suspect; S.challenge = null; S.deflectOn = null; }
   else if (d.search) {
     const sp = Object.values(C().rooms).flatMap(r => r.spots).find(s => s.id === d.search);
