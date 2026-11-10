@@ -125,6 +125,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .act.press:hover:not(:disabled) { border-color: var(--blood); color: var(--ink); background: var(--blood); }
 .act .cost { font-family: var(--f-mono); font-size: 11px; color: var(--muted); margin-left: 6px; }
 .result { font-family: var(--f-display); font-size: 15.5px; line-height: 1.75; max-width: 64ch; }
+.found-chip.fake { color: var(--muted); border-color: var(--line); }
 .found-chip { display: inline-flex; align-items: center; gap: 6px; justify-self: start; font-family: var(--f-mono); font-size: 12px; color: var(--lamp); border: 1px solid var(--lamp-dim); border-radius: 999px; padding: 2px 10px; }
 
 /* 심문 */
@@ -1234,7 +1235,7 @@ const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, fou
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
   locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], rebutNotes: {}, lawyerUsed: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
-  mode: "3d", pos: null, dir: null, autopsyDone: false, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
+  mode: "3d", pos: null, dir: null, autopsyDone: false, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
@@ -1328,6 +1329,33 @@ const rebutLeft = id => ((REBUT[S.diff] || {})[id] || 0) - S.rebuts.filter(x => 
 const pfull = x => `${x.title} ${x.name}`;
 const MISSION_DELAY = 2;
 
+/* 가짜 물건: 진짜 단서처럼 ?가 붙지만 조사하면 헛수고. 매 판 무작위로 놓인다 */
+const FAKE_POOL = [
+  { type: "plant", label: "화분 흙을 뒤진다", text: "흙 속에는 뿌리뿐이다. 아무것도 묻혀 있지 않다." },
+  { type: "drawer", label: "작은 서랍장을 연다", text: "양말과 손수건이 가지런히 개어져 있다. 사건과는 관계없어 보인다." },
+  { type: "trash", label: "구석 휴지통을 본다", text: "과자 봉지와 오래된 영수증뿐이다. 날짜도 한참 전이다." },
+  { type: "box", label: "종이 상자를 열어 본다", text: "크리스마스 장식이 가득하다. 쓸모없는 물건들이다." },
+  { type: "bag", label: "주인 없는 가방을 연다", text: "접이식 우산과 낡은 잡지 한 권. 별다른 건 없다." },
+  { type: "photo", label: "액자 뒤를 살핀다", text: "먼지만 소복하다. 오래 아무도 손대지 않았다." },
+  { type: "board", label: "벽의 메모를 읽는다", text: "‘내일 우유 사기.’ 사건과는 아무 관계 없는 메모다." },
+  { type: "teatable", label: "작은 탁자 위를 본다", text: "빈 찻잔 하나. 깨끗이 씻어 둔 것이다." },
+  { type: "safe", label: "작은 금고를 열어 본다", text: "텅 비어 있다. 오래전부터 쓰지 않은 듯하다." },
+  { type: "cart", label: "정리 카트를 뒤진다", text: "수건과 비누가 가득하다. 이상한 점은 없다." },
+  { type: "tv", label: "작은 TV를 켜 본다", text: "날씨 예보가 나온다. 내일도 비가 온다고 한다." },
+  { type: "crate", label: "구석의 나무 궤짝을 연다", text: "낡은 신문지 뭉치뿐이다. 몇 년 전 신문이다." },
+];
+function makeFakes() {
+  const c = C(), out = {}, per = S.diff === "hard" ? 2 : 1;
+  for (const rid of Object.keys(c.rooms)) {
+    if (S.diff === "easy" && Math.random() < .5) continue;   /* 쉬움은 절반 정도의 방에만 */
+    const used = new Set(c.rooms[rid].spots.map(sp => furnType(sp.label)));
+    out[rid] = RND.shuffle(FAKE_POOL).filter(f => !used.has(f.type)).slice(0, per)
+      .map((f, i) => ({ id: `fk_${rid}_${i}`, label: f.label, type: f.type, text: f.text, clue: null, fake: true }));
+  }
+  return out;
+}
+const allSpots = rid => C().rooms[rid].spots.concat((S.fakes && S.fakes[rid]) || []);
+
 /* 난이도: 첫 사건은 쉽게, 뒤로 갈수록 어렵게 */
 const DIFF = {
   easy:   { label: "쉬움",   turns: 30, time: 720, bonus: 0, sab: null,
@@ -1359,6 +1387,7 @@ function beginCase() {
   S.turns = S.maxTurns = t;
   S.timeLeft = S.timeMax = S.timed ? d.time : 0;
   S.vars = S.diff === "easy" ? [] : makeVars();
+  S.fakes = makeFakes(); S.fakeSeed = Math.random();
   S.screen = "game";
 }
 function nextCaseId() {
@@ -1496,7 +1525,7 @@ function resolveMissions() {
   S.missions = S.missions.filter(m => S.actions < m.due);
   for (const m of done) {
     const x = partner(m.pid), r = c.rooms[m.room], names = [];
-    for (const sp of r.spots) {
+    for (const sp of allSpots(m.room)) {
       if (has(S.searched, sp.id) || (m.only && sp.id !== m.only)) continue;
       S.searched.push(sp.id);
       if (sp.clue && !has(S.found, sp.clue)) { S.found.push(sp.clue); names.push(c.clues[sp.clue].name); }
@@ -1828,9 +1857,9 @@ function renderBrief() {
 
 function roomBtn(id, wide) {
   const r = C().rooms[id];
-  const done = r.spots.filter(s => has(S.searched, s.id)).length, lk = S.locks[id];
+  const all = allSpots(id), done = all.filter(s => has(S.searched, s.id)).length, lk = S.locks[id];
   return `<button class="room${r.crime ? " crime" : ""}${wide ? " wide" : ""}${lk ? " is-locked" : ""}" aria-pressed="${S.room === id}" data-room="${id}">
-    <span class="rname">${r.name}</span><span class="rstat">${lk ? `잠김 ${lk}턴` : `조사 ${done}/${r.spots.length}`}</span></button>`;
+    <span class="rname">${r.name}</span><span class="rstat">${lk ? `잠김 ${lk}턴` : `조사 ${done}/${all.length}`}</span></button>`;
 }
 function renderRooms(out) {
   if (S.mode !== "list") {
@@ -1841,14 +1870,14 @@ function renderRooms(out) {
   }
   const c = C(), r = c.rooms[S.room], lk = S.locks[S.room];
   const floorOf = c.floors.find(f => f.rooms.includes(S.room));
-  const spots = r.spots.map(sp => {
+  const spots = allSpots(S.room).map(sp => {
     const done = has(S.searched, sp.id), tam = has(S.tampered, sp.id);
     return `<div class="spot">
       <div class="spot-head"><b>${sp.label}</b>
         ${done ? "" : `<button class="act" data-search="${sp.id}" ${out || lk ? "disabled" : ""}>${tam ? "복구하며 조사한다" : "조사한다"}<span class="cost">−${tam ? 2 : 1}턴</span></button>`}
       </div>
       ${!done && tam ? `<span class="tampered">누군가 손댄 흔적 · 조사에 2턴</span>` : ""}
-      ${done ? `<p class="result">${esc(sp.text)}</p>${sp.clue ? `<span class="found-chip">단서 · ${esc(c.clues[sp.clue].name)}</span><p class="result">${esc(c.clues[sp.clue].text)}</p>` : ""}` : ""}
+      ${done ? `<p class="result">${esc(sp.text)}</p>${sp.fake ? `<span class="found-chip fake">헛수고 · 사건과 관계없음</span>` : ""}${sp.clue ? `<span class="found-chip">단서 · ${esc(c.clues[sp.clue].name)}</span><p class="result">${esc(c.clues[sp.clue].text)}</p>` : ""}` : ""}
     </div>`;
   }).join("");
   const plan = c.floors.map(f => `<div class="floor"><span class="label">${f.label}</span>
@@ -1950,7 +1979,7 @@ function doorsOf(rid) {
   return out;
 }
 function layout(rid) {
-  const key = `${S.caseId}|${C().title}|${rid}|${S.vars.map(v => v.name).join()}`;
+  const key = `${S.caseId}|${C().title}|${rid}|${S.vars.map(v => v.name).join()}|${S.fakeSeed}`;
   if (layoutCache.has(key)) return layoutCache.get(key);
   const r = C().rooms[rid], h = hashStr(rid + C().title), taken = new Set(), k = (x, y) => x + "," + y;
   const doors = doorsOf(rid);
@@ -1959,8 +1988,8 @@ function layout(rid) {
   const rot = a => { const o = h % a.length; return a.slice(o).concat(a.slice(0, o)); };
   const take = slots => { for (const [x, y] of slots) if (!taken.has(k(x, y))) { taken.add(k(x, y)); return [x, y]; } return null; };
   const anyFree = () => { for (let y = 2; y < EXH - 2; y++) for (let x = 2; x < EXW - 2; x++) if (!taken.has(k(x, y))) { taken.add(k(x, y)); return [x, y]; } return [5, 3]; };
-  const items = r.spots.map(sp => {
-    const t = furnType(sp.label);
+  const items = allSpots(rid).map(sp => {
+    const t = sp.type || furnType(sp.label);
     const pos = take(rot(WALL_T.has(t) ? WALL_SLOTS : CENTER_T.has(t) ? CENTER_SLOTS : CORNER_SLOTS)) || anyFree();
     return { spot: sp.id, type: t, x: pos[0], y: pos[1], label: sp.label };
   });
@@ -2069,10 +2098,12 @@ function goTo(target) {
   walkPath(findPath(L, S.pos, goals), () => { S.dir = [Math.sign(target.x - S.pos.x), Math.sign(target.y - S.pos.y)]; updateNear(); interact(target); });
 }
 function doSearch(id) {
-  const sp = Object.values(C().rooms).flatMap(r => r.spots).find(s => s.id === id);
-  const rid = Object.keys(C().rooms).find(k => C().rooms[k].spots.includes(sp));
+  const rid = Object.keys(C().rooms).find(k => allSpots(k).some(s => s.id === id));
+  const sp = rid && allSpots(rid).find(s => s.id === id);
   if (!sp || S.turns <= 0 || has(S.searched, sp.id) || S.locks[rid]) return false;
-  Sound.step(); S.searched.push(sp.id); addClue(sp.clue); spend(has(S.tampered, sp.id) ? 2 : 1);
+  Sound.step(); S.searched.push(sp.id); addClue(sp.clue);
+  if (sp.fake) toast("헛수고 — 사건과 관계없는 물건이었다.", true);
+  spend(has(S.tampered, sp.id) ? 2 : 1);
   return true;
 }
 
@@ -2104,10 +2135,10 @@ function renderExplore(out, plan) {
   }).join("");
   const me = `<div class="me" id="me" style="${cell(S.pos.x, S.pos.y)}"><span class="shadow"></span>${Face(pname(), 0)}</div>`;
   const light = `<div class="light" id="light" style="--lx:${(S.pos.x + .5) / EXW * 100}%;--ly:${(S.pos.y + .5) / EXH * 100}%"></div>`;
-  const found = r.spots.filter(sp => has(S.searched, sp.id));
-  const left = r.spots.length - found.length;
+  const found = allSpots(rid).filter(sp => has(S.searched, sp.id));
+  const left = allSpots(rid).length - found.length;
   const results = found.map(sp => `<div class="spot"><b>${esc(sp.label)}</b><p class="result">${esc(sp.text)}</p>
-    ${sp.clue ? `<span class="found-chip">단서 · ${esc(c.clues[sp.clue].name)}</span><p class="result">${esc(c.clues[sp.clue].text)}</p>` : ""}</div>`).join("");
+    ${sp.fake ? `<span class="found-chip fake">헛수고 · 사건과 관계없음</span>` : ""}${sp.clue ? `<span class="found-chip">단서 · ${esc(c.clues[sp.clue].name)}</span><p class="result">${esc(c.clues[sp.clue].text)}</p>` : ""}</div>`).join("");
   return `<div class="split explore">
     <div class="plan">${plan}<p class="hint">방 이름을 누르면 바로 이동해요.</p></div>
     <section class="panel" aria-live="polite">
@@ -2322,89 +2353,101 @@ const V3 = (() => {
     }
     return g;
   }
-  /* 얼굴 무늬: 구의 앞쪽(가로 1/4 지점)에 눈·눈썹·코·입을 그린다 */
+  /* 얼굴 무늬(평범한 그림체): 구의 앞쪽(가로 1/4 지점)에 보통 크기 눈·눈썹·코·입 */
   function faceTexture(T, name) {
-    return canvasTexture("face3d" + name + T.age, 512, 256, (g, w, h) => {
+    return canvasTexture("face3dnormal" + name + T.age, 512, 256, (g, w, h) => {
       g.fillStyle = T.skin; g.fillRect(0, 0, w, h);
-      const cx = w * .25, ey = h * .47, sep = 28, hc = T.hair === "#c7c1b6" ? "#6a655e" : T.hair;
-      if (T.facial === "stubble") { g.fillStyle = "rgba(40,30,25,.22)"; g.beginPath(); g.ellipse(cx, h * .66, 46, 26, 0, 0, Math.PI * 2); g.fill(); }
-      if (T.F) { g.fillStyle = "rgba(232,143,134,.35)"; for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(cx + sx * 38, h * .57, 12, 7, 0, 0, Math.PI * 2); g.fill(); } }
-      g.strokeStyle = hc; g.lineCap = "round"; g.lineWidth = T.F ? 3 : 5;
-      for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(cx + sx * (sep - 12), ey - 15); g.quadraticCurveTo(cx + sx * sep, ey - (T.F ? 21 : 18), cx + sx * (sep + 13), ey - 14); g.stroke(); }
+      const cx = w * .25, ey = h * .52, sep = 25, hc = T.hair === "#c7c1b6" ? "#6a655e" : T.hair;
+      /* 얼굴 음영: 눈두덩·볼 아래 살짝 */
+      g.fillStyle = "rgba(120,70,50,.07)"; for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(cx + sx * 36, ey + 22, 14, 18, 0, 0, Math.PI * 2); g.fill(); }
+      if (T.F) { g.fillStyle = "rgba(230,130,120,.12)"; for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(cx + sx * 34, ey + 16, 11, 6, 0, 0, Math.PI * 2); g.fill(); } }
+      if (T.facial === "stubble") { g.fillStyle = "rgba(50,35,28,.2)"; g.beginPath(); g.ellipse(cx, ey + 36, 36, 18, 0, 0, Math.PI * 2); g.fill(); }
+      /* 눈썹 */
+      g.strokeStyle = hc; g.lineCap = "round"; g.lineWidth = T.F ? 3 : 4.5;
+      for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(cx + sx * (sep - 10), ey - 14); g.quadraticCurveTo(cx + sx * (sep + 1), ey - (T.F ? 19 : 17), cx + sx * (sep + 11), ey - 14); g.stroke(); }
+      /* 눈: 흰자 + 갈색 눈동자 + 작은 반짝이 + 윗눈꺼풀 선 */
       for (const sx of [-1, 1]) {
-        g.fillStyle = "#fbf7f0"; g.beginPath(); g.ellipse(cx + sx * sep, ey, 10, 6.5, 0, 0, Math.PI * 2); g.fill();
-        g.fillStyle = "#3a2a20"; g.beginPath(); g.arc(cx + sx * sep, ey, 5.2, 0, Math.PI * 2); g.fill();
-        g.fillStyle = "#120c0a"; g.beginPath(); g.arc(cx + sx * sep, ey, 2.6, 0, Math.PI * 2); g.fill();
-        g.fillStyle = "#fff"; g.beginPath(); g.arc(cx + sx * sep + 1.8, ey - 1.8, 1.4, 0, Math.PI * 2); g.fill();
-        g.strokeStyle = "#2a1d18"; g.lineWidth = T.F ? 2.6 : 1.6; g.beginPath(); g.ellipse(cx + sx * sep, ey, 10, 6.5, 0, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
+        const x = cx + sx * sep;
+        g.fillStyle = "#f7f3ec"; g.beginPath(); g.ellipse(x, ey, 8.5, 5.6, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#4a3326"; g.beginPath(); g.arc(x, ey + .3, 4.6, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#16100d"; g.beginPath(); g.arc(x, ey + .3, 2.2, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "rgba(255,255,255,.9)"; g.beginPath(); g.arc(x + 1.6, ey - 1.6, 1.2, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = "#2a1d18"; g.lineWidth = T.F ? 2.3 : 1.7; g.beginPath(); g.ellipse(x, ey, 8.5, 5.6, 0, Math.PI * 1.03, Math.PI * 1.97); g.stroke();
       }
-      g.strokeStyle = "rgba(120,70,50,.55)"; g.lineWidth = 2.2; g.beginPath(); g.moveTo(cx + 2, ey + 6); g.quadraticCurveTo(cx - 5, ey + 22, cx + 3, ey + 25); g.stroke();
-      if (T.F) { g.fillStyle = "#b8625c"; g.beginPath(); g.moveTo(cx - 13, h * .7); g.quadraticCurveTo(cx, h * .66, cx + 13, h * .7); g.quadraticCurveTo(cx, h * .76, cx - 13, h * .7); g.fill(); }
-      else { g.strokeStyle = "#8a4a40"; g.lineWidth = 3; g.beginPath(); g.moveTo(cx - 12, h * .7); g.quadraticCurveTo(cx, h * .72, cx + 12, h * .7); g.stroke(); }
-      if (T.old) { g.strokeStyle = "rgba(60,35,25,.35)"; g.lineWidth = 1.2; for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(cx + sx * 40, ey + 2); g.lineTo(cx + sx * 46, ey + 6); g.stroke(); } g.beginPath(); g.moveTo(cx - 20, ey - 32); g.quadraticCurveTo(cx, ey - 36, cx + 20, ey - 32); g.stroke(); }
+      /* 코: 옅은 그림자 */
+      g.strokeStyle = "rgba(130,75,55,.4)"; g.lineWidth = 2; g.beginPath(); g.moveTo(cx + 1, ey + 6); g.quadraticCurveTo(cx - 4, ey + 18, cx + 2, ey + 20); g.stroke();
+      /* 입 */
+      if (T.F) { g.fillStyle = "#b9675f"; g.beginPath(); g.moveTo(cx - 10, ey + 31); g.quadraticCurveTo(cx, ey + 28, cx + 10, ey + 31); g.quadraticCurveTo(cx, ey + 36, cx - 10, ey + 31); g.fill(); }
+      else { g.strokeStyle = "#8a4c42"; g.lineWidth = 2.6; g.beginPath(); g.moveTo(cx - 9, ey + 31); g.quadraticCurveTo(cx, ey + 33, cx + 9, ey + 31); g.stroke(); }
+      if (T.old) { g.strokeStyle = "rgba(90,55,40,.3)"; g.lineWidth = 1.3; for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(cx + sx * 36, ey + 1); g.lineTo(cx + sx * 42, ey + 5); g.stroke(); g.beginPath(); g.moveTo(cx + sx * 12, ey + 24); g.quadraticCurveTo(cx + sx * 15, ey + 30, cx + sx * 13, ey + 35); g.stroke(); } }
     });
   }
-  /* 머리·몸통·팔·다리가 따로 움직이는 인물 */
+  /* 평범한 사람: 키 약 1.7m(머리 약 1/6), 매끈한 몸통 윤곽, 무릎·팔꿈치 관절 */
   function person(p) {
-    /* 키 약 1.74m(여자 0.95배), 머리는 키의 1/7. 몸통은 앞뒤로 납작, 무릎·팔꿈치 관절 */
     const T = Face.traits(p.name, ageOf(p.role)), root = new THREE.Group(), body = new THREE.Group();
     body.scale.setScalar(T.F ? .95 : 1); root.add(body);
-    const skin = mat(T.skin, { r: .7 }), cloth = mat(T.cloth, { r: .85 }), pants = mat(T.pants, { r: .9 }), hairM = mat(T.hair, { r: .9 }), shoe = mat(0x1a1716, { r: .5 });
+    const skin = mat(T.skin, { r: .65 }), cloth = mat(T.cloth, { r: .8 }), pants = mat(T.pants, { r: .85 }), hairM = mat(T.hair, { r: .8 }), shoe = mat(0x221c19, { r: .45 });
     const skirt = T.F && hashStr(p.name) % 2 === 0;
-    const seg = (r0, r1, len, m, flat = 1) => { const g = new THREE.Group(); const c = cyl(r0, r1, len, m, 0, -len / 2, 0, 14); c.scale.z = flat; g.add(c); const j = sph(r0, m, 0, 0, 0); j.scale.z = flat; g.add(j); return g; };
-    /* 다리: 허벅지 → 무릎 → 정강이 → 신발 */
-    const legM = skirt ? mat(T.skin, { r: .6 }) : pants;
-    const legs = [], knees = [];
+    const seg = (r0, r1, len, m) => { const g = new THREE.Group(); g.add(cyl(r0, r1, len, m, 0, -len / 2, 0, 16)); g.add(sph(r0, m, 0, 0, 0)); return g; };
+    /* 다리 */
+    const legM = skirt ? mat(T.skin, { r: .55 }) : pants, legs = [], knees = [];
     for (const sx of [-1, 1]) {
-      const hip = seg(skirt ? .07 : .085, skirt ? .058 : .07, .41, legM); hip.position.set(sx * .09, .88, 0);
-      const knee = seg(skirt ? .056 : .066, .048, .39, legM); knee.position.y = -.41; hip.add(knee);
-      knee.add(box(.1, .075, .25, shoe, 0, -.39, .05));
+      const hip = seg(skirt ? .068 : .08, skirt ? .056 : .066, .4, legM); hip.position.set(sx * .088, .86, 0);
+      const knee = seg(skirt ? .055 : .064, skirt ? .045 : .05, .38, legM); knee.position.y = -.4; hip.add(knee);
+      const foot = sph(.06, shoe, 0, -.405, .04); foot.scale.set(1, .62, 2.0); knee.add(foot);
       body.add(hip); legs.push(hip); knees.push(knee);
     }
-    /* 골반 · 치마 */
-    const pelvis = cyl(T.F ? .18 : .17, T.F ? .19 : .17, .18, pants, 0, .92, 0, 20); pelvis.scale.z = .72; body.add(pelvis);
-    if (skirt) { const sk = cyl(.17, .27, .42, mat(T.pants === "#1f2226" ? "#3a2f3f" : T.pants, { r: .9 }), 0, .7, 0, 24); sk.scale.z = .85; body.add(sk); }
-    /* 몸통: 허리는 좁고 가슴·어깨는 넓게, 앞뒤로 납작하게 */
-    const torso = new THREE.Group(); torso.position.y = .96; body.add(torso);
-    const chest = T.F ? .172 : .2, waist = T.F ? .135 : .158, FL = .62;
-    const trunk = cyl(chest, waist, .44, cloth, 0, .22, 0, 24); trunk.scale.z = FL; torso.add(trunk);
-    const sh = sph(chest, cloth, 0, .43, 0); sh.scale.set(1.14, .34, FL); torso.add(sh);
-    const front = chest * FL;
-    if (["suit", "shirt", "jacket", "blouse", "cardigan"].includes(T.top)) {
-      const col = new THREE.Mesh(new THREE.ConeGeometry(.05, .085, 3), mat(0xece8e1)); col.position.set(0, .41, front - .005); col.rotation.set(Math.PI + .3, 0, 0); torso.add(col);
+    /* 골반 */
+    const pel = sph(T.F ? .17 : .165, pants, 0, .9, 0); pel.scale.set(1, .55, .72); body.add(pel);
+    if (skirt) { const sk = cyl(.165, .25, .4, mat(T.pants === "#1f2226" ? "#3a3340" : T.pants, { r: .85 }), 0, .7, 0, 28); sk.scale.z = .82; body.add(sk); }
+    /* 몸통: 허리→가슴→어깨로 이어지는 매끈한 윤곽(회전체) */
+    const torso = new THREE.Group(); torso.position.y = .9; body.add(torso);
+    const W = T.F ? [.135, .14, .135, .158, .165, .15, .09, .045] : [.15, .155, .152, .178, .19, .175, .1, .05];
+    const prof = [0, .06, .15, .28, .36, .43, .49, .51].map((y, i) => new THREE.Vector2(W[i], y));
+    const trunk = new THREE.Mesh(new THREE.LatheGeometry(prof, 28), cloth); trunk.scale.z = .66; torso.add(trunk);
+    const front = W[4] * .66;
+    /* 옷: 깃·단추·정장 깃·넥타이 */
+    if (T.top !== "knit") { for (const sx of [-1, 1]) { const col = box(.06, .05, .012, mat(0xece8e1), sx * .03, .47, front - .035); col.rotation.set(-.5, 0, sx * .5); torso.add(col); } }
+    if (T.top === "suit") {   /* 정장: 흰 셔츠 + 넥타이 + 깃 */
+      torso.add(box(.06, .26, .01, mat(0xe4e0d8), 0, .33, front + .002));
+      torso.add(box(.026, .2, .012, mat(0x5c2b26), 0, .32, front + .01));
     }
-    if (T.top === "suit" || T.top === "jacket") for (const sx of [-1, 1]) { const lp = box(.045, .28, .015, mat(T.cloth, { r: .7 }), sx * .05, .3, front + .004); lp.rotation.z = sx * .3; torso.add(lp); }
-    if (T.top === "suit") torso.add(box(.032, .22, .015, mat(0x5c2b26), 0, .3, front + .008));
-    /* 팔: 어깨 → 위팔 → 팔꿈치 → 아래팔 → 손 (손목이 엉덩이 아래 높이) */
-    const arms = [], elbows = [];
+    if (T.top === "suit" || T.top === "jacket") for (const sx of [-1, 1]) { const lp = box(.045, .24, .012, mat(T.cloth, { r: .65 }), sx * .042, .34, front + .008); lp.rotation.z = sx * .26; torso.add(lp); }
+    if (T.top === "shirt" || T.top === "blouse" || T.top === "cardigan") for (let i = 0; i < 4; i++) torso.add(sph(.008, mat(T.top === "cardigan" ? 0x3a2e26 : 0xf2eee6), 0, .1 + i * .08, front + .004));
+    /* 팔 */
+    const arms = [], elbows = [], sw = W[5] + .025;
     for (const sx of [-1, 1]) {
-      const shoulder = seg(.05, .044, .28, cloth, .9); shoulder.position.set(sx * (chest * 1.1 + .012), .41, 0);
-      const elbow = seg(.043, .036, .26, sx ? cloth : cloth, .9); elbow.position.y = -.28; shoulder.add(elbow);
-      const hand = sph(.045, skin, 0, -.29, .005); hand.scale.set(.8, 1.15, .6); elbow.add(hand);
+      const shoulder = seg(.052, .045, .27, cloth); shoulder.position.set(sx * sw, .44, 0);
+      const elbow = seg(.044, .036, .25, cloth); elbow.position.y = -.27; shoulder.add(elbow);
+      const hand = sph(.042, skin, 0, -.28, .005); hand.scale.set(.8, 1.2, .6); elbow.add(hand);
       torso.add(shoulder); arms.push(shoulder); elbows.push(elbow);
     }
     /* 목 · 머리 */
-    torso.add(cyl(.045, .05, .08, skin, 0, .47, 0, 12));
-    const head = new THREE.Group(); head.position.y = .48; torso.add(head);
-    const HR = .118;
-    const skull = new THREE.Mesh(new THREE.SphereGeometry(HR, 36, 24), mat(0xffffff, { map: faceTexture(T, p.name), r: .7 }));
-    skull.position.y = .14; skull.scale.set(.9, 1.1, .96); head.add(skull);
-    const jaw = sph(HR * .78, skin, 0, .085, .01); jaw.scale.set(.95, .7, .9); head.add(jaw);
-    for (const sx of [-1, 1]) head.add(sph(.024, skin, sx * .106, .14, 0));
-    const cap = (tl, tilt, sz = 1.07) => { const m = new THREE.Mesh(new THREE.SphereGeometry(HR * sz, 32, 16, 0, Math.PI * 2, 0, Math.PI * tl), hairM); m.position.y = .145; m.rotation.x = tilt; m.scale.set(.92, 1.1, .98); head.add(m); return m; };
-    const band = (h, y, r0, r1, gap = .2) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, 28, 1, true, Math.PI * gap, Math.PI * (2 - gap * 2)), mat(T.hair, { r: .9, side: THREE.DoubleSide })); m.position.set(0, y, -.006); m.scale.z = .95; head.add(m); return m; };
-    const bangs = () => { const m = new THREE.Mesh(new THREE.SphereGeometry(HR * 1.08, 24, 10, Math.PI * .1, Math.PI * .8, Math.PI * .18, Math.PI * .2), hairM); m.position.y = .145; m.scale.set(.92, 1.1, .98); head.add(m); };
+    torso.add(cyl(.046, .05, .09, skin, 0, .53, 0, 14));
+    const head = new THREE.Group(); head.position.y = .54; torso.add(head);
+    const HR = .128;
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(HR, 40, 28), mat(0xffffff, { map: faceTexture(T, p.name), r: .65 }));
+    skull.position.y = .14; skull.scale.set(.9, 1.1, .97); head.add(skull);
+    const jaw = sph(HR * .8, skin, 0, .085, .012); jaw.scale.set(.92, .72, .9); head.add(jaw);
+    for (const sx of [-1, 1]) { const ear = sph(.026, skin, sx * .114, .14, 0); ear.scale.set(.6, 1, .8); head.add(ear); }
+    const cap = (tl, tilt, sz = 1.07) => { const m = new THREE.Mesh(new THREE.SphereGeometry(HR * sz, 36, 18, 0, Math.PI * 2, 0, Math.PI * tl), hairM); m.position.y = .145; m.rotation.x = tilt; m.scale.set(.92, 1.1, .98); head.add(m); return m; };
+    const fringe = (n, wdt, r = .036) => { for (let i = 0; i < n; i++) { const t = (i / (n - 1) - .5) * wdt; const f = sph(r, hairM, Math.sin(t) * HR * .86, .225 - Math.abs(t) * .03, Math.cos(t) * HR * .82); f.scale.set(1.1, .7, .55); head.add(f); } };
+    const back = (len, wide) => {
+      const m = sph(HR, hairM, 0, .13 - len * .22, -.06); m.scale.set(wide * .95, 1.1 + len, .6); head.add(m);
+      for (const sx of [-1, 1]) { const side = sph(HR * .4, hairM, sx * HR * .8, .1 - len * .14, -.008); side.scale.set(.55, 1.1 + len * 1.3, .8); head.add(side); }
+    };
     const st = T.style;
-    if (st === "short" || st === "side") { const c0 = cap(.42, -.32); if (st === "side") c0.rotation.z = .12; }
-    if (st === "crew") cap(.38, -.28, 1.04);
-    if (st === "thin") for (const sx of [-1, 1]) { const t0 = sph(.05, hairM, sx * .098, .14, -.03); t0.scale.set(.5, .9, 1.2); head.add(t0); }
-    if (st === "long" || st === "wave") { cap(.46, -.18); bangs(); band(.34, .0, .124, st === "wave" ? .17 : .145, .17); }
-    if (st === "bob") { cap(.46, -.18); bangs(); band(.16, .08, .126, .138, .17); }
-    if (st === "bun") { cap(.45, -.26); head.add(sph(.058, hairM, 0, .27, -.085)); }
-    if (T.glasses) { const gm = mat(0x2b2522, { r: .3, m: .6 });
-      for (const sx of [-1, 1]) { const ring = new THREE.Mesh(T.glasses === "round" ? new THREE.TorusGeometry(.027, .005, 6, 18) : new THREE.TorusGeometry(.029, .005, 4, 4), gm); ring.position.set(sx * .041, .148, .108); if (T.glasses === "rect") ring.rotation.z = Math.PI / 4; head.add(ring); }
-      head.add(box(.028, .005, .005, gm, 0, .151, .113)); }
-    if (T.facial === "mustache") head.add(box(.058, .012, .018, hairM, 0, .099, .108));
+    if (st === "short") cap(.42, -.34);
+    if (st === "side") { const c0 = cap(.43, -.34); c0.rotation.z = .1; fringe(3, .7, .032); }
+    if (st === "crew") cap(.38, -.3, 1.04);
+    if (st === "thin") for (const sx of [-1, 1]) { const tf = sph(.045, hairM, sx * .105, .14, -.03); tf.scale.set(.55, 1, 1.25); head.add(tf); }
+    if (st === "long" || st === "wave") { cap(.47, -.22); fringe(5, 1.1); back(.5, st === "wave" ? 1.15 : 1.02); }
+    if (st === "bob") { cap(.47, -.22); fringe(5, 1.1); back(.15, 1.06); }
+    if (st === "bun") { cap(.45, -.3); fringe(4, .9, .032); head.add(sph(.055, hairM, 0, .29, -.07)); }
+    if (T.glasses) { const gm = mat(0x2f2724, { r: .3, m: .5 });
+      for (const sx of [-1, 1]) { const ring = new THREE.Mesh(T.glasses === "round" ? new THREE.TorusGeometry(.029, .0055, 8, 20) : new THREE.TorusGeometry(.031, .0055, 4, 4), gm); ring.position.set(sx * .044, .155, .118); ring.rotation.y = sx * .15; if (T.glasses === "rect") ring.rotation.z = Math.PI / 4; head.add(ring); }
+      head.add(box(.03, .005, .005, gm, 0, .158, .124)); }
+    if (T.facial === "mustache") { const ms = sph(.026, hairM, 0, .1, .117); ms.scale.set(1.6, .45, .5); head.add(ms); }
     const nm = textSprite(p.name); nm.position.y = 2.0; root.add(nm);
     return { root, body, torso, head, legs, knees, arms, elbows };
   }
@@ -2552,20 +2595,21 @@ const V3 = (() => {
     if (dPlayer < 3.2) { const rel = Math.atan2(cam.x - n.wx, cam.z - n.wz) - n.heading; lookWant = Math.max(-.9, Math.min(.9, Math.atan2(Math.sin(rel), Math.cos(rel)))); }
     const R = n.rig;
     R.head.rotation.y = angTo(R.head.rotation.y, lookWant, Math.min(1, dt * 3));
-    R.head.rotation.x = dPlayer < 3.2 ? -.08 : 0;
+    R.head.rotation.x = dPlayer < 3.2 ? -.05 : 0;
     /* 걷기: 팔다리 흔들기 / 서 있기: 숨쉬기 */
     const sw = moving ? 1 : 0;
     n.walkAmt = (n.walkAmt || 0) + (sw - (n.walkAmt || 0)) * Math.min(1, dt * 6);
-    n.phase += dt * (moving ? 7.5 : 1.6);
+    n.phase += dt * (moving ? 7.2 : 1.6);
     const a = Math.sin(n.phase), wa = n.walkAmt;
     /* 엉덩이 관절이 뒤로 갈 때 무릎이 굽고, 팔은 반대로 흔들며 앞으로 갈 때 팔꿈치가 굽는다 */
-    R.legs[0].rotation.x = a * .5 * wa; R.legs[1].rotation.x = -a * .5 * wa;
+    R.legs[0].rotation.x = a * .48 * wa; R.legs[1].rotation.x = -a * .48 * wa;
     R.knees[0].rotation.x = (Math.max(0, a) * .85 + .08) * wa; R.knees[1].rotation.x = (Math.max(0, -a) * .85 + .08) * wa;
     const idle = Math.sin(t / 900 + n.phase) * .03 * (1 - wa);
-    R.arms[0].rotation.x = -a * .38 * wa + idle; R.arms[1].rotation.x = a * .38 * wa - idle;
+    R.arms[0].rotation.x = -a * .36 * wa + idle; R.arms[1].rotation.x = a * .36 * wa - idle;
     R.elbows[0].rotation.x = -(.12 + Math.max(0, a) * .45 * wa); R.elbows[1].rotation.x = -(.12 + Math.max(0, -a) * .45 * wa);
-    R.arms[0].rotation.z = -.07; R.arms[1].rotation.z = .07;
-    R.body.position.y = (Math.abs(Math.sin(n.phase)) * .03 - .012) * wa;
+    R.arms[0].rotation.z = -.06; R.arms[1].rotation.z = .06;
+    R.body.position.y = (Math.abs(Math.sin(n.phase)) * .025 - .01) * wa;      /* 걸을 때 살짝 오르내림 */
+    R.head.rotation.z = Math.sin(t / 1700 + n.phase) * .025 * (1 - wa);
     R.torso.scale.y = 1 + Math.sin(t / 700 + n.phase) * .012 * (1 - wa);
     R.torso.rotation.y = a * .08 * wa;
     R.root.position.set(n.wx, 0, n.wz); R.root.rotation.y = n.heading;
@@ -2773,9 +2817,9 @@ function render3D(out, plan) {
   ensurePos();
   const c = C(), rid = S.room, r = c.rooms[rid], lk = S.locks[rid];
   const floorOf = c.floors.find(f => f.rooms.includes(rid));
-  const found = r.spots.filter(sp => has(S.searched, sp.id)), left = r.spots.length - found.length;
+  const found = allSpots(rid).filter(sp => has(S.searched, sp.id)), left = allSpots(rid).length - found.length;
   const results = found.map(sp => `<div class="spot"><b>${esc(sp.label)}</b><p class="result">${esc(sp.text)}</p>
-    ${sp.clue ? `<span class="found-chip">단서 · ${esc(c.clues[sp.clue].name)}</span><p class="result">${esc(c.clues[sp.clue].text)}</p>` : ""}</div>`).join("");
+    ${sp.fake ? `<span class="found-chip fake">헛수고 · 사건과 관계없음</span>` : ""}${sp.clue ? `<span class="found-chip">단서 · ${esc(c.clues[sp.clue].name)}</span><p class="result">${esc(c.clues[sp.clue].text)}</p>` : ""}</div>`).join("");
   return `<div class="split explore">
     <div class="plan">${plan}<p class="hint">방 이름을 누르면 바로 이동해요.</p></div>
     <section class="panel" aria-live="polite">
@@ -2799,7 +2843,7 @@ function render3D(out, plan) {
 function renderDispatch(r) {
   const rule = DISPATCH[S.diff];
   if (!rule) return "";
-  const left = r.spots.some(sp => !has(S.searched, sp.id));
+  const left = allSpots(S.room).some(sp => !has(S.searched, sp.id));
   const busy = S.missions.find(m => m.room === S.room);
   if (!left && !busy) return "";
   const btns = PARTNERS.filter(x => !rule.who || rule.who.includes(x.id)).map(x => {
