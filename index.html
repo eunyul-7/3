@@ -1391,7 +1391,7 @@ let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
 /* 수사팀(경찰): 어려워지면 돕고, 직접 현장에 보낼 수 있다 */
 const PARTNERS = [
-  { id: "kang", name: "강무열", title: "베테랑 형사", rank: "경감", skill: "잠긴 문 열기·수사 시간 벌기",
+  { id: "kang", name: "강무열", title: "베테랑 경감", rank: "경감", skill: "잠긴 문 열기·수사 시간 벌기",
     report: (room, list) => list ? `“자물쇠쯤이야. ${room}에서 이런 걸 건졌네. ${list}.”` : `“${room}엔 더 볼 게 없더군.”` },
   { id: "yoon", name: "윤도경", title: "과학수사 경사", rank: "경사", skill: "현장 감식",
     report: (room, list) => list ? `“${room} 감식 끝났습니다. 나온 건 ${list}입니다.”` : `“${room}에서는 새로 나온 게 없습니다.”` },
@@ -1511,12 +1511,14 @@ const DIFF = {
   easy:   { label: "쉬움", turns: 24, time: 240, bonus: 0, chances: 1, fakes: 0, sab: null, villains: false, persona: "show", lieTags: true, helpMax: 0,
             desc: "아주 쉬워요. 가짜 물건·방해·공범이 없고, 내 판단도 조금 더 정확해요. 대신 시간이 4분뿐이고 윤도경 경사 출동 한 번, 한서진 간파 한 번, 모은재 분석 두 번뿐이에요." },
   normal: { label: "보통", turns: 34, time: 420, bonus: 3, chances: 1, fakes: 1, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 }, villains: true, persona: "show", lieTags: false, helpMax: 3,
-            desc: "가짜 물건과 방해, 공범이 있어요. 시간은 7분. 윤도경·변주원·서하루를 2번씩 출동시킬 수 있고, 공태하 순경이 쓸데없는 물건을 한 번 치워 줘요. 한서진 간파 1번·모은재 분석 3번이에요." },
+            desc: "가짜 물건과 방해, 공범이 있어요. 시간은 7분. 윤도경·변주원 2번씩, 서하루 3번 출동시킬 수 있고, 공태하 순경이 쓸데없는 물건을 한 번 치워 줘요. 한서진 간파 1번·모은재 분석 2번이에요." },
   hard:   { label: "어려움", turns: 50, time: 720, bonus: 6, chances: 2, fakes: 2, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 }, villains: true, persona: "hint", lieTags: false, helpMax: 6,
-            desc: "아주 어려워요. 가짜 물건이 많고 방해가 거세며, 용의자 성격도 눈치로 알아내야 해요. 대신 시간 12분, 지목 기회 2번, 동료 넷이 3번씩 출동하고(강무열과 함께 공태하도 따라와요), 공태하가 물건을 두 번 치워 줘요. 한서진 간파 2번·모은재 분석 5번이에요." },
+            desc: "아주 어려워요. 가짜 물건이 많고 방해가 거세며, 용의자 성격도 눈치로 알아내야 해요. 대신 시간 12분, 지목 기회 2번, 서하루 5번, 윤도경·변주원 3번씩, 강무열 2번 출동하고(강무열과 함께 공태하도 따라와요), 공태하가 물건을 두 번 치워 줘요. 한서진 간파 2번·모은재 분석 3번이에요." },
 };
 /* 팀원 출동 횟수 */
-const DISPATCH = { easy: { each: 1, who: ["yoon"] }, normal: { each: 2, who: ["yoon", "byun", "seo"] }, hard: { each: 3, who: ["kang", "yoon", "byun", "seo"] } };
+/* 계급별 최대 출동 횟수(어려움 기준): 순경 서하루 5 · 경장/경사 3 · 경위/경감 2. 쉬울수록 줄어든다 */
+const DISPATCH = { easy: { max: { yoon: 1 } }, normal: { max: { yoon: 2, byun: 2, seo: 3 } }, hard: { max: { kang: 2, yoon: 3, byun: 3, seo: 5 } } };
+const PLAYER_RANK = "경장";
 /* 강력계 순경 공태하: 강무열과 다니며 쓸데없는 물건을 치우고, 비협조적인 용의자를 압박한다 */
 const GONG = { normal: { clear: 1 }, hard: { clear: 2 } };
 const PRESS_RISK = [0, 0.15, 0.5, 0.85];   /* 같은 사람을 몇 번째로 압박하나 → 역효과 확률 */
@@ -1572,7 +1574,7 @@ function pressure(sid) {
   spend();
 }
 /* 반박 횟수 */
-const REBUT = { easy: { prof: 1, psy: 2 }, normal: { prof: 1, psy: 3 }, hard: { prof: 2, psy: 5 } };
+const REBUT = { easy: { prof: 1, psy: 2 }, normal: { prof: 1, psy: 2 }, hard: { prof: 2, psy: 3 } };   /* 경위 한서진 최대 2 · 경사 모은재 최대 3 */
 const rebutLeft = id => ((REBUT[S.diff] || {})[id] || 0) - S.rebuts.filter(x => x === id).length;
 const pfull = x => `${x.title} ${x.name}`;
 const MISSION_DELAY = 2;
@@ -1767,8 +1769,8 @@ const bodySpot = () => C().rooms[crimeRoomId()].spots[0];
 const sentCount = pid => S.dispatched.filter(x => !pid || x === pid).length;
 function dispatchLeft(pid) {
   const rule = DISPATCH[S.diff];
-  if (!rule || (pid && rule.who && !rule.who.includes(pid))) return 0;
-  return rule.total ? rule.total - sentCount() : rule.each - sentCount(pid);
+  if (!rule || !pid || !rule.max[pid]) return 0;
+  return rule.max[pid] - sentCount(pid);
 }
 function canDispatch(pid) {
   if (S.turns <= 0 || dispatchLeft(pid) <= 0) return false;
@@ -2054,7 +2056,7 @@ function render() {
   app.innerHTML = `
     <header class="board">
       <div class="board-top">
-        <div><span class="label">형사 ${esc(pname())}</span><h2>${c.title}</h2></div>
+        <div><span class="label">강력계 ${PLAYER_RANK} ${esc(pname())}</span><h2>${c.title}</h2></div>
         <div class="clock" aria-label="남은 행동 ${S.turns}회, 남은 시간 ${mmss(S.timeLeft)}">
           <div class="pips">${pips}</div>
           <span class="mono">결단까지 <b>${S.turns}</b>턴</span>
@@ -2073,7 +2075,7 @@ function render() {
 function mePreview() {
   const g = playerGender(), auto = PLAYER_G === "auto";
   const btn = (v, t) => `<button type="button" class="chip" data-pg="${v}" aria-pressed="${PLAYER_G === v}">${t}</button>`;
-  return `${pixelFace(pname(), 48, "", true)}<span><b>${g === "f" ? "여자" : "남자"} 형사</b>${auto ? " · 이름을 보고 정했어요" : ""}</span>
+  return `${pixelFace(pname(), 48, "", true)}<span><b>${g === "f" ? "여자" : "남자"} ${PLAYER_RANK}</b>${auto ? " · 이름을 보고 정했어요" : ""}</span>
     <span class="chips">${btn("auto", "자동")}${btn("f", "여자")}${btn("m", "남자")}</span>`;
 }
 function renderTitle() {
@@ -2237,7 +2239,7 @@ const INTRO = (() => {
     capKey = b.t + "|" + el.isConnected;
     const isMe = b.who === pname();
     el.className = "intro-cap" + (b.who ? "" : " narr");
-    el.innerHTML = b.who ? `${pixelFace(b.who, 40, "", isMe)}<div><b>${esc(b.who)}${b.who === "서하루" ? " 순경" : b.who === "강무열" ? " 경감" : b.who === "한서진" ? " 경위" : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
+    el.innerHTML = b.who ? `${pixelFace(b.who, 40, "", isMe)}<div><b>${esc(b.who)}${isMe ? " " + PLAYER_RANK : b.who === "서하루" ? " 순경" : b.who === "강무열" ? " 경감" : b.who === "한서진" ? " 경위" : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
   }
   function sounds(t) {
     for (const [at, fn] of [[2.4, "ring"], [3.5, "ring"], [8, "thunder"], [16, "siren"]]) {
@@ -2383,7 +2385,7 @@ const ENDING = (() => {
     capKey = k; el.dataset.k = k;
     const isMe = b.who === pname(), role = Object.values(C().suspects).find(p => p.name === b.who);
     el.className = "intro-cap" + (b.who ? "" : " narr");
-    el.innerHTML = b.who ? `${pixelFace(b.who, 40, role ? role.role : "", isMe)}<div><b>${esc(b.who)}${isMe ? " 형사" : TITLE[b.who] ? " " + TITLE[b.who] : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
+    el.innerHTML = b.who ? `${pixelFace(b.who, 40, role ? role.role : "", isMe)}<div><b>${esc(b.who)}${isMe ? " " + PLAYER_RANK : TITLE[b.who] ? " " + TITLE[b.who] : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
   }
   function sounds(t) {
     const list = kind === "win" ? [[1.8, "lie"], [7.8, "verdict"], [8.4, "help"]] : [[0.3, "thunder"], [10.2, "help"]];
@@ -2427,7 +2429,7 @@ function renderBrief() {
       <span class="label">${c.tag}</span>
       <h1>${c.title}</h1>
       <p class="lede">${c.lede}</p>
-      <div class="brief"><p><b>${esc(pname())} 형사</b>, ${c.brief}</p></div>
+      <div class="brief"><p><b>${esc(pname())} ${PLAYER_RANK}</b>, ${c.brief}</p></div>
       <fieldset class="setup">
         <legend>난이도</legend>
         ${Object.entries(DIFF).map(([k, d]) => `<label class="opt"><input type="radio" name="diff" id="diff-${k}" value="${k}" ${S.diff === k ? "checked" : ""}><span><b>${d.label}</b> · ${mmss(d.time)} · ${d.turns}턴${d.chances > 1 ? ` · 지목 기회 ${d.chances}번` : ""} — ${d.desc}</span></label>`).join("")}
@@ -3210,7 +3212,7 @@ function renderDispatch(r) {
   const left = allSpots(S.room).some(sp => !has(S.searched, sp.id));
   const busy = S.missions.find(m => m.room === S.room);
   if (!left && !busy) return "";
-  const btns = PARTNERS.filter(x => !x.noDispatch && (!rule.who || rule.who.includes(x.id))).map(x => {
+  const btns = PARTNERS.filter(x => !x.noDispatch && rule.max[x.id]).map(x => {
     const left = dispatchLeft(x.id), away = S.missions.some(m => m.pid === x.id);
     const tag = away ? "출동 중" : left <= 0 ? "끝" : `${left}번 남음`;
     return `<button class="act ally with-face" data-dispatch="${x.id}" ${canDispatch(x.id) ? "" : "disabled"}>
@@ -3290,7 +3292,7 @@ function renderPeople(out) {
   /* 말풍선: 마지막 대화 */
   const L = S.lastLine && S.lastLine.sid === sid ? S.lastLine : null;
   const speech = L
-    ? `<div class="line mine"><span class="who-tag">${L.who ? esc(L.who) : `형사 ${esc(pname())}`}</span><p>${esc(L.q)}</p></div>
+    ? `<div class="line mine"><span class="who-tag">${L.who ? esc(L.who) : `${PLAYER_RANK} ${esc(pname())}`}</span><p>${esc(L.q)}</p></div>
        <div class="line them ${L.kind}"><span class="who-tag">${esc(p.name)}${L.kind === "broken" ? " · 진술 번복" : L.kind === "secret" ? " · 숨은 증언" : ""}</span><p>${esc(L.a)}</p></div>${L.kind === "answer" && L.qid && findQ(L.qid) ? `<div class="read-box">${readTags(findQ(L.qid).q)}${readBtns(findQ(L.qid).q, sid)}</div>` : ""}`
     : `<div class="line them"><span class="who-tag">${esc(p.name)}</span><p>“…무슨 일이시죠, 형사님?”</p></div>`;
   /* 선택지 */
@@ -3419,7 +3421,7 @@ function judge() {
 function renderGameOver() {
   const c = C(), pk = S.pick;
   app.innerHTML = `<section class="verdict gameover">
-    <span class="label">${esc(pname())} 형사 · ${c.title}</span>
+    <span class="label">${esc(pname())} ${PLAYER_RANK} · ${c.title}</span>
     <div class="intro-scene end-scene">
       <div class="pxview" id="end-view" aria-label="범인을 놓친 뒤 강력팀이 서로를 위로하는 장면"><span class="intro-sign">강력팀</span></div>
       <div class="intro-cap narr" id="end-cap" aria-live="polite"><p>…</p></div>
@@ -3446,7 +3448,7 @@ function renderResult() {
     : "범인은 잡았지만, 변호사가 빈틈을 파고들 것이다.";
   const next = c.random ? null : caseById(nextCaseId());
   app.innerHTML = `<section class="verdict">
-    <span class="label">${esc(pname())} 형사 · ${c.title} · 수사 결과</span>
+    <span class="label">${esc(pname())} ${PLAYER_RANK} · ${c.title} · 수사 결과</span>
     <div class="intro-scene end-scene">
       <div class="pxview" id="end-view" aria-label="범인을 체포하고 강력팀이 축하하는 장면"><span class="intro-sign">강력팀</span></div>
       <div class="intro-cap narr" id="end-cap" aria-live="polite"><p>…</p></div>
