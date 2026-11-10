@@ -219,6 +219,10 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .event-log p { color: var(--muted); font-size: 14px; border-left: 2px solid var(--blood); padding-left: 10px; }
 .event-log p.good { border-left-color: var(--ok); }
 .setup { max-width: 640px; }
+.alert.ally { color: var(--ok); border-color: var(--ok); }
+.dispatch { border-top: 1px dashed var(--ok); padding-top: 12px; display: grid; gap: 8px; }
+.dispatch b { font-weight: 600; color: var(--ok); }
+.act.ally:hover:not(:disabled) { border-color: var(--ok); color: var(--ok); }
 .setup .opt b { color: var(--ink); }
 .timer { color: var(--muted); }
 .timer b { color: var(--lamp); font-weight: 500; }
@@ -250,7 +254,6 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 const CASES = [
 /* ------------------------------------------------------------------ */
 {
-  helpers: ["관리인의 손녀 하늘", "마을 순경 배철민"],
   id: "cheongram", no: "01", title: "청람장 사건", where: "강원도 산장 · 폭우",
   tag: "사건 번호 11-10 · 강원도 청람장 · 22:41 접수",
   lede: "폭우로 산길이 끊긴 밤, 은퇴한 제약회사 회장 한도윤(68)이 자신의 서재에서 숨진 채 발견되었다.",
@@ -377,7 +380,6 @@ const CASES = [
 },
 /* ------------------------------------------------------------------ */
 {
-  helpers: ["매표소 직원 진주", "객석의 연극 기자 남궁 씨"],
   id: "theater", no: "02", title: "달빛극장 사건", where: "대학로 소극장 · 인터미션",
   tag: "사건 번호 11-14 · 달빛극장 · 20:31 접수",
   lede: "2막이 오르기 직전, 주연 배우 송하린(29)이 분장실 바닥에 쓰러진 채 발견되었다. 분장대 모서리에 피가 묻어 있었다.",
@@ -499,7 +501,6 @@ const CASES = [
 },
 /* ------------------------------------------------------------------ */
 {
-  helpers: ["식당칸 직원 하람", "옆 칸의 퇴직 형사 민 씨"],
   id: "train", no: "03", title: "은하 야간열차 사건", where: "서울→부산 침대열차 · 새벽",
   tag: "사건 번호 11-19 · 야간열차 ‘은하’ 3호차 · 02:47 접수",
   lede: "새벽 2시 40분, 침대열차 3호차 5번 칸에서 미술품 감정사 백승호(58)가 숨진 채 발견되었다. 문은 안쪽에서 걸쇠가 걸려 있었다.",
@@ -621,7 +622,6 @@ const CASES = [
 },
 /* ------------------------------------------------------------------ */
 {
-  helpers: ["도슨트 지유", "보존 과학자 탁 박사"],
   id: "museum", no: "04", title: "한빛 박물관 매병 사건", where: "시립 박물관 · 폐관 후",
   tag: "사건 번호 11-23 · 한빛 시립박물관 · 08:12 접수",
   lede: "아침 개관 전, 국보급 유물 ‘청자 학무늬 매병’이 진열장 안에서 감쪽같이 복제품으로 바뀌어 있었다.",
@@ -757,7 +757,7 @@ const SETTINGS = [
     c2: { name: "로비", desc: "샹들리에 아래 프런트 데스크. 구석에 CCTV 모니터가 있다." },
     solo: { spot: "프런트 근무 메모를 본다", name: "프런트 근무 메모", act: "로비 소파에 줄곧 앉아 있었다고 야간 직원이 적어 두었다" },
     witness: { spot: "CCTV를 돌려 본다", name: "복도 CCTV", text: (n, t) => `복도 CCTV, ${t}. ${I(n)} 펜트하우스 쪽으로 걸어가는 뒷모습이 찍혀 있다.` },
-    room: "객실", floors: ["꼭대기 층", "아래층"], helpers: ["벨보이 준호", "단골 투숙객 오 여사"] },
+    room: "객실", floors: ["꼭대기 층", "아래층"] },
   { title: "설봉 산장", where: "스키 리조트 산장 · 눈보라", intro: "눈보라로 케이블카가 멈춘 밤", victimRole: "리조트 회장",
     brief: "당신은 산장에 고립된 손님이다. 눈보라가 그치면 구조대와 경찰이 올라온다.",
     crime: { name: "회장실", desc: "사슴뿔 장식이 걸린 집무실. 피해자는 책상 앞에 쓰러져 있다." },
@@ -766,7 +766,7 @@ const SETTINGS = [
     c2: { name: "장비실", desc: "스키와 부츠가 빼곡하다. 벽에 엘리베이터 운행 패널이 있다." },
     solo: { spot: "장비 대여 기록을 본다", name: "장비 대여 기록", act: "장비실에서 스키에 왁스칠을 했다고 대여 직원이 서명했다" },
     witness: { spot: "엘리베이터 운행 기록을 본다", name: "엘리베이터 운행 기록", text: (n, t) => `엘리베이터 운행 기록, ${t}. ${n}의 카드로 회장실 층이 호출되었다.` },
-    room: "방", floors: ["2층", "1층"], helpers: ["스키 강사 은솔", "산장 요리사 곽 씨"] },
+    room: "방", floors: ["2층", "1층"] },
   { title: "물안개 섬 별장", where: "외딴 섬 별장 · 짙은 안개", intro: "안개로 배가 끊긴 밤", victimRole: "베스트셀러 소설가",
     brief: "당신은 출간 기념 모임에 초대된 손님이다. 안개가 걷히면 해경이 들어온다.",
     crime: { name: "집필실", desc: "원고가 사방에 흩어진 방. 타자기 옆에 피해자가 쓰러져 있다." },
@@ -775,7 +775,7 @@ const SETTINGS = [
     c2: { name: "현관", desc: "무거운 원목 문과 전자 도어락. 신발장 옆에 우산꽂이." },
     solo: { spot: "현관 벤치의 노트를 본다", name: "현관 벤치의 노트", act: "현관 벤치에서 시각을 적어 가며 배를 기다렸다. 필체가 맞다" },
     witness: { spot: "도어락 기록을 본다", name: "도어락 기록", text: (n, t) => `본관 도어락 기록, ${t}. ${n}의 지문으로 집필실 쪽 중문이 열렸다.` },
-    room: "손님방", floors: ["본관", "별채"], helpers: ["별장 관리인 순례 할머니", "섬 우체부 동하"] },
+    room: "손님방", floors: ["본관", "별채"] },
   { title: "구름다리 미술관", where: "미술관 개관 파티 · 폭우", intro: "개관 기념 파티가 끝난 밤", victimRole: "미술관장",
     brief: "당신은 파티에 초대된 손님이다. 폭우로 다리가 통제되어 경찰이 늦어진다.",
     crime: { name: "관장실", desc: "현대 미술 작품이 걸린 넓은 방. 피해자는 책상 옆 카펫에 쓰러져 있다." },
@@ -784,7 +784,7 @@ const SETTINGS = [
     c2: { name: "보안실", desc: "모니터가 줄지어 켜진 보안실. 야식 그릇이 쌓여 있다." },
     solo: { spot: "보안실 출입부를 본다", name: "보안실 출입부", act: "보안실에서 경비원과 야식을 먹었다. 경비원 서명이 있다" },
     witness: { spot: "보안 카메라를 돌려 본다", name: "2층 복도 카메라", text: (n, t) => `2층 복도 카메라, ${t}. ${I(n)} 관장실 문을 두드리는 모습이 찍혀 있다.` },
-    room: "대기실", floors: ["2층", "1층"], helpers: ["도슨트 하윤", "경비원 석 씨"] },
+    room: "대기실", floors: ["2층", "1층"] },
   { title: "은빛 물결호", where: "크루즈선 · 한밤의 바다", intro: "항구까지 열두 시간이 남은 밤", victimRole: "선박 회사 대표",
     brief: "당신은 같은 배의 승객이다. 해경 헬기가 오기 전까지 배 안의 누구도 내릴 수 없다.",
     crime: { name: "대표 객실", desc: "바다 쪽 창이 넓은 특실. 피해자는 침대 발치에 쓰러져 있다." },
@@ -793,7 +793,7 @@ const SETTINGS = [
     c2: { name: "안내 데스크", desc: "선내 지도와 카드키 단말기가 있는 데스크." },
     solo: { spot: "안내 데스크 일지를 본다", name: "안내 데스크 일지", act: "데스크 옆 의자에서 멀미약을 받고 쉬었다고 직원이 적었다" },
     witness: { spot: "카드키 기록을 조회한다", name: "선내 카드키 기록", text: (n, t) => `선내 카드키 기록, ${t}. ${n}의 카드로 대표 객실 층 출입문이 열렸다.` },
-    room: "선실", floors: ["상갑판", "하갑판"], helpers: ["승무원 미르", "선상 마술사 로이"] },
+    room: "선실", floors: ["상갑판", "하갑판"] },
   { title: "해담 와이너리", where: "포도밭 와이너리 · 수확제", intro: "수확제가 끝난 밤", victimRole: "와이너리 주인",
     brief: "당신은 수확제에 초대된 손님이다. 산불 연기로 길이 막혀 경찰이 돌아오는 중이다.",
     crime: { name: "지하 저장고", desc: "오크통이 줄지은 서늘한 저장고. 피해자는 통 사이에 쓰러져 있다." },
@@ -802,7 +802,7 @@ const SETTINGS = [
     c2: { name: "관리 사무실", desc: "포도밭 지도와 보안 패널이 붙은 사무실." },
     solo: { spot: "사무실 전화 기록을 본다", name: "사무실 전화 기록", act: "사무실 유선 전화로 장거리 통화를 했다" },
     witness: { spot: "보안 패널 기록을 본다", name: "저장고 보안 패널", text: (n, t) => `저장고 보안 패널, ${t}. ${n}의 카드로 지하 저장고 문이 열렸다.` },
-    room: "게스트룸", floors: ["본채 · 지하", "별채"], helpers: ["포도밭 일꾼 덕배", "소믈리에 지아"] },
+    room: "게스트룸", floors: ["본채 · 지하", "별채"] },
 ];
 const VICTIMS = ["마정호", "구선영", "탁무진", "엄혜경", "하태수", "봉미란", "편승철", "길소연"];
 const NAMES = ["서도윤", "한예린", "박준서", "김하율", "이서진", "정민재", "최유나", "오태경", "윤소이", "강지후", "문채원", "배성훈",
@@ -959,7 +959,7 @@ function generateCase() {
   }
   const secrets = inn.map(p => `${p.name}의 ${p.motive.docName}`).join(", ");
   return {
-    id: "random", no: "??", random: true, title: `${st.title} 사건`, where: st.where, helpers: st.helpers,
+    id: "random", no: "??", random: true, title: `${st.title} 사건`, where: st.where,
     tag: `무작위 사건 · ${st.title} · ${hm(T + 45)} 접수`,
     lede: `${st.intro}, ${st.victimRole} ${v}(${vAge})${I("" + v).slice(v.length)} ${crime}에서 숨진 채 발견되었다.`,
     brief: st.brief,
@@ -1000,10 +1000,23 @@ const turnsFor = c => {
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
   locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null,
-  diff: "easy", timed: false, timeLeft: 0, timeMax: 0,
+  diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
+/* 동료 탐정: 어려워지면 돕고, 어려움에서는 직접 현장에 보낼 수 있다 */
+const PARTNERS = [
+  { id: "kang", name: "강무열", title: "베테랑 탐정", skill: "자물쇠 따기와 경찰 연락",
+    report: (room, list) => list ? `“자물쇠쯤이야. ${room}에서 이런 걸 건졌네. ${list}.”` : `“${room}엔 더 볼 게 없더군.”` },
+  { id: "yoon", name: "윤도경", title: "법의학 탐정", skill: "현장 감식",
+    report: (room, list) => list ? `“${room} 감식 끝났어요. 나온 건 ${list}입니다.”` : `“${room}에서는 새로 나온 게 없어요.”` },
+  { id: "seo", name: "서하루", title: "견습 탐정", skill: "거짓말 냄새 맡기",
+    report: (room, list) => list ? `“선배님! ${room} 싹 다 뒤져 봤어요. ${list}!”` : `“${room}은 이미 다 조사돼 있던데요?”` },
+];
+const partner = id => PARTNERS.find(x => x.id === id);
+const pfull = x => `${x.title} ${x.name}`;
+const MISSION_DELAY = 2;
+
 /* 난이도: 첫 사건은 쉽게, 뒤로 갈수록 어렵게 */
 const DIFF = {
   easy:   { label: "쉬움",   turns: 6, time: 720, bonus: 0, sab: null,
@@ -1011,7 +1024,7 @@ const DIFF = {
   normal: { label: "보통",   turns: 2, time: 540, bonus: 3, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 },
             desc: "중반부터 가끔 훼방이 들어온다." },
   hard:   { label: "어려움", turns: 0, time: 360, bonus: 6, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 },
-            desc: "일찍부터 훼방이 잦고 갈수록 거세진다." },
+            desc: "일찍부터 훼방이 잦고 갈수록 거세진다. 대신 동료 탐정 3명을 현장에 직접 보낼 수 있다." },
 };
 const mmss = sec => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 let PLAYER = ""; try { PLAYER = localStorage.getItem("midnight-player") || ""; } catch {}
@@ -1057,7 +1070,8 @@ function spend(n = 1) {
   S.turns -= n;
   for (const m of [S.locks, S.silence]) for (const k in m) { m[k] -= n; if (m[k] <= 0) delete m[k]; }
   if (S.turns <= 0) { policeArrive("턴이 모두 지났다"); return; }
-  S.sinceEvent += 1; S.sinceHelp += 1;
+  S.sinceEvent += 1; S.sinceHelp += 1; S.actions += n;
+  resolveMissions();
   maybeSabotage();
   maybeHelp();
 }
@@ -1071,7 +1085,7 @@ function maybeHelp() {
   help();
 }
 function help() {
-  const c = C(), who = c.helpers[S.helps % c.helpers.length], opts = [];
+  const c = C(), opts = [];
   const blocked = Object.keys(S.locks).length || Object.keys(S.silence).length;
   if (blocked) opts.push("unlock", "unlock");
   const spots = Object.entries(c.rooms).flatMap(([rid, r]) => r.spots.map(s => ({ ...s, rid })))
@@ -1082,28 +1096,55 @@ function help() {
   if (lies.length) opts.push("hint");
   opts.push("time");
   const kind = RND.pick(opts);
+  const who = pfull(partner(kind === "reveal" ? "yoon" : kind === "hint" ? "seo" : "kang"));
   let msg = "";
   if (kind === "unlock") {
     S.locks = {}; S.silence = {};
-    msg = `${I(who)} 예비 열쇠와 따뜻한 차를 들고 나타났다. 잠긴 문이 모두 열리고, 입을 닫았던 사람들도 다시 말을 꺼낸다.`;
+    msg = `${I(who)} 나타나 잠긴 문을 모두 땄다. 입을 닫았던 사람들도 베테랑의 눈빛에 다시 말을 꺼낸다.`;
   } else if (kind === "reveal") {
     const s = RND.pick(keySpots.length ? keySpots : spots);
     S.searched.push(s.id); S.found.push(s.clue);
     msg = `${who}: “${pname()} 탐정님, ${c.rooms[s.rid].name}에서 이걸 찾았어요.” — ${c.clues[s.clue].name}`;
   } else if (kind === "hint") {
     const { q, p } = RND.pick(lies); S.hints.push(q.id);
-    msg = `${who}: “${p.name} 씨가 ‘${q.q}’에 한 대답, 아무래도 앞뒤가 안 맞아요.”`;
+    msg = `${who}: “${pname()} 선배님, ${p.name} 씨가 ‘${q.q}’에 한 대답, 아무래도 냄새가 나요.”`;
   } else {
     S.turns += 2; S.maxTurns = Math.max(S.maxTurns, S.turns);
     msg = `${I(who)} 경찰에 무전을 넣어 시간을 벌어 주었다. 도착이 2턴 늦춰졌다.`;
   }
   S.helps += 1; S.sinceHelp = 0;
   S.events.push({ bad: false, msg });
-  toast(`<b>조력자</b> — ${esc(msg)}`); Sound.help();
+  toast(`<b>동료 탐정</b> — ${esc(msg)}`); Sound.help();
+}
+
+/* ---------- 어려움: 동료 탐정을 현장에 보내 직접 조사시키기 ---------- */
+function dispatch(pid) {
+  if (S.diff !== "hard" || has(S.dispatched, pid) || S.turns <= 0) return;
+  if (S.missions.some(m => m.room === S.room)) return;
+  S.dispatched.push(pid);
+  S.missions.push({ pid, room: S.room, due: S.actions + MISSION_DELAY });
+  const x = partner(pid), rn = C().rooms[S.room].name;
+  toast(`<b>${esc(x.name)}</b> — “${esc(EUN(rn))} 제게 맡기세요. ${MISSION_DELAY}턴 뒤에 보고하겠습니다.”`);
+  Sound.ask();
+}
+function resolveMissions() {
+  const c = C(), done = S.missions.filter(m => S.actions >= m.due);
+  S.missions = S.missions.filter(m => S.actions < m.due);
+  for (const m of done) {
+    const x = partner(m.pid), r = c.rooms[m.room], names = [];
+    for (const sp of r.spots) {
+      if (has(S.searched, sp.id)) continue;
+      S.searched.push(sp.id);
+      if (sp.clue && !has(S.found, sp.clue)) { S.found.push(sp.clue); names.push(c.clues[sp.clue].name); }
+    }
+    const msg = `${pfull(x)}의 보고 — ${x.report(r.name, names.join(", "))}`;
+    S.events.push({ bad: false, msg });
+    toast(`<b>현장 보고</b> — ${esc(msg)}`); names.length ? Sound.clue() : Sound.help();
+  }
 }
 
 function policeArrive(why) {
-  S.turns = 0; S.tab = "accuse"; S.challenge = null; S.locks = {}; S.silence = {};
+  S.turns = 0; S.tab = "accuse"; S.challenge = null; S.locks = {}; S.silence = {}; S.missions = [];
   toast(`<b>경찰 도착</b> — ${why}. 이제 범인을 지목해야 한다.`, true); Sound.siren();
 }
 
@@ -1298,6 +1339,7 @@ function render() {
   const alerts = [
     ...Object.entries(S.locks).map(([rid, n]) => `<span class="alert">잠김 · ${c.rooms[rid].name} ${n}턴</span>`),
     ...Object.entries(S.silence).map(([sid, n]) => `<span class="alert">침묵 · ${c.suspects[sid].name} ${n}턴</span>`),
+    ...S.missions.map(m => `<span class="alert ally">조사 중 · ${partner(m.pid).name} → ${c.rooms[m.room].name} ${m.due - S.actions}턴 뒤 보고</span>`),
   ];
   const alertRow = alerts.length && !out
     ? `<div class="alerts">${alerts.join("")}<button class="act" data-act="wait">기다린다<span class="cost">−1턴</span></button></div>` : "";
@@ -1344,7 +1386,8 @@ function renderTitle() {
         <div><b><span class="k">04</span>수사 수첩</b><p>찾은 단서와 진술로 만든 시간표가 모인다. 거짓으로 밝혀진 진술에는 줄이 그어진다.</p></div>
         <div><b><span class="k">05</span>범인 지목</b><p>범인·동기·수법·결정적 증거(최대 3개)를 골라 제출한다. 맞힌 만큼 S~F 등급.</p></div>
         <div class="warn"><b><span class="k">주의</span>훼방</b><p>시간이 흐를수록 누군가 수사를 방해한다. 증거가 훼손되고, 방이 잠기고, 용의자가 입을 닫는다. 경찰이 앞당겨 오기도 한다.</p></div>
-        <div><b><span class="k">도움</span>조력자</b><p>훼방이 심해지면 사건 현장의 조력자가 나타난다. 잠긴 문을 열어 주거나, 단서를 찾아 주거나, 수상한 진술을 귀띔해 준다.</p></div>
+        <div><b><span class="k">도움</span>동료 탐정</b><p>훼방이 심해지면 동료 탐정들이 달려온다. 베테랑 강무열은 잠긴 문을 따고 시간을 벌어 주고, 법의학 탐정 윤도경은 단서를 찾아 주고, 견습 서하루는 수상한 진술을 귀띔한다.</p></div>
+        <div><b><span class="k">어려움</span>현장 파견</b><p>어려움에서는 장소 화면의 ‘동료 탐정에게 맡기기’로 동료를 직접 보낼 수 있다. 턴을 쓰지 않고, 2턴 뒤 그 장소에서 찾은 단서를 모두 보고한다. 탐정마다 한 번씩.</p></div>
         <div><b><span class="k">난이도</span>쉬움 → 어려움</b><p>첫 사건은 쉬움, 뒤로 갈수록 어려워진다. 사건을 열 때 난이도와 시간 제한 모드를 직접 고를 수도 있다.</p></div>
         <div class="warn"><b><span class="k">시간</span>시간 제한 모드</b><p>실제 시계가 흐른다. 쉬움 12분, 보통 9분, 어려움 6분. 마지막 30초엔 초침 소리가 들린다.</p></div>
         <div><b><span class="k">무한</span>무작위 사건</b><p>무대·용의자·동기·수법·범인이 매번 새로 정해진다. 같은 사건은 두 번 나오지 않는다.</p></div>
@@ -1436,7 +1479,25 @@ function renderRooms(out) {
       <p class="desc">${r.desc}</p>
       ${lk ? `<p class="locked-room">문이 안쪽에서 잠겨 있다. ${lk}턴 뒤에 열쇠를 찾을 수 있다.</p>` : ""}
       <div class="spots">${spots}</div>
+      ${S.diff === "hard" && !out ? renderDispatch(r) : ""}
     </section>
+  </div>`;
+}
+
+function renderDispatch(r) {
+  const left = r.spots.some(sp => !has(S.searched, sp.id));
+  const busy = S.missions.find(m => m.room === S.room);
+  if (!left && !busy) return "";
+  const btns = PARTNERS.map(x => {
+    const used = has(S.dispatched, x.id);
+    return `<button class="act ally" data-dispatch="${x.id}" ${used || busy ? "disabled" : ""}>
+      ${x.name}<span class="cost">${used ? "출동 완료" : x.title}</span></button>`;
+  }).join("");
+  return `<div class="dispatch">
+    <b>동료 탐정에게 맡기기</b>
+    <p class="hint">${busy ? `${I(partner(busy.pid).name)} 이 방을 조사하고 있다. ${busy.due - S.actions}턴 뒤 보고.`
+      : `턴을 쓰지 않는다. 남은 곳을 전부 조사해 ${MISSION_DELAY}턴 뒤 보고한다. 잠긴 방도 들어간다. 탐정마다 한 번씩.`}</p>
+    <div class="q-actions">${btns}</div>
   </div>`;
 }
 
@@ -1566,7 +1627,7 @@ function renderResult() {
       ${row("무너뜨린 거짓말", S.broken.length > 0, `${S.broken.length}개`)}
       ${row("헛짚은 지적", S.wrong === 0, `${S.wrong}회`)}
       ${row("받은 훼방", !S.events.some(e => e.bad), `${S.events.filter(e => e.bad).length}회`)}
-      ${row("조력자의 도움", true, `${S.helps}회`)}
+      ${row("동료 탐정의 도움", true, `${S.helps + S.dispatched.length}회`)}
       ${row("남은 턴", S.turns > 0, `${S.turns}`)}
       ${row("난이도", true, `${DIFF[S.diff].label}${DIFF[S.diff].bonus ? ` (+${DIFF[S.diff].bonus})` : ""}`)}
       ${S.timed ? row("시간 제한", S.timeLeft > 0, S.timeLeft > 0 ? `${mmss(S.timeLeft)} 남김 (+5)` : "시간 초과 (+5)") : ""}
@@ -1601,6 +1662,7 @@ app.addEventListener("click", e => {
   else if (d.act === "wait") { if (S.turns <= 0) return; Sound.step(); spend(); }
   else if (d.tab) { S.tab = d.tab; S.challenge = null; }
   else if (d.room) { S.room = d.room; }
+  else if (d.dispatch) { dispatch(d.dispatch); }
   else if (d.suspect) { S.suspect = d.suspect; S.challenge = null; S.deflectOn = null; }
   else if (d.search) {
     const sp = Object.values(C().rooms).flatMap(r => r.spots).find(s => s.id === d.search);
