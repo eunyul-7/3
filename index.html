@@ -2058,9 +2058,17 @@ const INTRO = (() => {
     { id: "mo", name: "모은재", x: 5, y: 2, dir: "right" },
     { id: "yoon", name: "윤도경", x: 9, y: 4, dir: "up" },
   ];
+  /* 신고 접수 시각은 사건 정보(“22:41 접수”)를 그대로 읽는다 */
+  const callTime = () => {
+    const m = String(C().tag || "").match(/(\d{1,2}):(\d{2})\s*접수/);
+    if (!m) return "늦은 밤";
+    const h = +m[1], mi = +m[2], part = h < 5 ? "새벽" : h < 11 ? "아침" : h < 17 ? "낮" : h < 19 ? "저녁" : "밤";
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return `${part} ${h12}시${mi ? ` ${mi}분` : ""}`;
+  };
   const place = () => C().title.replace(/ 사건$/, ""), where = () => (C().where || "").split(" · ")[0];
   const beats = () => [
-    { t: 0, who: "", text: `밤 11시 40분. 비가 오는 밤, 강력팀 사무실.` },
+    { t: 0, who: "", text: `${callTime()}. 강력팀 사무실.` },
     { t: 2.4, who: "", text: "따르릉— 따르릉—" },
     { t: 4.6, who: "서하루", text: "네, 강력팀 서하루 순경입니다. …네? 사람이 죽었다고요? 위치가 어디죠?" },
     { t: 8, who: "서하루", text: `선배님들! ${where()} ‘${place()}’에서 살인 사건 신고입니다!` },
