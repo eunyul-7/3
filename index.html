@@ -1380,7 +1380,7 @@ const turnsFor = c => {
 };
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
-  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], reads: {}, introDone: false,
+  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], reads: {}, counter: {}, introDone: false,
   chances: 1, penalties: 0, decided: false, advice: {}, cleared: [], persona: {}, heart: {}, secrets: [], lastLine: null, dlg: null, wrongAccuse: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
   mode: "pixel", pos: null, dir: null, autopsyDone: false, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
@@ -1464,6 +1464,40 @@ function penalty(why) {
   toast(`<b>−${PENALTY_SEC}초</b> — ${esc(why)}`, true);
   const el = document.getElementById("timer"); if (el) { el.classList.remove("hit"); void el.offsetWidth; el.classList.add("hit"); }
   if (S.timeLeft <= 0) decisionTime("시간이 다 됐다");
+}
+
+/* ---------- 한서진의 반격: 용의자가 입을 다물면 대신 나선다. 실패하면 −30초 · −3턴 ---------- */
+const COUNTER_SEC = 30, COUNTER_TURNS = 3;
+function counterLie(sid) {
+  return C().suspects[sid].qs.find(q => q.lie && has(S.asked, q.id) && !has(S.broken, q.id) && q.lie.clues.some(k => has(S.found, k)));
+}
+function counterattack(sid) {
+  const c = C(), p = c.suspects[sid]; S.counter = S.counter || {};
+  if (!p || !S.silence[sid] || S.turns <= 0 || S.decided || S.counter[sid]) return;
+  const who = "프로파일러 경위 한서진", lie = counterLie(sid);
+  S.dlg = null;
+  if (Math.random() < (lie ? 0.8 : 0.35)) {
+    delete S.silence[sid];
+    if (lie) {
+      const clue = c.clues[lie.lie.clues.find(k => has(S.found, k))].name;
+      S.broken.push(lie.id); addTl(lie.lie.tl);
+      S.lastLine = { sid, who, q: `“입 다문다고 끝나는 게 아니에요. ‘${clue}’ — 이건 어떻게 설명하실 거죠?”`, a: lie.lie.reply, kind: "broken" };
+      toast(`<b>한서진의 반격 성공!</b> ${esc(EUN(p.name))} 입을 열고 거짓말을 털어놨다.`); Sound.lie(); flash();
+    } else {
+      S.lastLine = { sid, who, q: "“계속 침묵하시면 그게 더 의심스러워요. 지금 말하는 게 본인에게 유리합니다.”", a: "“…알겠어요. 물어보세요.”", kind: "answer" };
+      toast(`<b>한서진의 반격 성공!</b> ${esc(EUN(p.name))} 다시 입을 열었다.`); Sound.help();
+    }
+    S.events.push({ bad: false, msg: `${I(who)} 입을 닫은 ${p.name}에게 반격해 다시 말하게 했다.` });
+  } else {
+    S.counter[sid] = true;
+    S.timeLeft = Math.max(0, S.timeLeft - COUNTER_SEC); S.turns = Math.max(0, S.turns - COUNTER_TURNS);
+    S.lastLine = { sid, who, q: "“입 다물고 버틴다고 달라지는 건 없어요.”", a: "“…할 말 없습니다. 증거부터 가져오시죠.”", kind: "deflect" };
+    S.events.push({ bad: true, msg: `${who}의 반격이 실패했다. ${COUNTER_SEC}초와 ${COUNTER_TURNS}턴을 잃었다.` });
+    toast(`<b>반격 실패 −${COUNTER_SEC}초 · −${COUNTER_TURNS}턴</b> — ${esc(p.name)}의 입은 더 굳게 닫혔다.`, true); Sound.wrong();
+    const el = document.getElementById("timer"); if (el) { el.classList.remove("hit"); void el.offsetWidth; el.classList.add("hit"); }
+    if (S.turns <= 0) decisionTime("수사 턴을 모두 썼다");
+    else if (S.timeLeft <= 0) decisionTime("시간이 다 됐다");
+  }
 }
 
 /* ---------- 난이도: 쉬움은 쉽지만 짧고 도움이 적다 / 어려움은 어렵지만 길고 도움이 많다 ---------- */
@@ -1618,7 +1652,7 @@ const josa = (w, a, b) => { const ch = w.charCodeAt(w.length - 1); return w + ((
 function spend(n = 1) {
   if (S.turns <= 0) return;
   S.turns -= n;
-  for (const m of [S.locks, S.silence]) for (const k in m) { m[k] -= n; if (m[k] <= 0) delete m[k]; }
+  for (const m of [S.locks, S.silence]) for (const k in m) { m[k] -= n; if (m[k] <= 0) { delete m[k]; if (m === S.silence && S.counter) delete S.counter[k]; } }
   if (S.turns <= 0) { decisionTime("수사 턴을 모두 썼다"); return; }
   S.sinceEvent += 1; S.sinceHelp += 1; S.actions += n;
   resolveMissions();
@@ -1785,7 +1819,7 @@ function sabotage(late) {
     const rid = pickOne(lockable); S.locks[rid] = dur;
     msg = `${josa(c.rooms[rid].name, "이", "가")} 잠겼다. 열쇠를 찾는 동안 ${dur}턴 들어갈 수 없다. 문 앞에 ${I(accomplice().trace)} 남아 있었다.`;
   } else if (kind === "silence") {
-    const [sid, sp] = pickOne(silenceable); S.silence[sid] = dur;
+    const [sid, sp] = pickOne(silenceable); S.silence[sid] = dur; if (S.counter) delete S.counter[sid];
     msg = `${josa(sp.name, "이", "가")} “더는 아무 말도 안 하겠다”며 입을 닫았다. ${dur}턴 동안 심문할 수 없다.`;
   } else {
     S.turns -= 1;
@@ -2007,7 +2041,7 @@ function renderTitle() {
         <div class="warn"><b><span class="k">05</span>결단의 시간</b><p>턴이나 시간이 다 되면 증거가 부족해도 범인을 골라야 해요. 범인을 놓치면 그대로 게임 오버예요.</p></div>
         <div><b><span class="k">출동</span>팀원 출동</b><p>장소에서 팀원을 보내면 문으로 들어와 대신 조사하고 2턴 뒤에 보고해요. 턴은 안 줄어요.</p></div>
         <div><b><span class="k">판단</span>진실일까, 거짓일까</b><p>용의자가 대답하면 주인공이 모은 증거를 토대로 ‘사실 같다/거짓말 같다’를 판단해요. 증거를 적게 모으면 판단도 엉성해요.</p></div>
-        <div><b><span class="k">심문</span>프로파일러</b><p>심문은 주인공과 프로파일러만 해요. 한서진 경위는 거짓말을 바로 알아채지만 몇 번 못 불러요. 모은재 경사는 더 자주 부를 수 있지만, 증거를 많이 모아야 정확해요.</p></div>
+        <div><b><span class="k">심문</span>프로파일러</b><p>심문은 주인공과 프로파일러만 해요. 한서진 경위는 거짓말을 바로 알아채지만 몇 번 못 불러요. 용의자가 입을 다물면 한서진이 대신 나서서 반격해요. 단, 실패하면 30초와 3턴을 잃어요. 모은재 경사는 더 자주 부를 수 있지만, 증거를 많이 모아야 정확해요.</p></div>
         <div class="warn"><b><span class="k">주의</span>방해 · 공범 · 가짜 물건</b><p>보통·어려움에서는 누군가 증거를 망치고 문을 잠가요. 변수 인물 중 한 명이 공범이에요. 가짜 물건도 섞여 있어요.</p></div>
         <div><b><span class="k">난이도</span>쉬움 ↔ 어려움</b><p>쉬움은 아주 쉽지만 시간이 짧고 도움이 적어요. 어려움은 아주 어렵지만 시간·지목 기회·동료 도움이 많아요.</p></div>
         <div><b><span class="k">무한</span>무작위 사건</b><p>무대·용의자·동기·수법·범인이 매번 새로 정해져요.</p></div>
@@ -3173,7 +3207,10 @@ function renderPeople(out) {
   const D = S.dlg;
   const statements = p.qs.filter(q => has(S.asked, q.id) && !has(S.broken, q.id));
   if (out) choices = `<p class="locked">결단의 시간이다. 더 물어볼 수 없다.</p>`;
-  else if (sl) choices = `<p class="locked-room">“더는 아무 말도 안 하겠어요.” ${sl}턴 동안 대화할 수 없다.</p>`;
+  else if (sl) choices = `<p class="locked-room">“더는 아무 말도 안 하겠어요.” ${sl}턴 동안 대화할 수 없다.</p>`
+    + ((S.counter || {})[sid]
+      ? `<p class="locked">한서진의 반격도 통하지 않았다. 입이 풀릴 때까지 기다려야 한다.</p>`
+      : `<button class="choice press with-face" data-counter="${sid}"><span class="ck">반격</span><span>${pixelFace("한서진", 22)} 한서진 경위가 대신 나서서 반격한다<br><small class="hint">${counterLie(sid) ? "찌를 증거가 있다. 잘 통할 것 같다." : "찌를 증거가 없다. 통할지 모르겠다."}</small></span><span class="cost">실패하면 −${COUNTER_SEC}초 · −${COUNTER_TURNS}턴</span></button>`);
   else if (!D) {
     const avail = p.qs.filter(q => (!q.need || has(S.found, q.need)) && !has(S.asked, q.id));
     const locked = p.qs.filter(q => q.need && !has(S.found, q.need)).length;
@@ -3426,6 +3463,7 @@ app.addEventListener("click", e => {
   else if (d.confront) { confront(S.dlg && S.dlg.q, d.confront); }
   else if (d.tone) { openHeart(S.suspect, d.tone); }
   else if (d.read) { doRead(d.read, d.q); }
+  else if (d.counter) { counterattack(d.counter); }
   else return;
   render();
   if (top) window.scrollTo(0, 0);
