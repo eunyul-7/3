@@ -1020,11 +1020,11 @@ const MISSION_DELAY = 2;
 /* 난이도: 첫 사건은 쉽게, 뒤로 갈수록 어렵게 */
 const DIFF = {
   easy:   { label: "쉬움",   turns: 30, time: 720, bonus: 0, sab: null,
-            desc: "훼방도 동료 탐정도 없다. 처음 해 보는 사람에게." },
+            desc: "방해가 없어요. 탐정 출동을 2번 쓸 수 있어요. 처음 하는 사람에게 추천!" },
   normal: { label: "보통",   turns: 35, time: 540, bonus: 3, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 },
-            desc: "중반부터 가끔 훼방이 들어온다. 법의학 탐정 윤도경이 알아서 시신을 감식하고 단서를 찾아 주며, 견습 탐정 서하루가 거짓말을 귀띔한다." },
+            desc: "중간쯤부터 가끔 방해가 들어와요. 윤도경이 알아서 시신을 살피고 단서를 찾아 주고, 서하루가 거짓말을 알려 줘요." },
   hard:   { label: "어려움", turns: 45, time: 360, bonus: 6, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 },
-            desc: "일찍부터 훼방이 잦고 갈수록 거세진다. 베테랑 탐정 강무열까지 세 명이 돕고, 동료를 현장에 직접 보낼 수 있다." },
+            desc: "일찍부터 방해가 자주 들어와요. 탐정 세 명이 모두 돕고, 탐정마다 3번씩 출동시킬 수 있어요." },
 };
 const mmss = sec => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 let PLAYER = ""; try { PLAYER = localStorage.getItem("midnight-player") || ""; } catch {}
@@ -1125,9 +1125,18 @@ function help() {
 /* 사건 현장의 첫 조사 지점 = 시신(박물관은 매병) */
 const crimeRoomId = () => Object.keys(C().rooms).find(k => C().rooms[k].crime);
 const bodySpot = () => C().rooms[crimeRoomId()].spots[0];
+/* 탐정 출동 횟수: 쉬움은 모두 합쳐 2번, 어려움은 탐정마다 3번, 보통은 없음 */
+const DISPATCH = { easy: { total: 2 }, hard: { each: 3 } };
+const sentCount = pid => S.dispatched.filter(x => !pid || x === pid).length;
+function dispatchLeft(pid) {
+  const rule = DISPATCH[S.diff];
+  if (!rule) return 0;
+  return rule.total ? rule.total - sentCount() : rule.each - sentCount(pid);
+}
 function canDispatch(pid) {
-  if (S.turns <= 0 || has(S.dispatched, pid) || S.missions.some(m => m.room === S.room)) return false;
-  return S.diff === "hard";
+  if (S.turns <= 0 || dispatchLeft(pid) <= 0) return false;
+  if (S.missions.some(m => m.room === S.room || m.pid === pid)) return false;
+  return true;
 }
 function dispatch(pid) {
   if (!canDispatch(pid)) return;
@@ -1411,7 +1420,7 @@ function renderTitle() {
         <div><b><span class="k">05</span>범인 지목</b><p>범인·동기·수법·결정적 증거(최대 3개)를 골라 제출한다. 맞힌 만큼 S~F 등급.</p></div>
         <div class="warn"><b><span class="k">주의</span>훼방</b><p>시간이 흐를수록 누군가 수사를 방해한다. 증거가 훼손되고, 방이 잠기고, 용의자가 입을 닫는다. 경찰이 앞당겨 오기도 한다.</p></div>
         <div><b><span class="k">도움</span>동료 탐정</b><p>훼방이 심해지면 동료 탐정들이 달려온다. 보통·어려움에서는 법의학 탐정 윤도경(수사 초반 시신 감식, 단서 찾기)과 견습 탐정 서하루(수상한 진술 귀띔)가, 어려움에서는 베테랑 탐정 강무열(잠긴 문 열기·시간 벌기)까지 나온다.</p></div>
-        <div><b><span class="k">어려움</span>현장 파견</b><p>어려움에서는 장소 화면의 ‘동료 탐정에게 맡기기’로 동료를 직접 보낼 수 있다. 턴을 쓰지 않고, 2턴 뒤 그 장소에서 찾은 단서를 모두 보고한다. 잠긴 방도 들어가며, 탐정마다 한 번씩.</p></div>
+        <div><b><span class="k">출동</span>탐정 출동</b><p>장소 화면 아래 ‘탐정 출동’ 버튼을 누르면 탐정이 그 장소를 대신 조사하고 2턴 뒤에 알려 줘요. 턴은 안 줄어요. 쉬움은 모두 합쳐 2번, 어려움은 탐정마다 3번 쓸 수 있어요.</p></div>
         <div><b><span class="k">난이도</span>쉬움 → 어려움</b><p>첫 사건은 쉬움, 뒤로 갈수록 어려워진다. 사건을 열 때 난이도와 시간 제한 모드를 직접 고를 수도 있다.</p></div>
         <div class="warn"><b><span class="k">시간</span>시간 제한 모드</b><p>실제 시계가 흐른다. 쉬움 12분, 보통 9분, 어려움 6분. 마지막 30초엔 초침 소리가 들린다.</p></div>
         <div><b><span class="k">무한</span>무작위 사건</b><p>무대·용의자·동기·수법·범인이 매번 새로 정해진다. 같은 사건은 두 번 나오지 않는다.</p></div>
@@ -1509,19 +1518,22 @@ function renderRooms(out) {
 }
 
 function renderDispatch(r) {
-  if (S.diff !== "hard") return "";
+  const rule = DISPATCH[S.diff];
+  if (!rule) return "";
   const left = r.spots.some(sp => !has(S.searched, sp.id));
   const busy = S.missions.find(m => m.room === S.room);
   if (!left && !busy) return "";
   const btns = PARTNERS.map(x => {
-    const used = has(S.dispatched, x.id);
-    return `<button class="act ally" data-dispatch="${x.id}" ${used || busy ? "disabled" : ""}>
-      ${x.name}<span class="cost">${used ? "출동 완료" : x.title}</span></button>`;
+    const left = dispatchLeft(x.id), away = S.missions.some(m => m.pid === x.id);
+    const tag = away ? "출동 중" : left <= 0 ? "끝" : rule.each ? `${left}번 남음` : x.title;
+    return `<button class="act ally" data-dispatch="${x.id}" ${canDispatch(x.id) ? "" : "disabled"}>
+      ${x.name}<span class="cost">${tag}</span></button>`;
   }).join("");
+  const howMany = rule.total ? `모두 합쳐 ${rule.total}번 (남은 횟수 ${Math.max(0, dispatchLeft())}번)` : `탐정마다 ${rule.each}번`;
   return `<div class="dispatch">
-    <b>동료 탐정에게 맡기기</b>
-    <p class="hint">${busy ? `${I(partner(busy.pid).name)} 이 방을 조사하고 있다. ${busy.due - S.actions}턴 뒤 보고.`
-      : `턴을 쓰지 않는다. 남은 곳을 전부 조사해 ${MISSION_DELAY}턴 뒤 보고한다. 잠긴 방도 들어간다. 탐정마다 한 번씩.`}</p>
+    <b>탐정 출동</b>
+    <p class="hint">${busy ? `${I(partner(busy.pid).name)} 여기를 조사하는 중이에요. ${busy.due - S.actions}턴 뒤에 알려 줘요.`
+      : `탐정을 보내면 이 장소를 대신 조사해서 ${MISSION_DELAY}턴 뒤에 알려 줘요. 턴은 안 줄어요. 잠긴 방도 들어가요. 출동은 ${howMany}.`}</p>
     <div class="q-actions">${btns}</div>
   </div>`;
 }
