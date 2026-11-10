@@ -1392,7 +1392,7 @@ const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, fou
   locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
   chances: 1, penalties: 0, decided: false, advice: {}, cleared: [], persona: {}, heart: {}, secrets: [], lastLine: null, dlg: null, wrongAccuse: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
-  mode: "pixel", pos: null, dir: null, autopsyDone: false, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
+  mode: "pixel", pos: null, dir: null, autopsyDone: false, autopsy: null, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
@@ -1525,12 +1525,13 @@ const DIFF = {
 /* 팀원 출동 횟수 */
 /* 계급별 호출 횟수: 순경·경장·경사는 쉬움 2 · 보통 3 · 어려움 5, 경위·경감은 쉬움 없음 · 보통 3 · 어려움 5 */
 /* 직급 역할(횟수 제한 없음)
-   - 부하(서하루·변주원·공태하): 쓸모없거나 헷갈리게 하는 것(가짜 물건)을 치운다
-   - 상관(윤도경·강무열): 대신 조사하지 않고, 부하들이 놓친 부분을 바로잡는다(망가진 증거 복구·사라진 단서 되찾기·놓친 곳 짚기, 강무열은 잠긴 문까지) */
-const FIELD_ON = { easy: ["seo", "byun", "yoon"], normal: ["seo", "byun", "gong", "yoon", "kang"], hard: ["seo", "byun", "gong", "yoon", "kang"] };
-const JUNIOR = ["seo", "byun", "gong"];
+   - 부하(서하루·공태하): 쓸모없거나 헷갈리게 하는 것(가짜 물건)을 치운다
+   - 상관(강무열): 대신 조사하지 않고, 부하들이 놓친 부분을 바로잡는다(망가진 증거 복구·사라진 단서 되찾기·놓친 곳 짚기, 강무열은 잠긴 문까지) */
+const FIELD_ON = { easy: ["seo"], normal: ["seo", "gong", "kang"], hard: ["seo", "gong", "kang"] };
+/* 과학수사대(윤도경·변주원)는 시신 감식만 한다: 사인을 밝혀 수사·심문에 쓸 증거로 넘겨준다 */
+const JUNIOR = ["seo", "gong"];
 const roleOf = pid => JUNIOR.includes(pid) ? "clear" : "fix";
-const FIELD_ROWS = [["seo"], ["byun", "yoon"], ["gong", "kang"]];
+const FIELD_ROWS = [["seo"], ["gong", "kang"]];
 const PLAYER_RANK = "경장";
 /* 강력계 순경 공태하: 강무열과 다니며 쓸데없는 물건을 치우고, 비협조적인 용의자를 압박한다 */
 const GONG = { easy: { clear: 2 }, normal: { clear: 3 }, hard: { clear: 5 } };   /* 순경 공태하 */
@@ -1758,7 +1759,7 @@ function help() {
   if (vet) opts.push("time");
   if (!opts.length) return;
   const kind = RND.pick(opts);
-  const who = pfull(partner(kind === "reveal" ? "yoon" : "kang"));
+  const who = pfull(partner("kang"));
   let msg = "";
   if (kind === "unlock") {
     S.locks = {}; S.silence = {};
@@ -1815,30 +1816,41 @@ function seniorFix(m) {
   }
   if (m.pid === "kang" && Object.keys(S.locks).length) { S.locks = {}; done.push("잠긴 문을 모두 엶"); }
   const miss = r.spots.filter(sp => sp.clue && !has(S.searched, sp.id) && !has(S.found, sp.clue) && !has(S.marked || [], sp.id));
+  if (S.autopsy) miss.sort((a, b) => c.key.includes(b.clue) - c.key.includes(a.clue));   /* 감식 소견이 있으면 사인과 이어지는 곳부터 */
   if (miss.length) {
     const sp = miss[0]; S.marked = (S.marked || []).concat(sp.id);
-    done.push(`놓친 곳 짚기: ‘${sp.label.replace(/(을|를) .*$/, "")}’ 쪽을 다시 보라`);
+    done.push(`${S.autopsy ? "감식 소견을 보니 " : ""}놓친 곳 짚기: ‘${sp.label.replace(/(을|를) .*$/, "")}’ 쪽을 다시 보라`);
   }
   return done.length ? done.join(" · ") + "." : "여긴 바로잡을 게 없군. 잘 해 뒀어.";
 }
 const AUTOPSY_AFTER = 3;   /* 행동 3번 뒤 도착 */
-function autoAutopsy() {
-  if (S.diff === "easy" || S.autopsyDone || S.actions < AUTOPSY_AFTER) return;
+function autoAutopsy() {}
+const autopsyCause = () => { const c = C(); return (c.methods.find(m => m.id === c.answer.method) || {}).text || ""; };
+function callForensic() {
+  if (S.autopsyDone || S.turns <= 0 || S.decided || S.missions.some(m => m.role === "autopsy")) return;
+  const room = crimeRoomId();
+  S.missions.push({ pid: "yoon", room, due: S.actions + MISSION_DELAY, only: "-", role: "autopsy" });
+  S.missions.push({ pid: "byun", room, due: S.actions + MISSION_DELAY, only: "-", role: "autopsy", quiet: true });
+  PX.helperEnter(S.missions[S.missions.length - 2]); PX.helperEnter(S.missions[S.missions.length - 1]);
+  toast(`<b>과학수사대</b> — “${esc(C().rooms[room].name)} 시신, 저희가 감식하겠습니다. ${MISSION_DELAY}턴 뒤에 사인을 알려 드리죠.”`);
+  Sound.door();
+}
+function forensicReport() {
+  const c = C(), sp = bodySpot();
   S.autopsyDone = true;
-  const sp = bodySpot();
-  if (has(S.searched, sp.id)) return;   /* 이미 직접 살폈으면 조용히 넘어간다 */
-  S.searched.push(sp.id);
   if (sp.clue && !has(S.found, sp.clue)) S.found.push(sp.clue);
-  const c = C(), rn = c.rooms[crimeRoomId()].name;
-  const msg = `과학수사 경사 윤도경의 감식 — “${pname()} 형사님, ${rn} 감식 끝났습니다. ${c.clues[sp.clue].text}”`;
+  if (!has(S.searched, sp.id)) S.searched.push(sp.id);
+  S.autopsy = { cause: autopsyCause(), body: sp.clue ? c.clues[sp.clue].text : "" };
+  const msg = `과학수사대 윤도경·변주원의 감식 소견 — “사인은 ‘${S.autopsy.cause}’ 쪽으로 보입니다. 이 소견은 수사 수첩에 넘겨 뒀으니 현장 점검과 심문 때 증거로 쓰세요.”`;
   S.events.push({ bad: false, msg });
-  toast(`<b>현장 감식</b> — 윤도경 경사가 ${esc(EUL(c.clues[sp.clue].name))} 확인했다.`); Sound.clue();
+  toast(`<b>감식 결과</b> — ${esc(msg.split(" — ")[1])}`); Sound.clue();
 }
 function resolveMissions() {
   const c = C(), done = S.missions.filter(m => S.actions >= m.due);
   S.missions = S.missions.filter(m => S.actions < m.due);
   for (const m of done) {
     const x = partner(m.pid), r = c.rooms[m.room], names = [];
+    if (m.role === "autopsy") { if (!m.quiet) forensicReport(); continue; }
     if (m.role) {
       const said = m.role === "clear" ? juniorClear(m) : seniorFix(m);
       const msg = `${pfull(x)}의 보고 (${r.name}) — “${said}”`;
@@ -2135,7 +2147,7 @@ function renderTitle() {
       <div class="pairs">
         ${[
           [[pname(), PLAYER_RANK + " (나)", true], ["서하루", "순경"], "늘 같이 다니는 짝. 서하루가 내 뒤를 따라와요."],
-          [["윤도경", "과학수사 경사"], ["변주원", "과학수사 경장"], "과학수사 짝. 같이 출동해 감식해요."],
+          [["윤도경", "과학수사 경사"], ["변주원", "과학수사 경장"], "과학수사 짝. 시신만 감식해서 사인을 증거로 넘겨줘요."],
           [["한서진", "수사팀 경위"], ["모은재", "수사팀 경사"], "수사팀 짝. 같이 심문에 들어가요."],
           [["강무열", "경감"], ["공태하", "순경"], "같이 출동해요. 공태하는 물건을 치우고 겁도 줘요."],
         ].map(([a, b2, note]) => `<div class="pair"><div class="team">${[a, b2].map(([n, t, me]) => `<div class="member"${me ? ' id="me-member"' : ""}>${pixelFace(n, 64, "", !!me)}<b>${esc(n)}</b><span>${t}</span></div>`).join("")}</div><p class="hint">${note}</p></div>`).join("")}
@@ -2149,7 +2161,8 @@ function renderTitle() {
         <div><b><span class="k">04</span>수사 수첩</b><p>찾은 단서, 시간표, 숨은 증언이 모여요. 거짓으로 밝혀진 진술에는 줄이 그어져요.</p></div>
         <div class="warn"><b><span class="k">05</span>결단의 시간</b><p>턴이나 시간이 다 되면 증거가 부족해도 범인을 골라야 해요. 범인을 놓치면 그대로 게임 오버예요.</p></div>
         <div class="warn"><b><span class="k">압박</span>순경 공태하</b><p>강무열 경감과 함께 다녀요. 방에서 사건과 상관없는 물건을 치워 주고, 비협조적인 용의자에게 겁을 줘서 입을 열게 해요. 하지만 같은 사람을 너무 몰아붙이면 입을 닫고, 그 소란에 단서를 놓쳐요.</p></div>
-        <div><b><span class="k">출동</span>팀원 부르기 (직급별 역할)</b><p>횟수 제한 없어요. 직급이 낮은 서하루·변주원·공태하는 방의 헷갈리게 하는 가짜 물건을 치워요. 직급이 높은 윤도경·강무열은 대신 조사하지 않고, 부하들이 놓친 걸 바로잡아요(망가진 증거 복구, 사라진 단서 되찾기, 놓친 곳 짚기).</p></div>
+        <div><b><span class="k">출동</span>팀원 부르기 (직급별 역할)</b><p>횟수 제한 없어요. 직급이 낮은 서하루·공태하는 방의 헷갈리게 하는 가짜 물건을 치워요. 직급이 높은 강무열은 대신 조사하지 않고 부하들이 놓친 걸 바로잡아요(망가진 증거 복구, 사라진 단서 되찾기, 놓친 곳 짚기, 잠긴 문).</p></div>
+        <div><b><span class="k">감식</span>과학수사대 (윤도경·변주원)</b><p>시신만 감식해요. 사인(죽은 원인)을 밝혀 증거로 넘겨주면 심문 때 판단이 더 정확해지고, 강무열도 사인과 이어지는 곳부터 짚어 줘요.</p></div>
         <div><b><span class="k">판단</span>진실일까, 거짓일까</b><p>용의자가 대답하면 주인공이 모은 증거를 토대로 ‘사실 같다/거짓말 같다’를 판단해요. 증거를 적게 모으면 판단도 엉성해요.</p></div>
         <div><b><span class="k">심문</span>수사팀 (한서진·모은재)</b><p>심문은 주인공과 수사팀만 해요. 모은재 경사는 사실로 보이는 헷갈리는 대답을 거짓말 후보에서 치워요(증거가 많을수록 많이). 한서진 경위는 모은재가 놓친 걸 바로잡아 거짓말을 못 박아요(쉬움에선 오지 않아요). 한 번에 1턴.</p></div>
         <div class="warn"><b><span class="k">주의</span>방해 · 공범 · 가짜 물건</b><p>보통·어려움에서는 누군가 증거를 망치고 문을 잠가요. 변수 인물 중 한 명이 공범이에요. 가짜 물건도 섞여 있어요.</p></div>
@@ -2325,26 +2338,26 @@ const ENDING = (() => {
       return {
         actors: [
           { id: "cul", name: cul.name, role: cul.role, x: 5, y: 3.5, dir: "down" },
-          { id: "yoon", name: "윤도경", x: 6, y: 3.5, dir: "left" },
+          { id: "gong", name: "공태하", x: 6, y: 3.5, dir: "left" },
           { id: "me", name: me, player: true, x: 4, y: 5.5, dir: "up" },
           { id: "kang", name: "강무열", x: 2, y: 5, dir: "right" },
           { id: "seo", name: "서하루", x: 3, y: 5.6, dir: "up" },
           { id: "han", name: "한서진", x: 8, y: 5, dir: "left" },
           { id: "mo", name: "모은재", x: 9, y: 5.6, dir: "left" },
-          { id: "gong", name: "공태하", x: 1, y: 5.6, dir: "right" },
+          { id: "yoon", name: "윤도경", x: 1, y: 5.6, dir: "right" },
           { id: "byun", name: "변주원", x: 10, y: 5, dir: "left" },
         ],
         beats: [
           { t: 0, who: "", text: "경찰서로 돌아온 강력팀." },
           { t: 1.8, who: me, text: `${cul.name} 씨, 당신을 살인 혐의로 체포합니다.` },
           { t: 4.2, who: cul.name, text: "……다 끝났군요." },
-          { t: 5.8, who: "윤도경", text: "연행하겠습니다. 이쪽으로." },
+          { t: 5.8, who: "공태하", text: "연행하겠습니다. 이쪽으로." },
           { t: 8.4, who: "서하루", text: "해냈어요, 선배님! 진짜 범인을 잡았어요!" },
           { t: 11, who: "모은재", text: "와… 저도 언젠가 저렇게 추리하고 싶어요!" },
           { t: 13.6, who: "한서진", text: grade === "S" ? "흠잡을 데 없는 추리였어요. 완벽합니다." : "깔끔했어요. 다음엔 증거를 조금 더 챙겨 보죠." },
           { t: 16.2, who: "강무열", text: `수고했네, ${me} 형사. 오늘 저녁은 내가 사지!` },
         ],
-        walks: { cul: [5.8, [[5, 3.5], [5, 9.5]]], yoon: [6.1, [[6, 3.5], [6, 6.5], [5, 6.5], [5, 9.5]]] },
+        walks: { cul: [5.8, [[5, 3.5], [5, 9.5]]], gong: [6.1, [[6, 3.5], [6, 6.5], [5, 6.5], [5, 9.5]]] },
         party: 7.8,
       };
     }
@@ -3295,9 +3308,17 @@ function pressBtn(sid) {
   const lv = risk < .3 ? "조금 위험" : risk < .7 ? "위험 — 역효과 날 수 있음" : "매우 위험 — 거의 역효과";
   return `<button class="choice press with-face" data-press="${sid}"><span class="ck">압박</span><span>${pixelFace("공태하", 22)} 공태하 순경이 겁을 준다${n ? ` <small class="hint">(${n}번 압박함)</small>` : ""}</span><span class="cost">−1턴 · ${lv}</span></button>`;
 }
+function renderForensic() {
+  const busy = S.missions.some(m => m.role === "autopsy");
+  const body = `${pixelFace("윤도경", 24)}${pixelFace("변주원", 24)}과학수사대 윤도경·변주원`;
+  if (S.autopsy) return `<div class="dispatch"><b>과학수사대 감식 소견</b><p class="hint">사인: <b>${esc(S.autopsy.cause)}</b> — 심문과 현장 점검 때 증거로 쓰여요.</p></div>`;
+  return `<div class="dispatch"><b>과학수사대</b>
+    <p class="hint">시신만 감식해요. 사인(죽은 원인)을 밝혀 증거로 넘겨주면, 내 판단·수사팀 정리가 더 정확해지고 강무열도 사인과 이어지는 곳부터 짚어 줘요. 턴은 안 줄어요.</p>
+    <div class="q-actions"><button class="act ally with-face" data-forensic="1" ${busy || S.turns <= 0 || S.decided ? "disabled" : ""}>${body}<span class="cost">${busy ? "감식 중…" : "시신 감식 · 사인 알아내기"}</span></button></div></div>`;
+}
 function renderDispatch(r) {
   const on = FIELD_ON[S.diff] || [];
-  if (!on.length) return "";
+  if (!on.length) return renderForensic();
   const btn = pid => {
     const x = partner(pid), away = S.missions.find(m => m.pid === pid), clear = roleOf(pid) === "clear";
     return `<button class="act ally with-face" data-dispatch="${pid}" ${canDispatch(pid) ? "" : "disabled"}>
@@ -3307,15 +3328,15 @@ function renderDispatch(r) {
     .map(row => `<div class="q-actions">${row.map(btn).join("")}</div>`).join("");
   return `<div class="dispatch">
     <b>팀원 부르기 <span class="hint">· 횟수 제한 없음</span></b>
-    <p class="hint">직급이 낮은 팀원(서하루·변주원·공태하)은 이 방의 <b>헷갈리게 하는 가짜 물건을 치워요</b>(1턴 뒤). 직급이 높은 팀원(윤도경${on.includes("kang") ? "·강무열" : ""})은 대신 조사하지 않고 <b>부하들이 놓친 걸 바로잡아요</b>: 망가진 증거 복구, 사라진 단서 되찾기, 놓친 곳 짚기${on.includes("kang") ? ", 강무열은 잠긴 문도 열어요" : ""}(2턴 뒤).</p>
+    <p class="hint">직급이 낮은 팀원(서하루${on.includes("gong") ? "·공태하" : ""})은 이 방의 <b>헷갈리게 하는 가짜 물건을 치워요</b>(1턴 뒤). ${on.includes("kang") ? "직급이 높은 강무열은 대신 조사하지 않고 <b>부하들이 놓친 걸 바로잡아요</b>: 망가진 증거 복구, 사라진 단서 되찾기, 놓친 곳 짚기, 잠긴 문 열기(2턴 뒤)." : ""}</p>
     ${rows}
-  </div>`;
+  </div>` + renderForensic();
 }
 
 /* ---------- 대답 판단: 주인공·모은재는 모은 증거만큼 정확, 한서진은 바로 간파 ---------- */
 const READ_WHO = { me: "내 판단", psy: "모은재", prof: "한서진" };
 const SURE = ["판단 불가", "근거 약함", "근거 보통", "확실"];
-function evidenceCover() { return Math.min(1, S.found.length / Math.max(1, Object.keys(C().clues).length)); }
+function evidenceCover() { return Math.min(1, S.found.length / Math.max(1, Object.keys(C().clues).length) + (S.autopsy ? .2 : 0)); }   /* 감식 소견도 증거로 친다 */
 function readOf(q, who) {
   if (who === "prof") return q.lie
     ? { v: "lie", sure: 3, text: "“거짓말입니다. 말과 눈빛이 따로 놀아요.”" }
@@ -3460,6 +3481,7 @@ function renderPeople(out) {
     <section class="panel talk" aria-live="polite">
       <div class="person-head"><span class="portrait">${pixelFace(p.name, 96, p.role)}</span><div><span class="label">${p.role}</span><h3 style="font-size:24px">${p.name}</h3>
         <span class="hint">${show ? `성격: <b>${per.label}</b> · ` : "눈치: "}${per.tell}</span> ${heartLabel(sid)}
+        ${S.autopsy ? `<span class="duo">${pixelFace("윤도경", 20)}감식 소견(증거): 사인 ‘${esc(S.autopsy.cause)}’</span>` : ""}
         <span class="duo">함께 심문: ${pixelFace("한서진", 20)}한서진 경위 · ${pixelFace("모은재", 20)}모은재 경사</span></div></div>
       <div class="speech">${speech}</div>
       <div class="choices">${choices}</div>
@@ -3493,6 +3515,7 @@ function renderNotes() {
       }).join("")
     : `<p class="empty">진술을 들으면 시간표가 채워진다.</p>`;
   return `<div class="notes">
+    ${S.autopsy ? `<section class="panel"><h3>과학수사대 감식 소견</h3><p><b>사인:</b> ${esc(S.autopsy.cause)}</p>${S.autopsy.body ? `<p class="hint">${esc(S.autopsy.body)}</p>` : ""}</section>` : ""}
     <section class="panel"><h3>시간표</h3><div class="timeline">${tl}</div></section>
     ${S.secrets.length ? `<section class="panel"><h3>숨은 증언</h3><div class="event-log">${S.secrets.map(x => `<p class="good"><b>${esc(x.name)}</b> ${esc(x.text)}</p>`).join("")}</div></section>` : ""}
     ${S.events.length ? `<section class="panel"><h3>방해와 도움</h3><div class="event-log">${S.events.map(e => `<p class="${e.bad ? "" : "good"}">${esc(e.msg)}</p>`).join("")}</div></section>` : ""}
@@ -3513,7 +3536,7 @@ function renderAccuse() {
     <p class="hint">지목 기회: <b>${S.chances}번</b>${S.chances > 1 ? " · 틀려도 한 번 더 고를 수 있다(−10초)" : " · 틀리면 게임 오버"}</p>
     <fieldset><legend>범인은 누구인가</legend>${radio("culprit", suspects, pk.culprit)}</fieldset>
     <fieldset><legend>동기</legend>${radio("motive", c.motives, pk.motive)}</fieldset>
-    <fieldset><legend>수법</legend>${radio("method", c.methods, pk.method)}</fieldset>
+    <fieldset><legend>수법</legend>${S.autopsy ? `<p class="hint">과학수사대 소견: 사인은 ‘${esc(S.autopsy.cause)}’ 쪽으로 보인다.</p>` : ""}${radio("method", c.methods, pk.method)}</fieldset>
     <fieldset><legend>결정적 증거 (최대 3개)</legend>${ev}</fieldset>
     <button class="btn" type="submit" ${ready ? "" : "disabled"}>이 사람이 범인이다</button>
   </form>`;
@@ -3720,6 +3743,7 @@ app.addEventListener("click", e => {
   else if (d.tone) { openHeart(S.suspect, d.tone); }
   else if (d.read) { doRead(d.read, d.q); }
   else if (d.moclear) { moClear(d.moclear); }
+  else if (d.forensic) { callForensic(); }
   else if (d.hanfix) { hanFix(d.hanfix); }
   else if (d.counter) { counterattack(d.counter); }
   else if (d.press) { pressure(d.press); }
