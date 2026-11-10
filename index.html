@@ -1003,7 +1003,7 @@ const GENDER = {
   /* 달빛극장 */ 문태준: "m", 오세나: "f", 강민혁: "m", 장경수: "m",
   /* 야간열차 */ 이현우: "m", 김도겸: "m", 류미선: "f", 정유나: "f",
   /* 박물관 */ 민서영: "f", 표지훈: "m", 노승철: "m", 홍예진: "f",
-  /* 수사팀 */ 강무열: "m", 윤도경: "m", 변주원: "m", 공태하: "m", 서하루: "f", 한서진: "f", 모은재: "f", 차도율: "m",
+  /* 수사팀 */ 강무열: "m", 윤도경: "m", 변주원: "m", 공태하: "m", 서하루: "f", 도현수: "m", 나예림: "f", 권하준: "m", 오지민: "f", 한서진: "f", 모은재: "f", 차도율: "m",
   /* 무작위 사건 이름 */ 서도윤: "m", 한예린: "f", 박준서: "m", 김하율: "f", 이서진: "f", 정민재: "m", 최유나: "f", 오태경: "m",
   윤소이: "f", 강지후: "m", 문채원: "f", 배성훈: "m", 임가온: "f", 장우빈: "m", 송다인: "f", 홍재민: "m", 류시아: "f", 권태오: "m",
   신보람: "f", 차은호: "m", 백지안: "f", 노현우: "m", 유해원: "f", 표나래: "f",
@@ -1571,7 +1571,7 @@ const turnsFor = c => {
 };
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
-  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
+  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], patrol: [], patrolNotes: {}, reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
   chances: 1, penalties: 0, decided: false, advice: {}, cleared: [], persona: {}, heart: {}, secrets: [], lastLine: null, dlg: null, wrongAccuse: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
   mode: "pixel", pos: null, dir: null, autopsyDone: false, autopsy: null, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
@@ -1880,6 +1880,45 @@ function openCase(id) {
   const diff = idx === 0 ? "easy" : idx === 1 ? "normal" : "hard";
   S = Object.assign(fresh(), { screen: "brief", caseId: id, diff, room: Object.keys(c.rooms)[0], suspect: Object.keys(c.suspects)[0] });
 }
+/* ===================== 강력팀 순찰조: 스스로 방을 돌아다니며 용의자를 지켜본다 =====================
+   - 같은 방에 순찰 경찰이 있으면 그 용의자는 방해(입 막기)를 당하지 않는다
+   - 용의자를 처음 지켜보면 '순찰 메모'를 남긴다: 어떤 질문에 긴장하는지 (대부분 맞지만 가끔 헛짚는다) */
+const PATROL = [
+  { id: "do", name: "도현수", title: "경장" }, { id: "na", name: "나예림", title: "순경" },
+  { id: "kw", name: "권하준", title: "순경" }, { id: "oh", name: "오지민", title: "경장" },
+];
+const PATROL_N = { easy: 2, normal: 3, hard: 4 };
+const patrolOf = id => PATROL.find(x => x.id === id);
+function suspectRoom(sid) { return Object.keys(C().rooms).find(r => roomPeople(r).some(p => p.id === sid)); }
+const guarded = sid => { const r = suspectRoom(sid); return !!r && (S.patrol || []).some(o => o.room === r); };
+function initPatrol() {
+  const rooms = RND.shuffle(Object.keys(C().rooms).filter(r => !C().rooms[r].crime));
+  S.patrol = PATROL.slice(0, PATROL_N[S.diff] || 2).map((x, i) => ({ id: x.id, room: rooms[i % rooms.length] }));
+  S.patrolNotes = {};
+  patrolWatch(true);
+}
+function patrolWatch(quiet) {
+  const c = C();
+  for (const o of S.patrol || []) for (const pp of roomPeople(o.room)) {
+    if (pp.kind !== "s" || S.patrolNotes[pp.id]) continue;
+    const p = c.suspects[pp.id], lies = p.qs.filter(q => q.lie), truths = p.qs.filter(q => !q.lie);
+    const q = lies.length && (Math.random() < .75 || !truths.length) ? RND.pick(lies) : RND.pick(truths.length ? truths : p.qs);
+    const who = patrolOf(o.id);
+    S.patrolNotes[pp.id] = { by: `${who.title} ${who.name}`, qid: q.id, text: `‘${q.q}’ 얘기만 나오면 눈을 피하고 말이 빨라지던데요.` };
+    if (!quiet) toast(`<b>순찰 메모</b> — ${esc(who.name)}: “${esc(p.name)} 씨, ${esc(S.patrolNotes[pp.id].text)}”`);
+  }
+}
+function patrolMove() {
+  if (!S.patrol) return;
+  for (const o of S.patrol) {
+    if (Math.random() < .45) continue;
+    const next = doorsOf(o.room).map(d => d.to).filter(r => C().rooms[r]);
+    if (!next.length) continue;
+    const unseen = next.filter(r => roomPeople(r).some(pp => pp.kind === "s" && !S.patrolNotes[pp.id]));
+    o.room = RND.pick(unseen.length && Math.random() < .7 ? unseen : next);
+  }
+  patrolWatch(false);
+}
 function beginCase() {
   const d = DIFF[S.diff];
   S.turns = S.maxTurns = d.turns;
@@ -1889,6 +1928,7 @@ function beginCase() {
   S.fakes = makeFakes(); S.fakeSeed = Math.random();
   const ids = Object.keys(PERSONAS);
   S.persona = {}; for (const sid of Object.keys(C().suspects)) S.persona[sid] = RND.pick(ids);   /* 성격은 판마다 바뀐다 */
+  initPatrol();
   S.screen = "game";
 }
 function nextCaseId() {
@@ -1916,6 +1956,7 @@ function spend(n = 1) {
   S.sinceEvent += 1; S.sinceHelp += 1; S.actions += n;
   resolveMissions();
   autoAutopsy();
+  patrolMove();
   maybeSabotage();
   maybeHelp();
 }
@@ -2122,7 +2163,7 @@ function sabotage(late) {
   const spots = Object.entries(c.rooms).flatMap(([rid, r]) => r.spots.map(s => ({ ...s, rid })));
   const tamperable = spots.filter(s => s.clue && !has(S.searched, s.id) && !has(S.tampered, s.id));
   const lockable = Object.keys(c.rooms).filter(rid => !S.locks[rid] && c.rooms[rid].spots.some(s => !has(S.searched, s.id)));
-  const silenceable = Object.entries(c.suspects).filter(([sid, p]) => !S.silence[sid] &&
+  const silenceable = Object.entries(c.suspects).filter(([sid, p]) => !S.silence[sid] && !guarded(sid) &&
     p.qs.some(q => qOpen(q) && (!has(S.asked, q.id) || (q.lie && !has(S.broken, q.id)))));
   const accFree = !S.accCaught && accomplice();   /* 공범이 잡히면 훼손·잠금이 멈춘다 */
   if (tamperable.length && accFree) opts.push("tamper");
@@ -2354,6 +2395,8 @@ function renderTitle() {
           [["윤도경", "과학수사 경사"], ["변주원", "과학수사 경장"], "과학수사 짝. 시신만 감식해서 사인을 증거로 넘겨줘요."],
           [["한서진", "수사팀 경위"], ["모은재", "수사팀 경사"], "수사팀 짝. 같이 심문에 들어가요."],
           [["강무열", "경감"], ["공태하", "순경"], "같이 출동해요. 공태하는 물건을 치우고 겁도 줘요."],
+          [["도현수", "경장"], ["나예림", "순경"], "강력팀 순찰조. 혼자 방을 돌며 용의자를 지켜봐요."],
+          [["권하준", "순경"], ["오지민", "경장"], "강력팀 순찰조. 보통에선 3명, 어려움에선 4명이 돌아요."],
         ].map(([a, b2, note]) => `<div class="pair"><div class="team">${[a, b2].map(([n, t, me]) => `<div class="member"${me ? ' id="me-member"' : ""}>${pixelFace(n, 64, "", !!me)}<b>${esc(n)}</b><span>${t}</span></div>`).join("")}</div><p class="hint">${note}</p></div>`).join("")}
       </div>
       <h2>조작 방법</h2>
@@ -2924,6 +2967,10 @@ const LOOK_OVERRIDE = {
   서하루: { cloth: "#22314f", pants: "#1b2335", top: "suit", cap: true },
   변주원: { cloth: "#dfe3e6", pants: "#c3c8cc", top: "shirt", glasses: "round" },
   공태하: { cloth: "#1f2c44", pants: "#171f30", top: "suit", cap: true, style: "crew" },
+  도현수: { cloth: "#26344d", pants: "#1a2233", top: "suit", cap: true },
+  나예림: { cloth: "#26344d", pants: "#1a2233", top: "suit", cap: true, style: "bun" },
+  권하준: { cloth: "#26344d", pants: "#1a2233", top: "suit", cap: true, style: "crew" },
+  오지민: { cloth: "#26344d", pants: "#1a2233", top: "suit", cap: true, style: "bob" },
   한서진: { cloth: "#2b3540", top: "suit" },
   모은재: { cloth: "#9a7f6a", top: "cardigan" },
 };
@@ -3216,6 +3263,51 @@ const PX = (() => {
       if (Math.hypot(me.fx - buddy.fx, me.fy - buddy.fy) > .2) buddy.dir = dirOf(me.fx - buddy.fx, me.fy - buddy.fy);
     }
   }
+  /* ---------- 순찰 경찰: 이 방에 있는 순찰조를 그린다 (들어오고, 서성이고, 나간다) ---------- */
+  let cops = [], copRoom = null;
+  function freeTile(L) {
+    const opts = [];
+    for (let y = 2; y <= EXH - 3; y++) for (let x = 1; x <= EXW - 2; x++) if (walkable(L, x, y) && !doorAt(L, x, y) && !(x === S.pos.x && y === S.pos.y)) opts.push([x, y]);
+    return opts.length ? opts[Math.floor(Math.random() * opts.length)] : [5, 5];
+  }
+  function syncCops() {
+    const L = layout(S.room), here = (S.patrol || []).filter(o => o.room === S.room).map(o => o.id);
+    if (copRoom !== S.room) {   /* 방을 옮기면 이미 있던 순찰조는 제자리에 */
+      copRoom = S.room;
+      cops = here.map(id => { const [x, y] = freeTile(L); return { id, fx: x, fy: y, dir: "down", seg: null, path: [], timer: 1 + Math.random() * 2, frameT: 0, leaving: false }; });
+      return;
+    }
+    for (const id of here) if (!cops.some(c => c.id === id)) {   /* 새로 들어온다 */
+      const d = L.doors[Math.floor(Math.random() * L.doors.length)] || { x: 5, y: EXH - 1 };
+      const goal = freeTile(L);
+      cops.push({ id, fx: d.x, fy: d.y, dir: "up", seg: null, path: bfs(L, { x: d.x, y: d.y }, (x, y) => x === goal[0] && y === goal[1], (x, y) => !walkable(L, x, y)) || [], timer: 2, frameT: 0, leaving: false });
+      Sound.door();
+    }
+    for (const c of cops) if (!here.includes(c.id) && !c.leaving) {   /* 다른 방으로 나간다 */
+      c.leaving = true; const d = L.doors[0];
+      c.path = d ? bfs(L, { x: Math.round(c.fx), y: Math.round(c.fy) }, (x, y) => x === d.x && y === d.y, (x, y) => !walkable(L, x, y)) || [] : [];
+      c.seg = null;
+    }
+  }
+  function updateCop(c, dt) {
+    const L = layout(S.room);
+    if (!c.seg && c.path && c.path.length) c.seg = c.path.shift();
+    if (c.seg) {
+      const dx = c.seg[0] - c.fx, dy = c.seg[1] - c.fy, d = Math.hypot(dx, dy), st = 2.6 * dt;
+      c.dir = dirOf(dx, dy); c.frameT += dt * 8;
+      if (d <= st) { c.fx = c.seg[0]; c.fy = c.seg[1]; c.seg = null; } else { c.fx += dx / d * st; c.fy += dy / d * st; }
+      return;
+    }
+    c.frameT = 0;
+    if (c.leaving) { c.gone = true; return; }
+    c.timer -= dt;
+    if (Math.hypot(me.fx - c.fx, me.fy - c.fy) < 2.5) c.dir = dirOf(me.fx - c.fx, me.fy - c.fy);   /* 가까이 오면 쳐다본다 */
+    if (c.timer > 0) return;
+    c.timer = 2 + Math.random() * 3;
+    const x = Math.round(c.fx), y = Math.round(c.fy);
+    const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => [x + a, y + b]).filter(([a, b]) => walkable(L, a, b) && !doorAt(L, a, b) && b >= 2 && !(a === S.pos.x && b === S.pos.y));
+    if (nb.length) c.path = [nb[Math.floor(Math.random() * nb.length)]];
+  }
   function helperEnter(m) {
     const L = layout(m.room), d = L.doors[0]; if (!d) return;
     const x = partner(m.pid), inX = d.side === "b" ? d.x : 1, inY = d.side === "b" ? EXH - 2 : d.y;
@@ -3353,6 +3445,7 @@ const PX = (() => {
       const rummage = h.cur && h.timer > 0 ? (Math.floor(t / 180) % 2) : 0;
       ents.push({ y: h.fy, draw: () => drawSprite(charSprites(h.p.name, h.p.role), h.dir, h.frameT || rummage * 1, h.fx, h.fy, rummage) });
     }
+    for (const c of cops) { const x = patrolOf(c.id); ents.push({ y: c.fy, draw: () => drawSprite(charSprites(x.name, x.title), c.dir, c.frameT, c.fx, c.fy) }); }
     if (buddy.on) ents.push({ y: buddy.fy - .01, draw: () => drawSprite(charSprites("서하루", "순경"), buddy.dir, buddy.frameT, buddy.fx, buddy.fy) });
     ents.push({ y: me.fy, draw: () => drawSprite(charSprites(pname(), "", true), me.dir, me.frameT, me.fx, me.fy) });
     ents.sort((a, b) => a.y - b.y).forEach(e => e.draw());
@@ -3378,6 +3471,7 @@ const PX = (() => {
     for (const n of npcs) list.push([n.p.id, n.fx + .5, n.fy - .2, `${n.p.name}${S.silence[n.p.id] ? " · 침묵" : ""}`, "nm" + (S.silence[n.p.id] ? " silent" : "")]);
     for (const h of Object.values(helpers)) if (h.room === S.room) list.push(["h" + h.pid, h.fx + .5, h.fy - .2, `${h.p.name} · ${h.state === "out" ? "보고 완료!" : roleOf(h.pid) === "clear" ? "치우는 중…" : "바로잡는 중…"}`, "nm ally" + (h.state === "out" ? " done" : "")]);
     for (const it of L.items) if (has(S.marked || [], it.spot) && !has(S.searched, it.spot)) list.push(["mk" + it.spot, it.x + .5, it.y - .75, "놓친 곳!", "nm silent"]);
+    for (const c of cops) list.push(["cop" + c.id, c.fx + .5, c.fy - .2, `${patrolOf(c.id).name} · ${c.leaving ? "이동 중" : "순찰"}`, "nm ally"]);
     if (buddy.on) list.push(["buddy", buddy.fx + .5, buddy.fy - .2, "서하루", "nm ally"]);
     for (const d of L.doors) list.push(["d" + d.x + d.y, d.side === "b" ? d.x + .5 : .9, d.side === "b" ? EXH - .35 : d.y + .55, d.stairs ? `계단 ${d.stairs}` : C().rooms[d.to].name, "door" + (S.locks[d.to] ? " locked" : "") + (d.side === "l" ? " left" : "")]);
     const seen = new Set();
@@ -3419,6 +3513,7 @@ const PX = (() => {
     for (const n of npcs) updateNpc(n, dt);
     for (const h of Object.values(helpers)) if (h.room === S.room) updateHelper(h, dt);
     updateBuddy(dt);
+    syncCops(); for (const c of cops) updateCop(c, dt); cops = cops.filter(c => !c.gone);
     draw(t);
     placeLabels();
     if (t - hoverT > 150) {
@@ -3475,6 +3570,7 @@ const PX = (() => {
     helperEnter,
     prune() { for (const h of Object.values(helpers)) if (!missionAlive(h) && !(S.room === h.room && S.tab === "rooms" && cv && document.body.contains(cv))) dropHelper(h); },
     go, act,
+    cops() { return cops.map(c => ({ id: c.id, x: +c.fx.toFixed(1), y: +c.fy.toFixed(1), leaving: c.leaving })); },
     buddy() { return { on: buddy.on, x: +buddy.fx.toFixed(2), y: +buddy.fy.toFixed(2), q: buddy.q.length }; },
     debug() { return { me: { x: S.pos && S.pos.x, y: S.pos && S.pos.y, fx: +me.fx.toFixed(2), fy: +me.fy.toFixed(2), dir: me.dir, walking: !!(me.seg || (me.path && me.path.length)) },
       npcs: npcs.map(n => ({ name: n.p.name, tile: [n.p.x, n.p.y], walking: !!n.seg })),
@@ -3526,6 +3622,14 @@ function pressBtn(sid) {
   const lv = risk < .3 ? "조금 위험" : risk < .7 ? "위험 — 역효과 날 수 있음" : "매우 위험 — 거의 역효과";
   return `<button class="choice press with-face" data-press="${sid}"><span class="ck">압박</span><span>${pixelFace("공태하", 22)} 공태하 순경이 겁을 준다${n ? ` <small class="hint">(${n}번 압박함)</small>` : ""}</span><span class="cost">−1턴 · ${lv}</span></button>`;
 }
+function renderPatrol() {
+  if (!(S.patrol || []).length) return "";
+  const c = C();
+  return `<div class="dispatch"><b>강력팀 순찰조 <span class="hint">· 알아서 돌아다녀요</span></b>
+    <p class="hint">스스로 방을 돌며 용의자를 지켜봐요. 순찰 경찰이 있는 방의 용의자는 방해로 입을 막을 수 없고, 처음 본 용의자는 ‘순찰 메모’(어떤 질문에 긴장하는지)를 남겨요. 메모는 대부분 맞지만 가끔 헛짚어요.</p>
+    <div class="q-actions">${S.patrol.map(o => { const x = patrolOf(o.id); return `<span class="act ally with-face" style="cursor:default">${pixelFace(x.name, 22)}${x.title} ${x.name}<span class="cost">${esc(c.rooms[o.room].name)}${o.room === S.room ? " (여기)" : ""}</span></span>`; }).join("")}</div>
+    <p class="hint">메모: ${Object.keys(S.patrolNotes || {}).length} / ${Object.keys(c.suspects).length}명</p></div>`;
+}
 function renderForensic() {
   const busy = S.missions.some(m => m.role === "autopsy");
   const body = `${pixelFace("윤도경", 24)}${pixelFace("변주원", 24)}과학수사대 윤도경·변주원`;
@@ -3536,7 +3640,7 @@ function renderForensic() {
 }
 function renderDispatch(r) {
   const on = FIELD_ON[S.diff] || [];
-  if (!on.length) return renderForensic();
+  if (!on.length) return renderForensic() + renderPatrol();
   const btn = pid => {
     const x = partner(pid), away = S.missions.find(m => m.pid === pid), clear = roleOf(pid) === "clear";
     return `<button class="act ally with-face" data-dispatch="${pid}" ${canDispatch(pid) ? "" : "disabled"}>
@@ -3548,7 +3652,7 @@ function renderDispatch(r) {
     <b>팀원 부르기 <span class="hint">· 횟수 제한 없음</span></b>
     <p class="hint">직급이 낮은 팀원(서하루${on.includes("gong") ? "·공태하" : ""})은 이 방의 <b>헷갈리게 하는 가짜 물건을 치워요</b>(1턴 뒤). ${on.includes("kang") ? "직급이 높은 강무열은 대신 조사하지 않고 <b>부하들이 놓친 걸 바로잡아요</b>: 망가진 증거 복구, 사라진 단서 되찾기, 놓친 곳 짚기, 잠긴 문 열기(2턴 뒤)." : ""}</p>
     ${rows}
-  </div>` + renderForensic();
+  </div>` + renderForensic() + renderPatrol();
 }
 
 /* ---------- 대답 판단: 주인공·모은재는 모은 증거만큼 정확, 한서진은 바로 간파 ---------- */
@@ -3577,7 +3681,8 @@ function readTags(q) {
   const r = (S.reads || {})[q.id] || {};
   const one = (who, x) => `<span class="read ${x.v} s${x.sure}"><b>${READ_WHO[who]}</b><span>${esc(x.text)}</span><i>${SURE[x.sure]}</i></span>`;
   if (profCleared(q.id)) return `<span class="reads"><span class="read true s3"><b>정리됨</b><span>사실로 보여 거짓말 후보에서 치움</span><i>수사팀</i></span></span>`;
-  return `<span class="reads">${one("me", readOf(q, "me"))}${r.prof ? one("prof", r.prof) : ""}</span>`;
+  const pn = Object.values(S.patrolNotes || {}).find(x => x.qid === q.id);
+  return `<span class="reads">${one("me", readOf(q, "me"))}${r.prof ? one("prof", r.prof) : ""}${pn ? `<span class="read lie s1"><b>순찰 메모</b><span>${esc(pn.by)}: 이 얘기에 긴장하더라</span><i>대부분 맞음</i></span>` : ""}</span>`;
 }
 function profCleared(qid) { return has(S.clearedQ || [], qid); }
 /* 모은재(부하): 이 사람의 대답 중 사실로 보이는 것(헷갈리게 하는 것)을 거짓말 후보에서 치운다. 증거가 많을수록 많이 치운다 */
@@ -3703,6 +3808,8 @@ function renderPeople(out) {
       <div class="person-head"><span class="portrait">${pixelFace(p.name, 96, p.role)}</span><div><span class="label">${p.role}</span><h3 style="font-size:24px">${p.name}</h3>
         <span class="hint">${show ? `성격: <b>${per.label}</b> · ` : "눈치: "}${per.tell}</span> ${heartLabel(sid)}
         ${S.autopsy ? `<span class="duo">${pixelFace("윤도경", 20)}감식 소견(증거): 사인 ‘${esc(S.autopsy.cause)}’</span>` : ""}
+        ${(S.patrolNotes || {})[sid] ? `<span class="duo">${pixelFace(S.patrolNotes[sid].by.split(" ")[1], 20)}순찰 메모 · ${esc(S.patrolNotes[sid].by)}: “${esc(S.patrolNotes[sid].text)}”</span>` : ""}
+        ${guarded(sid) ? `<span class="duo">🛡 순찰 경찰이 지키는 중 — 방해로 입을 막을 수 없어요</span>` : ""}
         <span class="duo">함께 심문: ${pixelFace("한서진", 20)}한서진 경위 · ${pixelFace("모은재", 20)}모은재 경사</span></div></div>
       <div class="speech">${speech}</div>
       <div class="choices">${choices}</div>
