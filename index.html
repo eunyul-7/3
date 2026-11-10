@@ -1391,7 +1391,7 @@ let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
 /* 수사팀(경찰): 어려워지면 돕고, 직접 현장에 보낼 수 있다 */
 const PARTNERS = [
-  { id: "kang", name: "강무열", title: "베테랑 경감", rank: "경감", skill: "잠긴 문 열기·수사 시간 벌기",
+  { id: "kang", name: "강무열", title: "강력계 경감", rank: "경감", skill: "잠긴 문 열기·수사 시간 벌기",
     report: (room, list) => list ? `“자물쇠쯤이야. ${room}에서 이런 걸 건졌네. ${list}.”` : `“${room}엔 더 볼 게 없더군.”` },
   { id: "yoon", name: "윤도경", title: "과학수사 경사", rank: "경사", skill: "현장 감식",
     report: (room, list) => list ? `“${room} 감식 끝났습니다. 나온 건 ${list}입니다.”` : `“${room}에서는 새로 나온 게 없습니다.”` },
@@ -1399,7 +1399,7 @@ const PARTNERS = [
     report: (room, list) => list ? `“${room} 감식 마쳤습니다. 채취한 건 ${list}입니다.”` : `“${room}에선 더 나올 게 없습니다.”` },
   { id: "gong", name: "공태하", title: "강력계 순경", rank: "순경", skill: "쓸데없는 물건 치우기·압박", noDispatch: true,
     report: (room) => `“경감님 따라 ${room} 한 바퀴 돌았습니다. 사건이랑 상관없는 건 싹 치워 뒀습니다.”` },
-  { id: "seo", name: "서하루", title: "순경", rank: "순경", skill: "현장 수색",
+  { id: "seo", name: "서하루", title: "형사 순경", rank: "순경", skill: "현장 수색",
     report: (room, list) => list ? `“선배님! ${room} 싹 다 뒤져 봤어요. ${list}!”` : `“${room}은 이미 다 조사돼 있던데요?”` },
 ];
 const partner = id => PARTNERS.find(x => x.id === id);
@@ -2056,7 +2056,7 @@ function render() {
   app.innerHTML = `
     <header class="board">
       <div class="board-top">
-        <div><span class="label">강력계 ${PLAYER_RANK} ${esc(pname())}</span><h2>${c.title}</h2></div>
+        <div><span class="label">형사 ${PLAYER_RANK} ${esc(pname())}</span><h2>${c.title}</h2></div>
         <div class="clock" aria-label="남은 행동 ${S.turns}회, 남은 시간 ${mmss(S.timeLeft)}">
           <div class="pips">${pips}</div>
           <span class="mono">결단까지 <b>${S.turns}</b>턴</span>
