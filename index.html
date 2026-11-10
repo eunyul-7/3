@@ -231,6 +231,43 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .timer b { color: var(--lamp); font-weight: 500; }
 .urgent .timer b { color: var(--blood); }
 .diff-chip { font-family: var(--f-mono); font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 1px 7px; }
+/* 걸어 다니는 지도 */
+.room-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.map { position: relative; width: 100%; aspect-ratio: 11 / 8; border-radius: 4px; overflow: hidden; outline: none; touch-action: manipulation; cursor: pointer;
+  background-color: #3b2f26;
+  background-image: linear-gradient(90deg, rgba(0,0,0,.22) 1px, transparent 1px), linear-gradient(rgba(0,0,0,.14) 1px, transparent 1px);
+  background-size: calc(100% / 11) calc(100% / 8); }
+.map:focus-visible { box-shadow: 0 0 0 2px var(--lamp); }
+.wall { position: absolute; background: #2b3138; box-shadow: inset 0 -3px 0 rgba(0,0,0,.35); }
+.floor-rug { position: absolute; background: rgba(110,48,40,.45); border: 2px solid rgba(216,180,106,.35); border-radius: 3px; }
+.obj, .npc, .door, .deco, .me { position: absolute; padding: 0; border: 0; background: none; }
+.obj { cursor: pointer; z-index: 2; }
+.obj svg, .deco svg { width: 100%; height: 100%; display: block; }
+.obj:hover svg, .obj:focus-visible svg { filter: brightness(1.25); }
+.obj .mark { position: absolute; right: 0; top: 0; width: 34%; height: 34%; min-width: 12px; min-height: 12px; border-radius: 50%; display: grid; place-items: center;
+  font: 600 clamp(8px, 1.6vw, 11px)/1 var(--f-mono); background: var(--lamp); color: #1a1408; }
+.obj.done .mark { background: var(--ok); }
+.obj.tam .mark { background: var(--blood); color: #fff; }
+.obj.done svg { opacity: .7; }
+.npc { z-index: 3; display: grid; place-items: center; cursor: pointer; }
+.npc .face, .me .face { width: 82%; height: 82%; }
+.npc .face { border: 2px solid var(--ink); }
+.npc.silent .face { border-color: var(--blood); filter: grayscale(.6); }
+.npc .nm { position: absolute; top: 92%; left: 50%; transform: translateX(-50%); font-size: clamp(8px, 1.6vw, 11px); white-space: nowrap; color: var(--ink);
+  background: rgba(10,14,18,.75); padding: 0 4px; border-radius: 3px; pointer-events: none; }
+.door { z-index: 2; background: #6b5038; display: grid; place-items: center; cursor: pointer; overflow: visible; }
+.door span { font-size: clamp(8px, 1.5vw, 10.5px); color: #f1e6d2; white-space: nowrap; background: rgba(10,14,18,.7); padding: 0 3px; border-radius: 2px; }
+.door.b span { transform: translateY(-2%); }
+.door.l span { position: absolute; left: 4px; }
+.door.locked { background: var(--blood); }
+.door:hover, .door:focus-visible { filter: brightness(1.3); }
+.me { z-index: 4; display: grid; place-items: center; transition: left .11s linear, top .11s linear; pointer-events: none; }
+.me .face { border: 2px solid var(--lamp); box-shadow: 0 0 0 3px rgba(226,178,92,.25); }
+.map-lock { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(120,30,25,.35); color: #fff; font-family: var(--f-display); font-size: 22px; pointer-events: none; }
+@media (max-width: 720px) { .split.explore .plan { order: 2; } }
+.explore-bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.explore-bar #near { flex: 1 1 200px; min-width: 0; }
+@media (prefers-reduced-motion: reduce) { .me { transition: none; } }
 /* 얼굴 그림 */
 .face { display: inline-block; flex: none; border-radius: 50%; overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); vertical-align: middle; }
 .face svg { width: 100%; height: 100%; display: block; }
@@ -876,7 +913,7 @@ const Face = (() => {
   return (name, size = 40, cls = "", age = 0) => {
     const key = name + "|" + age;
     if (!cache.has(key)) cache.set(key, draw(name, age, LOOKS[name] || {}));
-    return `<span class="face ${cls}" style="width:${size}px;height:${size}px">${cache.get(key)}</span>`;
+    return `<span class="face ${cls}"${size ? ` style="width:${size}px;height:${size}px"` : ""}>${cache.get(key)}</span>`;
   };
 })();
 /* 크게 보이는 머그샷(키 눈금 배경) */
@@ -1147,7 +1184,7 @@ const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, fou
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
   locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], rebutNotes: {}, lawyerUsed: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
-  autopsyDone: false, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
+  listMode: false, pos: null, dir: null, autopsyDone: false, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
@@ -1663,7 +1700,7 @@ function renderTitle() {
       </div>
       <h2>조작 방법</h2>
       <div class="howto">
-        <div><b><span class="k">01</span>현장 조사</b><p>평면도에서 장소를 누르고 ‘조사한다’를 누른다. 장소 이동은 공짜, 조사 한 번에 1턴.</p></div>
+        <div><b><span class="k">01</span>현장 조사</b><p>탐정을 직접 움직여요. 컴퓨터는 방향키·WASD, 휴대폰은 바닥을 터치. 물음표(?)가 붙은 물건을 누르면 걸어가서 조사해요(1턴). 사람을 누르면 말을 걸고, 문으로 나가면 옆 방이에요. 이동은 공짜.</p></div>
         <div><b><span class="k">02</span>심문</b><p>용의자를 고르고 ‘묻는다’를 누른다. 단서를 찾을수록 물어볼 것이 늘어난다.</p></div>
         <div><b><span class="k">03</span>모순 지적</b><p>들은 진술 아래 ‘모순 지적’을 누르고, 그 말과 맞지 않는 단서를 골라 들이민다. 맞으면 진술이 무너지고, 틀리면 1턴을 잃는다.</p></div>
         <div><b><span class="k">04</span>수사 수첩</b><p>찾은 단서와 진술로 만든 시간표가 모인다. 거짓으로 밝혀진 진술에는 줄이 그어진다.</p></div>
@@ -1744,6 +1781,12 @@ function roomBtn(id, wide) {
     <span class="rname">${r.name}</span><span class="rstat">${lk ? `잠김 ${lk}턴` : `조사 ${done}/${r.spots.length}`}</span></button>`;
 }
 function renderRooms(out) {
+  if (!S.listMode) {
+    const c = C();
+    const plan = c.floors.map(f => `<div class="floor"><span class="label">${f.label}</span>
+      <div class="floor-grid">${f.rooms.map(id => roomBtn(id, (f.wide || []).includes(id))).join("")}</div></div>`).join("");
+    return renderExplore(out, plan);
+  }
   const c = C(), r = c.rooms[S.room], lk = S.locks[S.room];
   const floorOf = c.floors.find(f => f.rooms.includes(S.room));
   const spots = r.spots.map(sp => {
@@ -1761,10 +1804,264 @@ function renderRooms(out) {
   return `<div class="split">
     <div class="plan">${plan}</div>
     <section class="panel" aria-live="polite">
-      <div><span class="label">${floorOf ? floorOf.label : ""}</span><h3 style="font-size:24px">${r.name}</h3></div>
+      <div class="room-head"><div><span class="label">${floorOf ? floorOf.label : ""}</span><h3 style="font-size:24px">${r.name}</h3></div>
+        <button class="act" data-act="listmode">걸어 다니며 조사하기</button></div>
       <p class="desc">${r.desc}</p>
       ${lk ? `<p class="locked-room">문이 안쪽에서 잠겨 있다. ${lk}턴 뒤에 열쇠를 찾을 수 있다.</p>` : ""}
       <div class="spots">${spots}</div>
+      ${!out ? renderDispatch(r) : ""}
+    </section>
+  </div>`;
+}
+
+/* =====================================================================
+   걸어 다니며 조사하기: 방을 위에서 내려다본 지도
+   - 방의 조사 지점(책상, 서랍, 시신 …)이 가구가 되어 자동으로 배치된다
+   - 방향키/WASD 또는 화면 터치로 움직이고, 옆에서 스페이스·‘조사하기’
+   ===================================================================== */
+const EXW = 11, EXH = 8;
+const FURN_RULES = [
+  [/시신/, "body"], [/진열장|매병/, "display"], [/창문|창밖|걸쇠|사이 문|문을 본다/, "window"],
+  [/카펫/, "rug"], [/벽난로|장작/, "fireplace"], [/찻잔|주전자|쟁반|시음 잔|남은 식기|테이블/, "teatable"],
+  [/체스|보드게임/, "chess"], [/소파|쿠션/, "sofa"], [/침대|매트리스/, "bed"],
+  [/쓰레기통|휴지통|재떨이/, "trash"], [/CCTV|카메라|콘솔|모니터|패널|카드키|도어락|엘리베이터/, "terminal"],
+  [/금고|보관함/, "safe"], [/휴대폰|분장대|화장대|자리를 본다/, "vanity"], [/레일|로프/, "rail"], [/상자/, "box"],
+  [/TV|편성표/, "tv"], [/사진|작품/, "photo"], [/카트/, "cart"], [/식물|화분/, "plant"],
+  [/묻는다/, "npc"], [/벽에 귀/, "wallear"],
+  [/서랍|찬장|옷장|선반/, "drawer"], [/가방|배낭|짐|소지품|스케치북|대본|매트리스/, "bag"],
+  [/책상|수첩|출력물|프린터|작업대|도록/, "desk"],
+  [/기록|일지|장부|영수증|계산서|방명록|주문|점수표|노트|메모|출입부|대여/, "board"],
+];
+const WALL_T = new Set(["window", "fireplace", "terminal", "board", "photo", "tv", "rail", "safe", "vanity", "drawer", "display", "wallear"]);
+const CENTER_T = new Set(["body", "chess", "sofa", "teatable", "bed", "desk", "rug"]);
+const WALL_SLOTS = [[2, 1], [5, 1], [8, 1], [3, 1], [7, 1], [1, 3], [9, 3], [1, 2], [9, 2]];
+const CENTER_SLOTS = [[5, 3], [3, 4], [7, 4], [2, 3], [8, 3], [5, 4]];
+const CORNER_SLOTS = [[1, 1], [9, 1], [1, 6], [9, 6], [1, 5], [9, 5], [1, 4], [9, 4]];
+const PERSON_SLOTS = [[4, 2], [6, 2], [3, 5], [7, 5], [4, 3], [6, 4]];
+const furnType = label => (FURN_RULES.find(([re]) => re.test(label)) || [0, "crate"])[1];
+const hashStr = str => { let h = 7; for (const ch of str) h = (h * 31 + ch.charCodeAt(0)) | 0; return Math.abs(h); };
+const layoutCache = new Map();
+
+/* 가구 그림 (위에서 본 모습) */
+function furnSVG(t) {
+  const W = "#6e4c34", Wd = "#4f3626", P = "#ddd5c4", M = "#7f8b94", D = "#2a2f35";
+  const g = {
+    desk: `<rect x="4" y="9" width="32" height="22" rx="2" fill="${W}"/><rect x="8" y="12" width="11" height="8" fill="${P}" transform="rotate(-6 13 16)"/><circle cx="29" cy="15" r="4" fill="#e2b25c" opacity=".8"/><rect x="21" y="22" width="9" height="5" fill="${Wd}"/>`,
+    drawer: `<rect x="7" y="4" width="26" height="32" rx="2" fill="${W}"/><rect x="10" y="8" width="20" height="7" fill="${Wd}"/><rect x="10" y="17" width="20" height="7" fill="${Wd}"/><rect x="10" y="26" width="20" height="7" fill="${Wd}"/><circle cx="20" cy="11.5" r="1.2" fill="#d8b46a"/><circle cx="20" cy="20.5" r="1.2" fill="#d8b46a"/><circle cx="20" cy="29.5" r="1.2" fill="#d8b46a"/>`,
+    body: `<g fill="none" stroke="#f1ece2" stroke-width="1.6" stroke-linejoin="round"><circle cx="20" cy="8" r="4.5"/><path d="M20 12.5 L20 26 M20 16 L10 21 M20 16 L30 13 M20 26 L13 36 M20 26 L28 35"/></g><circle cx="27" cy="27" r="2.2" fill="#a33c34"/>`,
+    window: `<rect x="3" y="8" width="34" height="24" fill="#3d5466"/><path d="M3 8 H37 V32 H3 Z M20 8 V32 M3 20 H37" fill="none" stroke="#c9c2b4" stroke-width="2"/><path d="M8 13 L14 26 M24 12 L30 24" stroke="#9fb6c6" stroke-width="1" opacity=".6"/>`,
+    rug: `<rect x="3" y="6" width="34" height="28" rx="2" fill="#6b2f2f"/><rect x="7" y="10" width="26" height="20" fill="none" stroke="#d8b46a" stroke-width="1.5"/>`,
+    fireplace: `<rect x="3" y="6" width="34" height="28" fill="#5a4a44"/><rect x="9" y="14" width="22" height="20" fill="#1b1512"/><path d="M14 33 Q16 22 20 26 Q23 18 26 33 Z" fill="#e2803c"/><path d="M17 33 Q19 27 21 29 Q23 25 24 33 Z" fill="#f2c45c"/>`,
+    teatable: `<circle cx="20" cy="20" r="15" fill="${W}"/><circle cx="14" cy="18" r="4" fill="#efe9dc"/><circle cx="14" cy="18" r="2.3" fill="#9a5b34"/><ellipse cx="25" cy="23" rx="5.5" ry="4.5" fill="#efe9dc"/><path d="M30 22 L34 20" stroke="#efe9dc" stroke-width="2"/>`,
+    chess: `<rect x="5" y="5" width="30" height="30" fill="${Wd}"/>${[0, 1, 2, 3].map(i => [0, 1, 2, 3].map(j => (i + j) % 2 ? `<rect x="${8 + i * 6}" y="${8 + j * 6}" width="6" height="6" fill="#e9e1cf"/>` : "").join("")).join("")}<circle cx="17" cy="17" r="2" fill="#1b1716"/><circle cx="25" cy="23" r="2" fill="#f4efe4"/>`,
+    sofa: `<rect x="3" y="10" width="34" height="22" rx="5" fill="#5b4a6b"/><rect x="3" y="10" width="34" height="7" rx="3" fill="#4a3b59"/><rect x="8" y="18" width="11" height="10" rx="2" fill="#6a5a7c"/><rect x="21" y="18" width="11" height="10" rx="2" fill="#6a5a7c"/>`,
+    bed: `<rect x="6" y="3" width="28" height="34" rx="2" fill="#4b5a68"/><rect x="9" y="6" width="22" height="8" rx="3" fill="#efe9dc"/><rect x="6" y="17" width="28" height="20" fill="#7d8fa0"/>`,
+    trash: `<circle cx="20" cy="20" r="11" fill="${M}"/><circle cx="20" cy="20" r="8" fill="#3a4148"/><path d="M15 17 L22 21 M18 24 L25 17" stroke="${P}" stroke-width="1.5"/>`,
+    terminal: `<rect x="4" y="8" width="32" height="20" rx="2" fill="${D}"/><rect x="7" y="11" width="26" height="14" fill="#2f6b62"/><path d="M9 15 H24 M9 19 H29 M9 22 H18" stroke="#9fe0cf" stroke-width="1.2"/><rect x="16" y="28" width="8" height="4" fill="${D}"/>`,
+    board: `<rect x="8" y="5" width="24" height="30" rx="2" fill="${W}"/><rect x="11" y="9" width="18" height="23" fill="${P}"/><rect x="16" y="3" width="8" height="5" rx="1" fill="${M}"/><path d="M14 14 H26 M14 18 H26 M14 22 H23 M14 26 H25" stroke="#7a7266" stroke-width="1.2"/>`,
+    safe: `<rect x="6" y="6" width="28" height="28" rx="2" fill="#4c555d"/><circle cx="20" cy="20" r="7" fill="#2c3238"/><circle cx="20" cy="20" r="2" fill="${M}"/><path d="M20 13 V16" stroke="${M}" stroke-width="1.5"/>`,
+    vanity: `<rect x="4" y="18" width="32" height="16" rx="2" fill="${W}"/><circle cx="20" cy="13" r="10" fill="#9fb6c6"/>${[0, 1, 2, 3, 4].map(i => `<circle cx="${10 + i * 5}" cy="4" r="1.6" fill="#f2d57c"/>`).join("")}<rect x="12" y="24" width="5" height="3" fill="#e6e0d4"/>`,
+    rail: `${[8, 15, 22, 29].map(x => `<path d="M${x} 2 V24" stroke="#b9a98a" stroke-width="1.4"/><rect x="${x - 3}" y="${22 + (x % 3)}" width="6" height="8" rx="2" fill="#7b6a4e"/>`).join("")}`,
+    box: `<rect x="6" y="8" width="28" height="24" fill="#9a7a52"/><path d="M6 8 L34 32 M34 8 L6 32" stroke="#7a5d3c" stroke-width="1.2"/><rect x="6" y="18" width="28" height="4" fill="#c9b48a"/>`,
+    tv: `<rect x="4" y="9" width="32" height="20" rx="2" fill="${D}"/><rect x="7" y="12" width="26" height="14" fill="#3b4c5c"/><path d="M12 31 L28 31" stroke="${D}" stroke-width="3"/>`,
+    photo: `<rect x="8" y="7" width="24" height="26" fill="#c9a24e"/><rect x="11" y="10" width="18" height="20" fill="#6f7f8f"/><circle cx="17" cy="18" r="3" fill="#e4bd9b"/><circle cx="24" cy="19" r="3" fill="#e4bd9b"/>`,
+    cart: `<rect x="7" y="8" width="26" height="20" rx="2" fill="#5f7f8f"/><rect x="10" y="11" width="9" height="7" fill="#e3e8ea"/><rect x="21" y="11" width="9" height="7" fill="#9fc4d4"/><circle cx="11" cy="32" r="3" fill="${D}"/><circle cx="29" cy="32" r="3" fill="${D}"/>`,
+    plant: `<circle cx="20" cy="24" r="8" fill="#6b4a34"/><circle cx="15" cy="15" r="7" fill="#3f6b45"/><circle cx="25" cy="14" r="7" fill="#4c7d52"/><circle cx="20" cy="9" r="6" fill="#5b8f60"/>`,
+    npc: `<circle cx="20" cy="20" r="13" fill="#3a4148"/><circle cx="20" cy="15" r="5.5" fill="#e4bd9b"/><path d="M10 31 Q20 20 30 31" fill="#56616b"/><text x="31" y="11" font-size="10" fill="#e2b25c">?</text>`,
+    wallear: `<rect x="3" y="4" width="34" height="32" fill="#4b4540"/><path d="M3 12 H37 M3 20 H37 M3 28 H37 M14 4 V12 M26 12 V20 M14 20 V28 M26 28 V36" stroke="#3a3531" stroke-width="1"/><path d="M17 17 C17 11 26 11 26 17 C26 21 21 21 21 25" stroke="#e4bd9b" stroke-width="2.4" fill="none"/>`,
+    display: `<rect x="5" y="5" width="30" height="30" rx="2" fill="#9fb6c6" opacity=".35"/><rect x="5" y="5" width="30" height="30" rx="2" fill="none" stroke="#c9d6de" stroke-width="1.5"/><path d="M16 30 Q12 22 16 16 Q15 11 20 10 Q25 11 24 16 Q28 22 24 30 Z" fill="#8fb5a8"/>`,
+    bag: `<rect x="6" y="11" width="28" height="21" rx="3" fill="#7a4e32"/><path d="M15 11 V7 H25 V11" stroke="#4a2f1f" stroke-width="2.5" fill="none"/><path d="M6 19 H34" stroke="#5c3a24" stroke-width="1.5"/><rect x="18" y="17" width="4" height="4" fill="#d8b46a"/>`,
+    crate: `<rect x="6" y="6" width="28" height="28" rx="2" fill="#5a6168"/><text x="20" y="26" font-size="16" text-anchor="middle" fill="#e2b25c">?</text>`,
+  };
+  return `<svg viewBox="0 0 40 40" aria-hidden="true">${g[t] || g.crate}</svg>`;
+}
+
+/* 용의자·변수 인물을 방에 배치: 이름이 붙은 방엔 그 사람, 나머지는 공용 공간에 */
+function roomPeople(rid) {
+  const c = C(), rooms = Object.keys(c.rooms), out = {};
+  rooms.forEach(r => (out[r] = []));
+  const owner = r => Object.entries(c.suspects).find(([, p]) => c.rooms[r].name.includes(p.name));
+  const placed = new Set();
+  for (const r of rooms) { const o = owner(r); if (o) { out[r].push({ kind: "s", id: o[0], name: o[1].name, role: o[1].role }); placed.add(o[0]); } }
+  const free = rooms.filter(r => !c.rooms[r].crime && !owner(r));
+  const pool = free.length ? free : rooms.filter(r => !c.rooms[r].crime);
+  let k = 0;
+  for (const [sid, p] of Object.entries(c.suspects)) if (!placed.has(sid)) out[pool[k++ % pool.length]].push({ kind: "s", id: sid, name: p.name, role: p.role });
+  S.vars.forEach((v, i) => out[pool[k++ % pool.length]].push({ kind: "v", id: "v" + i, name: v.name, role: v.role }));
+  return out[rid] || [];
+}
+/* 같은 층 방은 아래쪽 문으로, 다른 층은 왼쪽 계단으로 */
+function doorsOf(rid) {
+  const c = C(), fl = c.floors.find(f => f.rooms.includes(rid)), out = [];
+  fl.rooms.filter(r => r !== rid).slice(0, 3).forEach((r, i) => out.push({ to: r, x: [2, 5, 8][i], y: EXH - 1, side: "b" }));
+  c.floors.filter(f => f !== fl).forEach((f, i) => out.push({ to: f.rooms[0], x: 0, y: 2 + i * 2, side: "l", stairs: f.label }));
+  return out;
+}
+function layout(rid) {
+  const key = `${S.caseId}|${C().title}|${rid}|${S.vars.map(v => v.name).join()}`;
+  if (layoutCache.has(key)) return layoutCache.get(key);
+  const r = C().rooms[rid], h = hashStr(rid + C().title), taken = new Set(), k = (x, y) => x + "," + y;
+  const doors = doorsOf(rid);
+  doors.forEach(d => taken.add(d.side === "b" ? k(d.x, EXH - 2) : k(1, d.y)));
+  taken.add(k(5, 6));
+  const rot = a => { const o = h % a.length; return a.slice(o).concat(a.slice(0, o)); };
+  const take = slots => { for (const [x, y] of slots) if (!taken.has(k(x, y))) { taken.add(k(x, y)); return [x, y]; } return null; };
+  const anyFree = () => { for (let y = 2; y < EXH - 2; y++) for (let x = 2; x < EXW - 2; x++) if (!taken.has(k(x, y))) { taken.add(k(x, y)); return [x, y]; } return [5, 3]; };
+  const items = r.spots.map(sp => {
+    const t = furnType(sp.label);
+    const pos = take(rot(WALL_T.has(t) ? WALL_SLOTS : CENTER_T.has(t) ? CENTER_SLOTS : CORNER_SLOTS)) || anyFree();
+    return { spot: sp.id, type: t, x: pos[0], y: pos[1], label: sp.label };
+  });
+  const people = roomPeople(rid).map(pp => { const pos = take(rot(PERSON_SLOTS)) || anyFree(); return { ...pp, x: pos[0], y: pos[1] }; });
+  const deco = [];
+  const pl = take(rot(CORNER_SLOTS)); if (pl) deco.push({ type: "plant", x: pl[0], y: pl[1] });
+  const L = { items, people, deco, doors };
+  layoutCache.set(key, L);
+  return L;
+}
+const at = (L, x, y) => L.items.find(o => o.x === x && o.y === y) || L.people.find(o => o.x === x && o.y === y) || L.deco.find(o => o.x === x && o.y === y);
+const doorAt = (L, x, y) => L.doors.find(d => d.x === x && d.y === y);
+const walkable = (L, x, y) => (x >= 1 && x <= EXW - 2 && y >= 1 && y <= EXH - 2 && !at(L, x, y)) || !!doorAt(L, x, y);
+const NB = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+function findPath(L, from, goals) {
+  const key = (x, y) => x + "," + y, goal = new Set(goals.map(([x, y]) => key(x, y)));
+  if (goal.has(key(from.x, from.y))) return [];
+  const prev = new Map([[key(from.x, from.y), null]]), q = [[from.x, from.y]];
+  while (q.length) {
+    const [x, y] = q.shift();
+    for (const [dx, dy] of NB) {
+      const nx = x + dx, ny = y + dy, nk = key(nx, ny);
+      if (prev.has(nk) || !walkable(L, nx, ny)) continue;
+      if (doorAt(L, nx, ny) && !goal.has(nk)) continue;   /* 문은 목적지일 때만 지나간다 */
+      prev.set(nk, [x, y]);
+      if (goal.has(nk)) { const path = [[nx, ny]]; let c = [x, y]; while (c && key(...c) !== key(from.x, from.y)) { path.unshift(c); c = prev.get(key(...c)); } return path; }
+      q.push([nx, ny]);
+    }
+  }
+  return null;
+}
+function ensurePos() {
+  if (!S.pos || S.pos.room !== S.room) S.pos = { room: S.room, x: 5, y: 6 };
+}
+/* 바로 옆(정면 우선)에 있는 조사 대상 */
+function nearby() {
+  ensurePos();
+  const L = layout(S.room), dirs = S.dir ? [S.dir, ...NB.filter(d => d.join() !== S.dir.join())] : NB;
+  for (const [dx, dy] of dirs) {
+    const o = at(L, S.pos.x + dx, S.pos.y + dy);
+    if (o && o.type !== "plant") return o;
+  }
+  return null;
+}
+function nearText() {
+  const o = nearby(), c = C();
+  if (!o) return "방향키·WASD나 바닥을 눌러 움직이세요. 물건이나 사람 옆에서 조사할 수 있어요.";
+  if (o.spot) {
+    if (has(S.searched, o.spot)) return `${o.label} — 이미 조사했다.`;
+    return `${o.label} — 스페이스 또는 ‘조사하기’ (−${has(S.tampered, o.spot) ? 2 : 1}턴)`;
+  }
+  return `${o.name} — 스페이스 또는 ‘말 걸기’`;
+}
+function updateNear() {
+  const el = document.getElementById("near"), btn = document.getElementById("act-btn"), o = nearby();
+  if (el) el.textContent = nearText();
+  if (btn) { btn.disabled = !o || (o.spot && (has(S.searched, o.spot) || S.turns <= 0 || S.locks[S.room])); btn.textContent = o && !o.spot ? "말 걸기" : "조사하기"; }
+}
+function placeMe() {
+  const me = document.getElementById("me"); if (!me) return;
+  me.style.left = (S.pos.x / EXW * 100) + "%"; me.style.top = (S.pos.y / EXH * 100) + "%";
+}
+let walkTimer = null;
+function stopWalk() { clearInterval(walkTimer); walkTimer = null; }
+function stepTo(x, y) {
+  const L = layout(S.room), d = doorAt(L, x, y);
+  S.dir = [Math.sign(x - S.pos.x), Math.sign(y - S.pos.y)];
+  if (d) { enterDoor(d); return false; }
+  if (!walkable(L, x, y)) { updateNear(); return false; }
+  S.pos.x = x; S.pos.y = y; placeMe(); updateNear();
+  return true;
+}
+function enterDoor(d) {
+  stopWalk();
+  if (S.locks[d.to]) { toast(`${esc(C().rooms[d.to].name)}은(는) 잠겨 있다. ${S.locks[d.to]}턴 뒤에 열린다.`, true); Sound.wrong(); return; }
+  const from = S.room; S.room = d.to;
+  const back = doorsOf(d.to).find(x => x.to === from);
+  S.pos = { room: d.to, x: back ? (back.side === "b" ? back.x : 1) : 5, y: back ? (back.side === "b" ? EXH - 2 : back.y) : 6 };
+  S.dir = back && back.side === "l" ? [1, 0] : [0, -1];
+  Sound.step(); render();
+}
+function walkPath(path, then) {
+  stopWalk();
+  if (!path) { toast("거기로는 갈 수 없다.", true); return; }
+  let i = 0;
+  const tick = () => {
+    if (i >= path.length) { stopWalk(); if (then) then(); return; }
+    const [x, y] = path[i++];
+    if (!stepTo(x, y)) stopWalk();
+  };
+  tick(); if (path.length > 1) walkTimer = setInterval(tick, 115);
+  else if (!path.length && then) then();
+}
+function interact(o) {
+  o = o || nearby(); if (!o) return;
+  if (o.spot) { if (doSearch(o.spot)) render(); return; }
+  if (o.id) { stopWalk(); S.tab = "people"; S.suspect = o.id; S.challenge = null; S.deflectOn = null; render(); window.scrollTo(0, 0); }
+}
+/* 멀리 있는 물건·사람을 누르면 옆까지 걸어가서 조사 */
+function goTo(target) {
+  ensurePos();
+  const L = layout(S.room), goals = NB.map(([dx, dy]) => [target.x + dx, target.y + dy]).filter(([x, y]) => walkable(L, x, y) && !doorAt(L, x, y));
+  walkPath(findPath(L, S.pos, goals), () => { S.dir = [Math.sign(target.x - S.pos.x), Math.sign(target.y - S.pos.y)]; updateNear(); interact(target); });
+}
+function doSearch(id) {
+  const sp = Object.values(C().rooms).flatMap(r => r.spots).find(s => s.id === id);
+  const rid = Object.keys(C().rooms).find(k => C().rooms[k].spots.includes(sp));
+  if (!sp || S.turns <= 0 || has(S.searched, sp.id) || S.locks[rid]) return false;
+  Sound.step(); S.searched.push(sp.id); addClue(sp.clue); spend(has(S.tampered, sp.id) ? 2 : 1);
+  return true;
+}
+
+function renderExplore(out, plan) {
+  ensurePos();
+  const c = C(), rid = S.room, r = c.rooms[rid], L = layout(rid), lk = S.locks[rid];
+  const floorOf = c.floors.find(f => f.rooms.includes(rid));
+  const cell = (x, y) => `left:${x / EXW * 100}%;top:${y / EXH * 100}%;width:${100 / EXW}%;height:${100 / EXH}%`;
+  const walls = `<div class="wall" style="left:0;top:0;width:100%;height:${100 / EXH}%"></div><div class="wall" style="left:0;bottom:0;width:100%;height:${100 / EXH}%"></div>
+    <div class="wall" style="left:0;top:0;width:${100 / EXW}%;height:100%"></div><div class="wall" style="right:0;top:0;width:${100 / EXW}%;height:100%"></div>`;
+  const rug = `<div class="floor-rug" style="left:${3 / EXW * 100}%;top:${2.5 / EXH * 100}%;width:${5 / EXW * 100}%;height:${3 / EXH * 100}%"></div>`;
+  const items = L.items.map(it => {
+    const done = has(S.searched, it.spot), tam = has(S.tampered, it.spot);
+    return `<button class="obj${done ? " done" : ""}${tam && !done ? " tam" : ""}" style="${cell(it.x, it.y)}" data-obj="${it.spot}" aria-label="${esc(it.label)}" title="${esc(it.label)}">${furnSVG(it.type)}<span class="mark">${done ? "✓" : tam ? "!" : "?"}</span></button>`;
+  }).join("");
+  const deco = L.deco.map(d => `<div class="deco" style="${cell(d.x, d.y)}">${furnSVG(d.type)}</div>`).join("");
+  const people = L.people.map(pp => {
+    const sl = S.silence[pp.id], caught = pp.kind === "v" && S.accCaught && S.vars[+pp.id[1]].acc;
+    return `<button class="npc${sl ? " silent" : ""}" style="${cell(pp.x, pp.y)}" data-talk="${pp.id}" aria-label="${esc(pp.name)}에게 말 걸기">${Face(pp.name, 0, "", ageOf(pp.role))}<span class="nm">${esc(pp.name)}${caught ? " · 체포" : ""}</span></button>`;
+  }).join("");
+  const doors = L.doors.map(d => {
+    const name = d.stairs ? `계단 ${d.stairs}` : c.rooms[d.to].name;
+    return `<button class="door ${d.side}${S.locks[d.to] ? " locked" : ""}" style="${cell(d.x, d.y)}" data-door="${d.to}" data-dx="${d.x}" data-dy="${d.y}" aria-label="${esc(name)}(으)로 가기" title="${esc(name)}"><span>${esc(name)}</span></button>`;
+  }).join("");
+  const me = `<div class="me" id="me" style="${cell(S.pos.x, S.pos.y)}">${Face(pname(), 0)}</div>`;
+  const found = r.spots.filter(sp => has(S.searched, sp.id));
+  const left = r.spots.length - found.length;
+  const results = found.map(sp => `<div class="spot"><b>${esc(sp.label)}</b><p class="result">${esc(sp.text)}</p>
+    ${sp.clue ? `<span class="found-chip">단서 · ${esc(c.clues[sp.clue].name)}</span><p class="result">${esc(c.clues[sp.clue].text)}</p>` : ""}</div>`).join("");
+  return `<div class="split explore">
+    <div class="plan">${plan}<p class="hint">방 이름을 누르면 바로 이동해요.</p></div>
+    <section class="panel" aria-live="polite">
+      <div class="room-head"><div><span class="label">${floorOf ? floorOf.label : ""}</span><h3 style="font-size:24px">${r.name}</h3></div>
+        <button class="act" data-act="listmode">목록으로 보기</button></div>
+      <div class="map" id="map" tabindex="0" role="application" aria-label="${esc(r.name)} 지도. 방향키로 움직이고 스페이스로 조사">
+        ${rug}${walls}${deco}${items}${people}${doors}${me}
+        ${lk ? `<div class="map-lock">잠김 · ${lk}턴</div>` : ""}
+      </div>
+      <div class="explore-bar"><span id="near" class="hint">${esc(nearText())}</span>
+        <button class="act press" id="act-btn" data-act="interact">조사하기</button></div>
+      <p class="desc">${r.desc}</p>
+      ${lk ? `<p class="locked-room">이 방이 잠겼다. 문으로 나가서 ${lk}턴 뒤에 다시 오자.</p>` : ""}
+      ${left ? `<p class="hint">이 방에 아직 조사하지 않은 곳(?)이 ${left}곳 있다.</p>` : `<p class="hint">이 방은 모두 조사했다.</p>`}
+      <div class="spots">${results}</div>
       ${!out ? renderDispatch(r) : ""}
     </section>
   </div>`;
@@ -1963,6 +2260,26 @@ function renderResult() {
 
 /* ===================== 이벤트 ===================== */
 app.addEventListener("click", e => {
+  const map = e.target.closest("#map");
+  if (map && !e.target.closest("button")) {
+    Sound.init(); ensurePos();
+    const rc = map.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rc.left) / rc.width * EXW), y = Math.floor((e.clientY - rc.top) / rc.height * EXH);
+    const L = layout(S.room);
+    if (walkable(L, x, y) && !doorAt(L, x, y)) walkPath(findPath(L, S.pos, [[x, y]]));
+    return;
+  }
+});
+document.addEventListener("keydown", e => {
+  if (S.screen !== "game" || S.tab !== "rooms" || S.listMode) return;
+  const tag = (document.activeElement && document.activeElement.tagName) || "";
+  if (/INPUT|SELECT|TEXTAREA/.test(tag)) return;
+  const k = e.key.toLowerCase();
+  const dir = { arrowup: [0, -1], w: [0, -1], arrowdown: [0, 1], s: [0, 1], arrowleft: [-1, 0], a: [-1, 0], arrowright: [1, 0], d: [1, 0] }[k];
+  if (dir) { e.preventDefault(); Sound.init(); ensurePos(); stopWalk(); stepTo(S.pos.x + dir[0], S.pos.y + dir[1]); return; }
+  if ((k === " " || k === "enter" || k === "e") && !/BUTTON/.test(tag)) { e.preventDefault(); Sound.init(); interact(); }
+});
+app.addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b || b.disabled) return;
   const d = b.dataset;
   let top = false;
@@ -1977,19 +2294,20 @@ app.addEventListener("click", e => {
   else if (d.act === "cancel") { S.challenge = null; }
   else if (d.act === "wait") { if (S.turns <= 0) return; Sound.step(); spend(); }
   else if (d.tab) { S.tab = d.tab; S.challenge = null; }
-  else if (d.room) { S.room = d.room; }
+  else if (d.room) { S.room = d.room; stopWalk(); }
   else if (d.dispatch) { dispatch(d.dispatch); }
   else if (d.rebut) { rebut(d.rebut, d.q); }
   else if (d.lawyer) { callLawyer(d.lawyer); }
   else if (d.vtalk) { talkVar(+d.vtalk); }
   else if (d.vaccuse) { accuseVar(+d.vaccuse); }
   else if (d.suspect) { S.suspect = d.suspect; S.challenge = null; S.deflectOn = null; }
-  else if (d.search) {
-    const sp = Object.values(C().rooms).flatMap(r => r.spots).find(s => s.id === d.search);
-    const rid = Object.keys(C().rooms).find(k => C().rooms[k].spots.includes(sp));
-    if (S.turns <= 0 || has(S.searched, sp.id) || S.locks[rid]) return;
-    Sound.step(); S.searched.push(sp.id); addClue(sp.clue); spend(has(S.tampered, sp.id) ? 2 : 1);
-  } else if (d.ask) {
+  else if (d.search) { if (!doSearch(d.search)) return; }
+  else if (d.act === "listmode") { S.listMode = !S.listMode; stopWalk(); }
+  else if (d.obj) { const o = layout(S.room).items.find(x => x.spot === d.obj); if (o) goTo(o); return; }
+  else if (d.talk) { const o = layout(S.room).people.find(x => x.id === d.talk); if (o) goTo(o); return; }
+  else if (d.door) { ensurePos(); const L = layout(S.room), dd = doorAt(L, +d.dx, +d.dy); walkPath(findPath(L, S.pos, [[dd.x, dd.y]])); return; }
+  else if (d.act === "interact") { interact(); return; }
+  else if (d.ask) {
     const { q, sid } = findQ(d.ask);
     if (S.turns <= 0 || has(S.asked, q.id) || S.silence[sid]) return;
     Sound.ask(); S.asked.push(q.id); addTl(q.tl, q.lie ? q.id : null); spend();
