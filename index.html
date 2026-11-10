@@ -1510,11 +1510,11 @@ function counterattack(sid) {
 
 /* ---------- 난이도: 쉬움은 쉽지만 짧고 도움이 적다 / 어려움은 어렵지만 길고 도움이 많다 ---------- */
 const DIFF = {
-  easy:   { label: "쉬움", turns: 24, time: 240, bonus: 0, chances: 1, fakes: 0, sab: null, villains: false, persona: "show", lieTags: true, helpMax: 0,
+  easy:   { label: "쉬움", turns: 25, time: 240, bonus: 0, chances: 1, fakes: 0, sab: null, villains: false, persona: "show", lieTags: true, helpMax: 0,
             desc: "아주 쉬워요. 가짜 물건·방해·공범이 없고, 내 판단도 조금 더 정확해요. 대신 시간이 4분뿐이고, 경위·경감(한서진·강무열)은 오지 않아요. 순경·경장·경사는 2번씩 부를 수 있어요." },
-  normal: { label: "보통", turns: 34, time: 420, bonus: 3, chances: 1, fakes: 1, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 }, villains: true, persona: "show", lieTags: false, helpMax: 3,
+  normal: { label: "보통", turns: 30, time: 420, bonus: 3, chances: 1, fakes: 1, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 }, villains: true, persona: "show", lieTags: false, helpMax: 3,
             desc: "가짜 물건과 방해, 공범이 있어요. 시간은 7분. 팀원 모두 3번씩 부를 수 있어요(강무열이 출동하면 공태하도 따라와요)." },
-  hard:   { label: "어려움", turns: 50, time: 720, bonus: 6, chances: 2, fakes: 2, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 }, villains: true, persona: "hint", lieTags: false, helpMax: 6,
+  hard:   { label: "어려움", turns: 35, time: 720, bonus: 6, chances: 2, fakes: 2, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 }, villains: true, persona: "hint", lieTags: false, helpMax: 6,
             desc: "아주 어려워요. 가짜 물건이 많고 방해가 거세며, 용의자 성격도 눈치로 알아내야 해요. 대신 시간 12분, 지목 기회 2번, 팀원 모두 5번씩 부를 수 있어요." },
 };
 /* 팀원 출동 횟수 */
