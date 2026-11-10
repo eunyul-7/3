@@ -1502,6 +1502,7 @@ function dispatch(pid) {
   if (!canDispatch(pid)) return;
   S.dispatched.push(pid);
   S.missions.push({ pid, room: S.room, due: S.actions + MISSION_DELAY, only: null });
+  V3.helperEnter(S.missions[S.missions.length - 1]);
   const x = partner(pid), rn = C().rooms[S.room].name;
   toast(`<b>${esc(x.name)}</b> — “${esc(EUN(rn))} 제게 맡기세요. ${MISSION_DELAY}턴 뒤에 보고하겠습니다.”`);
   Sound.ask();
@@ -1534,6 +1535,7 @@ function resolveMissions() {
     S.events.push({ bad: false, msg });
     toast(`<b>현장 보고</b> — ${esc(msg)}`); names.length ? Sound.clue() : Sound.help();
   }
+  if (done.length) V3.prune();
 }
 
 function policeArrive(why) {
@@ -1681,6 +1683,13 @@ const Sound = (() => {
     },
     wrong() { if (ctx) tone(110, "sine", now(), 0.01, 0.4, 0.4, 45); },
     tick() { if (ctx) tone(1800, "square", now(), 0.002, 0.05, 0.04); },
+    door() {   /* 끼이익 문 열리는 소리 + 쿵 */
+      if (!ctx) return; const t = now(), o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+      o.type = "sawtooth"; o.frequency.setValueAtTime(150, t); o.frequency.linearRampToValueAtTime(92, t + .55);
+      f.type = "bandpass"; f.frequency.value = 620; f.Q.value = 5;
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.07, t + .06); g.gain.exponentialRampToValueAtTime(.0001, t + .6);
+      o.connect(f).connect(g).connect(master); o.start(t); o.stop(t + .65); noise(t + .55, .16, .28, "lowpass", 280);
+    },
     foot() { if (ctx) { const t = now(); tone(95 + Math.random() * 20, "sine", t, 0.004, 0.07, 0.07, 55); noise(t, 0.04, 0.03, "lowpass", 700); } },
     help() { if (!ctx) return; const t = now(); [392, 494, 587].forEach((f, i) => tone(f, "sine", t + i * 0.09, 0.01, 0.12, 0.9)); },
     sabotage() {
@@ -2088,6 +2097,7 @@ function walkPath(path, then) {
 }
 function interact(o) {
   o = o || nearby(); if (!o) return;
+  if (o.kind === "h") { toast(`<b>${esc(o.name)}</b> — “여긴 제게 맡기세요! 곧 보고하겠습니다.”`); return; }
   if (o.spot) { if (doSearch(o.spot)) render(); return; }
   if (o.id) { stopWalk(); S.tab = "people"; S.suspect = o.id; S.challenge = null; S.deflectOn = null; render(); window.scrollTo(0, 0); }
 }
@@ -2186,6 +2196,8 @@ const wallSideOf = it => it.y === 1 ? "n" : it.x === 1 ? "w" : it.x === EXW - 2 
 const V3 = (() => {
   let renderer = null, scene = null, camera = null, raf = 0, sceneKey = "", host = null, failed = false;
   let clickables = [], marks = [], flames = [], npcs = [], last = 0, hoverT = 0, looking = null, bob = 0, lastStepSign = 0;
+  const helpers = {};          /* 출동한 탐정: pid → 상태 (장면이 다시 지어져도 유지) */
+  let sceneRoom = null, cutscene = null;
   const cam = { room: null, x: 5.5, z: 6.5, yaw: 0, pitch: -0.08 };
   const keys = {};
   let walk = null;           /* { pts: [[x,z]...], i, done } */
@@ -2520,7 +2532,9 @@ const V3 = (() => {
     }
     for (const d of L.deco) { const g = model(d.type); g.position.set(d.x + .5, 0, d.y + .5); scene.add(g); }
     /* 사람 */
+    sceneRoom = rid;
     for (const p of L.people) {
+      if (p.kind === "h") continue;   /* 출동한 탐정은 아래에서 따로 */
       const rig = person(p), g = rig.root;
       g.position.set(p.x + .5, 0, p.y + .5);
       g.userData = { kind: "person", ref: p };
@@ -2529,6 +2543,15 @@ const V3 = (() => {
       npcs.push({ p, rig, wx: p.x + .5, wz: p.y + .5, heading: Math.atan2(5.5 - p.x, 6 - p.y), path: null, seg: null,
         timer: 1.5 + Math.random() * 3, hold: 0, phase: Math.random() * 6, look: 0, lookT: 0, home: { x: p.homeX ?? p.x, y: p.homeY ?? p.y } });
       if (p.homeX === undefined) { p.homeX = p.x; p.homeY = p.y; }
+    }
+    /* 출동한 탐정 다시 세우기 */
+    for (const h of Object.values(helpers)) {
+      if (h.room !== rid) continue;
+      if (!missionAlive(h) && h.state !== "out") {
+        if (!h.rig) { dropHelper(h); continue; }   /* 안 보는 사이 끝났으면 조용히 퇴장 */
+        h.state = "out"; h.path = null; h.pending = null; h.cur = null; h.timer = 1.2;   /* 보고 장면은 보여 준다 */
+      }
+      addHelperRig(h);
     }
     /* 문 */
     for (const d of L.doors) {
@@ -2623,6 +2646,109 @@ const V3 = (() => {
     R.root.position.set(n.wx, 0, n.wz); R.root.rotation.y = n.heading;
   }
 
+  /* ---------- 탐정 출동 연출: 문으로 들어와 ? 물건을 뒤적이고, 보고 후 나간다 ---------- */
+  const missionAlive = h => S.missions.some(m => m.pid === h.pid && m.room === h.room);
+  function helperBlocked(L, h, x, y) {
+    if (x < 1 || x > EXW - 2 || y < 1 || y > EXH - 2) return !doorAt(L, x, y);
+    if (L.items.some(o => o.x === x && o.y === y) || L.deco.some(o => o.x === x && o.y === y)) return true;
+    if (L.people.some(o => o !== h.p && o.x === x && o.y === y)) return true;
+    if (S.room === h.room && Math.floor(cam.x) === x && Math.floor(cam.z) === y) return true;
+    return false;
+  }
+  function helperPath(L, h, goals) {
+    const key = (x, y) => x + "," + y, goal = new Set(goals.map(([x, y]) => key(x, y)));
+    const prev = new Map([[key(h.p.x, h.p.y), null]]), q = [[h.p.x, h.p.y]];
+    while (q.length) {
+      const [x, y] = q.shift();
+      if (goal.has(key(x, y))) { const out = []; let c = [x, y]; while (c && key(...c) !== key(h.p.x, h.p.y)) { out.unshift(c); c = prev.get(key(...c)); } return out; }
+      for (const [dx, dy] of NB) { const nx = x + dx, ny = y + dy; if (prev.has(key(nx, ny)) || helperBlocked(L, h, nx, ny)) continue; prev.set(key(nx, ny), [x, y]); q.push([nx, ny]); }
+    }
+    return null;
+  }
+  function addHelperRig(h) {
+    const rig = person({ name: h.p.name, role: h.p.role }), g = rig.root;
+    g.userData = { kind: "person", ref: h.p };
+    const bub = textSprite("조사 중…", "#1a1408", "rgba(226,178,92,.95)"); bub.position.y = 1.86; g.add(bub);
+    const done = textSprite("보고 완료!", "#0f1a12", "rgba(127,181,154,.95)"); done.position.y = 1.86; done.visible = h.state === "out"; g.add(done);
+    bub.visible = h.state !== "out";
+    rig.bubble = bub; rig.done = done;
+    g.traverse(o => { if ((o.isMesh && !o.userData.isOutline) || o.isSprite) clickables.push(o); o.userData.root = g; });
+    g.position.set(h.wx, 0, h.wz); g.rotation.y = h.heading;
+    scene.add(g); h.rig = rig;
+  }
+  function dropHelper(h) {
+    const L = layout(h.room), i = L.people.indexOf(h.p);
+    if (i >= 0) L.people.splice(i, 1);
+    if (h.rig && scene) { scene.remove(h.rig.root); clickables = clickables.filter(o => o.userData.root !== h.rig.root); }
+    delete helpers[h.pid];
+  }
+  function helperEnter(m) {
+    const L = layout(m.room), d = L.doors[0]; if (!d) return;
+    const x = partner(m.pid), inX = d.side === "b" ? d.x : 1, inY = d.side === "b" ? EXH - 2 : d.y;
+    const p = { kind: "h", id: "h_" + m.pid, name: x.name, role: x.title, x: d.x, y: d.y };
+    L.people.push(p);
+    const h = { pid: m.pid, room: m.room, p, door: d, wx: d.x + .5, wz: d.y + .5, heading: Math.atan2(inX - d.x, inY - d.y),
+      path: [[inX, inY]], seg: null, state: "in", targets: L.items.filter(it => !has(S.searched, it.spot)), pending: null, cur: null, timer: 0, phase: 0, walkAmt: 0, rig: null };
+    helpers[m.pid] = h;
+    if (scene && sceneRoom === m.room && host && S.mode === "3d") {
+      addHelperRig(h);
+      cutscene = { pid: m.pid, t: 3.2 };   /* 들어오는 탐정을 눈으로 따라간다 */
+      Sound.door();
+    }
+  }
+  function updateHelper(h, dt, t) {
+    const L = layout(h.room), R = h.rig;
+    if (!missionAlive(h) && h.state !== "out") { h.state = "out"; h.path = null; h.pending = null; h.cur = null; R.bubble.visible = false; R.done.visible = true; h.timer = 1.2; }
+    let moving = false, searching = false;
+    if (!h.seg && h.path && h.path.length) {
+      const [tx, ty] = h.path[0];
+      if (helperBlocked(L, h, tx, ty)) { h.path = null; h.timer = .6; }
+      else { h.path.shift(); h.p.x = tx; h.p.y = ty; h.seg = [tx + .5, ty + .5]; }
+    }
+    if (h.seg) {
+      const dx = h.seg[0] - h.wx, dz = h.seg[1] - h.wz, d = Math.hypot(dx, dz), stp = 1.15 * dt;
+      h.heading = angTo(h.heading, Math.atan2(dx, dz), Math.min(1, dt * 8));
+      if (d <= stp) { h.wx = h.seg[0]; h.wz = h.seg[1]; h.seg = null; if (!h.path || !h.path.length) { if (h.pending) { h.cur = h.pending; h.pending = null; h.timer = 2.4; h.state = "search"; } } }
+      else { h.wx += dx / d * stp; h.wz += dz / d * stp; }
+      moving = true;
+    } else if (h.state === "out") {
+      h.timer -= dt;
+      if (doorAt(L, h.p.x, h.p.y)) { if (S.room === h.room) Sound.door(); dropHelper(h); return; }
+      if (h.timer <= 0) { h.path = helperPath(L, h, [[h.door.x, h.door.y]]); h.timer = .8; }
+    } else if (h.cur && h.timer > 0) {
+      h.timer -= dt; searching = true;
+      h.heading = angTo(h.heading, Math.atan2(h.cur.x + .5 - h.wx, h.cur.y + .5 - h.wz), Math.min(1, dt * 6));
+    } else {
+      h.cur = null; h.timer -= dt;
+      if (h.timer <= 0) {
+        const next = h.targets.shift();
+        if (next) {
+          const goals = NB.map(([dx, dy]) => [next.x + dx, next.y + dy]).filter(([x, y]) => !helperBlocked(L, h, x, y) && !doorAt(L, x, y));
+          const adj = goals.some(([x, y]) => x === h.p.x && y === h.p.y);
+          if (adj) { h.cur = next; h.timer = 2.4; }
+          else { const path = helperPath(L, h, goals); if (path) { h.path = path; h.pending = next; } else h.targets.push(next); }
+        } else { h.targets = L.items.filter(it => !has(S.searched, it.spot)); h.timer = 1.5; }
+        if (!h.cur && !h.path) h.timer = .4;
+      }
+    }
+    /* 동작: 걷기 / 허리 숙여 뒤적이기 / 서서 숨쉬기 */
+    h.walkAmt += ((moving ? 1 : 0) - h.walkAmt) * Math.min(1, dt * 6);
+    h.phase += dt * (moving ? 8.5 : 1.6);
+    const a = Math.sin(h.phase), wa = h.walkAmt, k = Math.min(1, dt * 5);
+    R.legs[0].rotation.x = a * .55 * wa; R.legs[1].rotation.x = -a * .55 * wa;
+    R.knees[0].rotation.x = (Math.max(0, a) * .85 + .08) * wa; R.knees[1].rotation.x = (Math.max(0, -a) * .85 + .08) * wa;
+    const rummage = searching ? Math.sin(t / 140) * .25 : 0;
+    R.torso.rotation.x += ((searching ? .38 : 0) - R.torso.rotation.x) * k;
+    R.head.rotation.x += ((searching ? .3 : -.05) - R.head.rotation.x) * k;
+    R.arms[0].rotation.x += ((searching ? -.95 + rummage : -a * .45 * wa) - R.arms[0].rotation.x) * Math.min(1, dt * 10);
+    R.arms[1].rotation.x += ((searching ? -.95 - rummage : a * .45 * wa) - R.arms[1].rotation.x) * Math.min(1, dt * 10);
+    R.elbows[0].rotation.x = searching ? -.5 : -(.12 + Math.max(0, a) * .45 * wa); R.elbows[1].rotation.x = searching ? -.5 : -(.12 + Math.max(0, -a) * .45 * wa);
+    R.arms[0].rotation.z = -.1; R.arms[1].rotation.z = .1;
+    R.body.position.y = Math.abs(Math.sin(h.phase)) * .035 * wa;
+    R.root.position.set(h.wx, 0, h.wz); R.root.rotation.y = h.heading;
+    R.bubble.position.y = 1.86 + Math.sin(t / 300) * .03;
+  }
+
   /* ---------- 카메라 · 이동 ---------- */
   function placeCamera() {
     camera.position.set(cam.x, EYE + Math.sin(bob) * .028, cam.z);
@@ -2666,10 +2792,12 @@ const V3 = (() => {
   function act(t) {
     if (!t) return;
     if (t.kind === "obj") { if (doSearch(t.ref.spot)) render(); }
+    else if (t.kind === "person" && t.ref.kind === "h") toast(`<b>${esc(t.ref.name)}</b> — “여긴 제게 맡기세요! 곧 보고하겠습니다.”`);
     else if (t.kind === "person") { S.tab = "people"; S.suspect = t.ref.id; S.challenge = null; S.deflectOn = null; render(); window.scrollTo(0, 0); }
   }
   function go(t) {
     if (!t) return;
+    if (t.kind === "person" && t.ref.kind === "h") { act(t); return; }
     if (t.kind === "person") { const n = npcs.find(x => x.p === t.ref); if (n) { n.hold = 8; n.path = null; } }
     if (t.kind === "door") { walkTo(t, () => enterDoor(t.ref)); return; }
     if (t.kind === "floor") { walkTo(t); return; }
@@ -2743,6 +2871,12 @@ const V3 = (() => {
       if (tryMove(cam.x + (fx * f + rx * st) / len * SPEED * dt, cam.z + (fz * f + rz * st) / len * SPEED * dt) === "door") return;
     }
     for (const n of npcs) updateNpc(n, dt, t);
+    for (const h of Object.values(helpers)) if (h.room === S.room && h.rig && sceneRoom === S.room) updateHelper(h, dt, t);
+    if (cutscene) {
+      const h = helpers[cutscene.pid];
+      if (h) { cam.yaw = angTo(cam.yaw, Math.atan2(-(h.wx - cam.x), -(h.wz - cam.z)), Math.min(1, dt * 3)); cam.pitch += (-.12 - cam.pitch) * Math.min(1, dt * 3); }
+      cutscene.t -= dt; if (!h || cutscene.t <= 0 || f || st || walk) cutscene = null;
+    }
     /* 자동 걷기 */
     if (walk && walk.i < walk.pts.length) {
       const [tx, tz] = walk.pts[walk.i], dx = tx - cam.x, dz = tz - cam.z, d = Math.hypot(dx, dz), stp = SPEED * 1.2 * dt;
@@ -2814,7 +2948,11 @@ const V3 = (() => {
     interact() { go(looking && looking.kind !== "floor" ? looking : null); },
     clearKeys() { for (const k in keys) keys[k] = false; },
     debug() { return { cam: { ...cam }, looking, objs: clickables.length, walking: !!walk, npcs: npcs.map(n => ({ name: n.p.name, x: +n.wx.toFixed(2), z: +n.wz.toFixed(2), tile: [n.p.x, n.p.y], walking: !!n.seg })) }; },
-    go, pick,
+    go, pick, helperEnter,
+    prune() {   /* 보고가 끝난 탐정: 지금 3D로 보고 있으면 걸어 나가고, 아니면 바로 사라진다 */
+      for (const h of Object.values(helpers)) if (!missionAlive(h) && !(h.rig && sceneRoom === h.room && S.room === h.room && S.mode === "3d" && S.tab === "rooms")) dropHelper(h);
+    },
+    helperInfo() { return Object.values(helpers).map(h => ({ name: h.p.name, room: h.room, state: h.state, tile: [h.p.x, h.p.y], searching: !!h.cur, hasRig: !!h.rig })); },
     /* 시험용: 카메라 위치 지정, 인물 멈추기 */
     setCam(x, z, yaw, pitch = -.05) { cam.x = x; cam.z = z; cam.yaw = yaw; cam.pitch = pitch; syncPos(); },
     freeze(sec = 30) { for (const n of npcs) { n.hold = sec; n.path = null; } },
