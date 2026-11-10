@@ -867,19 +867,27 @@ const Face = (() => {
     for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
     return () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }
-  function draw(name, age, look) {
+  /* 생김새(성별·피부·머리·안경·옷)를 정한다. 2D 얼굴과 3D 인물이 같은 값을 쓴다 */
+  function traits(name, age, look) {
     const r = rng(name), pick = a => a[Math.floor(r() * a.length)];
     const g = look.g || GENDER[name] || (r() < 0.5 ? "f" : "m");
     age = look.age || age || 30 + Math.floor(r() * 25);
     const skin = pick(SKIN), old = age >= 56;
     const hair = look.hair || (old ? pick(GRAY) : age >= 48 && r() < 0.4 ? pick(GRAY.slice(0, 1).concat(HAIR.slice(2))) : pick(HAIR));
-    const shade = "rgba(80,45,30,.16)", line = "rgba(60,35,25,.55)";
     const F = g === "f";
     const style = look.style || (F ? pick(["long", "long", "bob", "bun", "wave"]) : pick(old ? ["short", "side", "thin"] : ["short", "side", "side", "crew"]));
     const glasses = look.glasses !== undefined ? look.glasses : pick([null, null, null, null, "round", "rect"]);
     const facial = F ? null : look.facial !== undefined ? look.facial : pick([null, null, null, null, "stubble", "mustache"]);
     const top = look.top || (F ? pick(["blouse", "cardigan", "jacket", "knit"]) : pick(["suit", "suit", "shirt", "knit", "jacket"]));
     const cloth = look.cloth || (top === "suit" || top === "jacket" ? pick(SUIT) : pick(SOFT));
+    const pants = pick(["#2a2d33", "#3a3330", "#2c3540", "#454040", "#1f2226"]);
+    return { g, F, age, skin, old, hair, style, glasses, facial, top, cloth, pants };
+  }
+  function draw(name, age, look) {
+    const T = traits(name, age, look), r = rng(name + "#d"), pick = a => a[Math.floor(r() * a.length)];
+    const { g, F, skin, old, hair, style, glasses, facial, top, cloth } = T;
+    age = T.age;
+    const shade = "rgba(80,45,30,.16)", line = "rgba(60,35,25,.55)";
 
     /* 머리 뒤쪽(어깨 뒤로 넘어가는 부분) */
     let back = "";
@@ -950,11 +958,13 @@ const Face = (() => {
     모은재: { g: "f", age: 33, style: "wave", glasses: null, top: "cardigan", cloth: "#9a7f6a", hair: "#46332a" },
     차도율: { g: "m", age: 45, style: "side", glasses: "rect", facial: null, top: "suit", cloth: "#1f2530", hair: "#241c18" },
   };
-  return (name, size = 40, cls = "", age = 0) => {
+  const fn = (name, size = 40, cls = "", age = 0) => {
     const key = name + "|" + age;
     if (!cache.has(key)) cache.set(key, draw(name, age, LOOKS[name] || {}));
     return `<span class="face ${cls}"${size ? ` style="width:${size}px;height:${size}px"` : ""}>${cache.get(key)}</span>`;
   };
+  fn.traits = (name, age = 0) => traits(name, age, LOOKS[name] || {});
+  return fn;
 })();
 /* 크게 보이는 머그샷(키 눈금 배경) */
 const mug = (name, age = 0) => `<span class="mug">${Face(name, 96, "big", age)}</span>`;
@@ -1642,6 +1652,7 @@ const Sound = (() => {
     },
     wrong() { if (ctx) tone(110, "sine", now(), 0.01, 0.4, 0.4, 45); },
     tick() { if (ctx) tone(1800, "square", now(), 0.002, 0.05, 0.04); },
+    foot() { if (ctx) { const t = now(); tone(95 + Math.random() * 20, "sine", t, 0.004, 0.07, 0.07, 55); noise(t, 0.04, 0.03, "lowpass", 700); } },
     help() { if (!ctx) return; const t = now(); [392, 494, 587].forEach((f, i) => tone(f, "sine", t + i * 0.09, 0.01, 0.12, 0.9)); },
     sabotage() {
       if (!ctx) return; const t = now();
@@ -2129,7 +2140,7 @@ const wallSideOf = it => it.y === 1 ? "n" : it.x === 1 ? "w" : it.x === EXW - 2 
 
 const V3 = (() => {
   let renderer = null, scene = null, camera = null, raf = 0, sceneKey = "", host = null, failed = false;
-  let clickables = [], marks = [], flames = [], last = 0, hoverT = 0, looking = null;
+  let clickables = [], marks = [], flames = [], npcs = [], last = 0, hoverT = 0, looking = null, bob = 0, lastStepSign = 0;
   const cam = { room: null, x: 5.5, z: 6.5, yaw: 0, pitch: -0.08 };
   const keys = {};
   let walk = null;           /* { pts: [[x,z]...], i, done } */
@@ -2270,16 +2281,81 @@ const V3 = (() => {
     }
     return g;
   }
+  /* 얼굴 무늬: 구의 앞쪽(가로 1/4 지점)에 눈·눈썹·코·입을 그린다 */
+  function faceTexture(T, name) {
+    return canvasTexture("face3d" + name + T.age, 512, 256, (g, w, h) => {
+      g.fillStyle = T.skin; g.fillRect(0, 0, w, h);
+      const cx = w * .25, ey = h * .47, sep = 28, hc = T.hair === "#c7c1b6" ? "#6a655e" : T.hair;
+      if (T.facial === "stubble") { g.fillStyle = "rgba(40,30,25,.22)"; g.beginPath(); g.ellipse(cx, h * .66, 46, 26, 0, 0, Math.PI * 2); g.fill(); }
+      if (T.F) { g.fillStyle = "rgba(232,143,134,.35)"; for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(cx + sx * 38, h * .57, 12, 7, 0, 0, Math.PI * 2); g.fill(); } }
+      g.strokeStyle = hc; g.lineCap = "round"; g.lineWidth = T.F ? 3 : 5;
+      for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(cx + sx * (sep - 12), ey - 15); g.quadraticCurveTo(cx + sx * sep, ey - (T.F ? 21 : 18), cx + sx * (sep + 13), ey - 14); g.stroke(); }
+      for (const sx of [-1, 1]) {
+        g.fillStyle = "#fbf7f0"; g.beginPath(); g.ellipse(cx + sx * sep, ey, 10, 6.5, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#3a2a20"; g.beginPath(); g.arc(cx + sx * sep, ey, 5.2, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#120c0a"; g.beginPath(); g.arc(cx + sx * sep, ey, 2.6, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#fff"; g.beginPath(); g.arc(cx + sx * sep + 1.8, ey - 1.8, 1.4, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = "#2a1d18"; g.lineWidth = T.F ? 2.6 : 1.6; g.beginPath(); g.ellipse(cx + sx * sep, ey, 10, 6.5, 0, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
+      }
+      g.strokeStyle = "rgba(120,70,50,.55)"; g.lineWidth = 2.2; g.beginPath(); g.moveTo(cx + 2, ey + 6); g.quadraticCurveTo(cx - 5, ey + 22, cx + 3, ey + 25); g.stroke();
+      if (T.F) { g.fillStyle = "#b8625c"; g.beginPath(); g.moveTo(cx - 13, h * .7); g.quadraticCurveTo(cx, h * .66, cx + 13, h * .7); g.quadraticCurveTo(cx, h * .76, cx - 13, h * .7); g.fill(); }
+      else { g.strokeStyle = "#8a4a40"; g.lineWidth = 3; g.beginPath(); g.moveTo(cx - 12, h * .7); g.quadraticCurveTo(cx, h * .72, cx + 12, h * .7); g.stroke(); }
+      if (T.old) { g.strokeStyle = "rgba(60,35,25,.35)"; g.lineWidth = 1.2; for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(cx + sx * 40, ey + 2); g.lineTo(cx + sx * 46, ey + 6); g.stroke(); } g.beginPath(); g.moveTo(cx - 20, ey - 32); g.quadraticCurveTo(cx, ey - 36, cx + 20, ey - 32); g.stroke(); }
+    });
+  }
+  /* 머리·몸통·팔·다리가 따로 움직이는 인물 */
   function person(p) {
-    const g = new THREE.Group();
-    const svg = (Face(p.name, 0, "", ageOf(p.role)).match(/<svg[\s\S]*<\/svg>/) || [""])[0];
-    const r = hashStr(p.name), cloth = [0x2c3a47, 0x4a2c2c, 0x33443a, 0x56462f, 0x30303f, 0x5b3434][r % 6];
-    g.add(cyl(.17, .24, .95, mat(cloth, { r: .9 }), 0, .48, 0));
-    g.add(cyl(.2, .17, .25, mat(cloth, { r: .9 }), 0, 1.06, 0));
-    const head = new THREE.Sprite(new THREE.SpriteMaterial({ map: svgTexture(svg, 256, 256), transparent: true }));
-    head.scale.set(.62, .62, 1); head.position.y = 1.42; g.add(head);
-    const nm = textSprite(p.name); nm.position.y = 1.86; g.add(nm);
-    return g;
+    const T = Face.traits(p.name, ageOf(p.role)), root = new THREE.Group(), body = new THREE.Group();
+    const sc = T.F ? .95 : 1; body.scale.setScalar(sc); root.add(body);
+    const skin = mat(T.skin, { r: .7 }), cloth = mat(T.cloth, { r: .85 }), pants = mat(T.pants, { r: .9 }), hairM = mat(T.hair, { r: .9 }), shoe = mat(0x1a1716, { r: .5 });
+    const skirt = T.F && hashStr(p.name) % 2 === 0;
+    const limb = (r, h, m) => { const piv = new THREE.Group(); piv.add(cyl(r, r * .82, h, m, 0, -h / 2, 0, 14)); piv.add(sph(r, m, 0, 0, 0)); return piv; };
+    /* 다리 (치마면 다리는 스타킹 색) */
+    const legM = skirt ? mat(T.skin, { r: .6 }) : pants;
+    const legs = [-1, 1].map(sx => {
+      const L = limb(skirt ? .06 : .078, .76, legM); L.position.set(sx * .095, .8, 0);
+      L.add(box(.12, .08, .24, shoe, 0, -.78, .045)); body.add(L); return L;
+    });
+    if (skirt) body.add(cyl(.17, .28, .42, mat(T.pants === "#1f2226" ? "#3a2f3f" : T.pants, { r: .9 }), 0, .66, 0, 24));
+    else body.add(cyl(.17, .16, .16, pants, 0, .84, 0, 18));
+    /* 몸통 */
+    const torso = new THREE.Group(); torso.position.y = .88; body.add(torso);
+    const tw = T.F ? .175 : .205;
+    torso.add(cyl(tw, tw * .8, .5, cloth, 0, .25, 0, 20));
+    torso.add(sph(tw, cloth, 0, .48, 0)).children.at(-1).scale.set(1.08, .38, .78);
+    if (["suit", "shirt", "jacket", "blouse", "cardigan"].includes(T.top)) {
+      const col = new THREE.Mesh(new THREE.ConeGeometry(.055, .09, 3), mat(0xece8e1)); col.position.set(0, .46, tw * .74); col.rotation.set(Math.PI + .25, 0, 0); torso.add(col);
+    }
+    if (T.top === "suit" || T.top === "jacket") for (const sx of [-1, 1]) { const lp = box(.05, .3, .02, mat(T.cloth, { r: .7 }), sx * .055, .33, tw * .78); lp.rotation.z = sx * .32; torso.add(lp); }
+    if (T.top === "suit") torso.add(box(.035, .24, .02, mat(0x5c2b26), 0, .32, tw * .8));
+    /* 팔 */
+    const arms = [-1, 1].map(sx => {
+      const A = limb(.056, .54, cloth); A.position.set(sx * (tw + .045), .45, 0);
+      A.add(sph(.055, skin, 0, -.58, .01)); torso.add(A); return A;
+    });
+    /* 머리 */
+    const head = new THREE.Group(); head.position.y = .52; torso.add(head);
+    head.add(cyl(.05, .056, .1, skin, 0, .03, 0, 12));
+    const HR = .145;
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(HR, 36, 24), mat(0xffffff, { map: faceTexture(T, p.name), r: .7 }));
+    skull.position.y = .19; skull.scale.set(.92, 1.06, .98); head.add(skull);
+    for (const sx of [-1, 1]) head.add(sph(.03, skin, sx * .135, .19, 0));
+    const cap = (tl, tilt, sz = 1.07) => { const m = new THREE.Mesh(new THREE.SphereGeometry(HR * sz, 32, 16, 0, Math.PI * 2, 0, Math.PI * tl), hairM); m.position.y = .195; m.rotation.x = tilt; m.scale.set(.94, 1.06, 1); head.add(m); return m; };
+    const band = (h, y, r0, r1, gap = .2) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, 28, 1, true, Math.PI * gap, Math.PI * (2 - gap * 2)), mat(T.hair, { r: .9, side: THREE.DoubleSide })); m.position.set(0, y, -.006); head.add(m); return m; };
+    const bangs = () => { const m = new THREE.Mesh(new THREE.SphereGeometry(HR * 1.08, 24, 10, Math.PI * .1, Math.PI * .8, Math.PI * .18, Math.PI * .2), hairM); m.position.y = .195; m.scale.set(.94, 1.06, 1); head.add(m); };
+    const st = T.style;
+    if (st === "short" || st === "side") { const c0 = cap(.42, -.32); if (st === "side") c0.rotation.z = .12; }
+    if (st === "crew") cap(.38, -.28, 1.04);
+    if (st === "thin") { for (const sx of [-1, 1]) head.add(sph(.06, hairM, sx * .12, .19, -.03)).children.at(-1).scale.set(.5, .9, 1.2); }
+    if (st === "long" || st === "wave") { cap(.46, -.18); bangs(); band(.42, .06, .15, st === "wave" ? .2 : .17, .17); }
+    if (st === "bob") { cap(.46, -.18); bangs(); band(.2, .14, .152, .165, .17); }
+    if (st === "bun") { cap(.45, -.26); head.add(sph(.07, hairM, 0, .33, -.1)); }
+    if (T.glasses) { const gm = mat(0x2b2522, { r: .3, m: .6 });
+      for (const sx of [-1, 1]) { const ring = new THREE.Mesh(T.glasses === "round" ? new THREE.TorusGeometry(.032, .006, 6, 18) : new THREE.TorusGeometry(.034, .006, 4, 4), gm); ring.position.set(sx * .05, .2, .133); if (T.glasses === "rect") ring.rotation.z = Math.PI / 4; head.add(ring); }
+      head.add(box(.034, .006, .006, gm, 0, .203, .139)); }
+    if (T.facial === "mustache") head.add(box(.07, .015, .02, hairM, 0, .135, .134));
+    const nm = textSprite(p.name); nm.position.y = 2.05; root.add(nm);
+    return { root, body, torso, head, legs, arms };
   }
 
   /* ---------- 장면 ---------- */
@@ -2287,7 +2363,7 @@ const V3 = (() => {
   function build() {
     if (scene) dispose(scene);
     const c = C(), rid = S.room, r = c.rooms[rid], L = layout(rid), hh = hashStr(rid + c.title);
-    scene = new THREE.Scene(); clickables = []; marks = []; flames = [];
+    scene = new THREE.Scene(); clickables = []; marks = []; flames = []; npcs = [];
     scene.background = lin(0x0b0e12); scene.fog = new THREE.Fog(lin(0x0b0e12), 5, 15);
     const X0 = 1, X1 = EXW - 1, Z0 = 1, Z1 = EXH - 1, CW = X1 - X0, CD = Z1 - Z0, CX = (X0 + X1) / 2, CZ = (Z0 + Z1) / 2, HGT = 2.8;
     const floor = plane(CW, CD, mat(0xffffff, { map: floorTex(floorKindOf(r.name), hh % 97), r: .85 }), CX, 0, CZ); floor.rotation.x = -Math.PI / 2; floor.userData.floor = true; scene.add(floor); clickables.push(floor);
@@ -2327,10 +2403,14 @@ const V3 = (() => {
     for (const d of L.deco) { const g = model(d.type); g.position.set(d.x + .5, 0, d.y + .5); scene.add(g); }
     /* 사람 */
     for (const p of L.people) {
-      const g = person(p); g.position.set(p.x + .5, 0, p.y + .5);
+      const rig = person(p), g = rig.root;
+      g.position.set(p.x + .5, 0, p.y + .5);
       g.userData = { kind: "person", ref: p };
       g.traverse(o => { if (o.isMesh || o.isSprite) clickables.push(o); o.userData.root = g; });
       scene.add(g);
+      npcs.push({ p, rig, wx: p.x + .5, wz: p.y + .5, heading: Math.atan2(5.5 - p.x, 6 - p.y), path: null, seg: null,
+        timer: 1.5 + Math.random() * 3, hold: 0, phase: Math.random() * 6, look: 0, lookT: 0, home: { x: p.homeX ?? p.x, y: p.homeY ?? p.y } });
+      if (p.homeX === undefined) { p.homeX = p.x; p.homeY = p.y; }
     }
     /* 문 */
     for (const d of L.doors) {
@@ -2352,9 +2432,76 @@ const V3 = (() => {
     const tgt = new THREE.Object3D(); tgt.position.set(0, -.15, -1); camera.add(tgt); torch.target = tgt;
   }
 
+  /* ---------- 인물: 돌아다니기 · 쳐다보기 · 걷기/숨쉬기 동작 ---------- */
+  function npcBlocked(L, n, x, y) {
+    if (x < 1 || x > EXW - 2 || y < 1 || y > EXH - 2 || doorAt(L, x, y)) return true;
+    if (L.items.some(o => o.x === x && o.y === y) || L.deco.some(o => o.x === x && o.y === y)) return true;
+    if (L.people.some(o => o !== n.p && o.x === x && o.y === y)) return true;
+    if (Math.floor(cam.x) === x && Math.floor(cam.z) === y) return true;
+    if (L.doors.some(d => (d.side === "b" ? d.x === x && y === EXH - 2 : x === 1 && d.y === y))) return true;   /* 문 앞은 비워 둔다 */
+    return false;
+  }
+  function npcPlan(L, n) {
+    const cand = [];
+    for (let y = 1; y <= EXH - 2; y++) for (let x = 1; x <= EXW - 2; x++) {
+      if (Math.abs(x - n.home.x) + Math.abs(y - n.home.y) > 3 || (x === n.p.x && y === n.p.y) || npcBlocked(L, n, x, y)) continue;
+      cand.push([x, y]);
+    }
+    if (!cand.length) return null;
+    const [gx, gy] = cand[Math.floor(Math.random() * cand.length)], key = (x, y) => x + "," + y;
+    const prev = new Map([[key(n.p.x, n.p.y), null]]), q = [[n.p.x, n.p.y]];
+    while (q.length) {
+      const [x, y] = q.shift();
+      if (x === gx && y === gy) { const out = []; let c = [x, y]; while (c && key(...c) !== key(n.p.x, n.p.y)) { out.unshift(c); c = prev.get(key(...c)); } return out; }
+      for (const [dx, dy] of NB) { const nx = x + dx, ny = y + dy; if (prev.has(key(nx, ny)) || npcBlocked(L, n, nx, ny)) continue; prev.set(key(nx, ny), [x, y]); q.push([nx, ny]); }
+    }
+    return null;
+  }
+  const angTo = (cur, want, k) => { let d = want - cur; d = Math.atan2(Math.sin(d), Math.cos(d)); return cur + d * k; };
+  function updateNpc(n, dt, t) {
+    const L = layout(S.room), dPlayer = Math.hypot(cam.x - n.wx, cam.z - n.wz);
+    if (n.hold > 0) n.hold -= dt;
+    let moving = false;
+    if (!n.seg && n.path && n.path.length && n.hold <= 0) {
+      const [tx, ty] = n.path[0];
+      if (npcBlocked(L, n, tx, ty)) { n.path = null; n.timer = 1 + Math.random() * 2; }
+      else { n.path.shift(); n.p.x = tx; n.p.y = ty; n.seg = [tx + .5, ty + .5]; }   /* 다음 칸을 먼저 차지한다 */
+    }
+    if (n.seg) {
+      const dx = n.seg[0] - n.wx, dz = n.seg[1] - n.wz, d = Math.hypot(dx, dz), stp = .85 * dt;
+      n.heading = angTo(n.heading, Math.atan2(dx, dz), Math.min(1, dt * 7));
+      if (d <= stp) { n.wx = n.seg[0]; n.wz = n.seg[1]; n.seg = null; } else { n.wx += dx / d * stp; n.wz += dz / d * stp; }
+      moving = true;
+    } else {
+      n.timer -= dt;
+      if (n.timer <= 0 && n.hold <= 0 && dPlayer > 1.6) { n.path = npcPlan(L, n); n.timer = 3 + Math.random() * 5; }
+      if (dPlayer < 2.8 || n.hold > 0) n.heading = angTo(n.heading, Math.atan2(cam.x - n.wx, cam.z - n.wz), Math.min(1, dt * 4));
+    }
+    /* 고개: 가까우면 나를 보고, 아니면 가끔 두리번 */
+    n.lookT -= dt;
+    if (n.lookT <= 0) { n.look = (Math.random() - .5) * 1.1; n.lookT = 2 + Math.random() * 3; }
+    let lookWant = n.look;
+    if (dPlayer < 3.2) { const rel = Math.atan2(cam.x - n.wx, cam.z - n.wz) - n.heading; lookWant = Math.max(-.9, Math.min(.9, Math.atan2(Math.sin(rel), Math.cos(rel)))); }
+    const R = n.rig;
+    R.head.rotation.y = angTo(R.head.rotation.y, lookWant, Math.min(1, dt * 3));
+    R.head.rotation.x = dPlayer < 3.2 ? -.08 : 0;
+    /* 걷기: 팔다리 흔들기 / 서 있기: 숨쉬기 */
+    const sw = moving ? 1 : 0;
+    n.walkAmt = (n.walkAmt || 0) + (sw - (n.walkAmt || 0)) * Math.min(1, dt * 6);
+    n.phase += dt * (moving ? 7.5 : 1.6);
+    const a = Math.sin(n.phase), wa = n.walkAmt;
+    R.legs[0].rotation.x = a * .55 * wa; R.legs[1].rotation.x = -a * .55 * wa;
+    R.arms[0].rotation.x = -a * .45 * wa + Math.sin(t / 900 + n.phase) * .03 * (1 - wa); R.arms[1].rotation.x = a * .45 * wa - Math.sin(t / 900 + n.phase) * .03 * (1 - wa);
+    R.arms[0].rotation.z = -.06; R.arms[1].rotation.z = .06;
+    R.body.position.y = Math.abs(Math.sin(n.phase)) * .03 * wa;
+    R.torso.scale.y = 1 + Math.sin(t / 700 + n.phase) * .012 * (1 - wa);
+    R.torso.rotation.y = a * .08 * wa;
+    R.root.position.set(n.wx, 0, n.wz); R.root.rotation.y = n.heading;
+  }
+
   /* ---------- 카메라 · 이동 ---------- */
   function placeCamera() {
-    camera.position.set(cam.x, EYE, cam.z);
+    camera.position.set(cam.x, EYE + Math.sin(bob) * .028, cam.z);
     camera.rotation.set(cam.pitch, cam.yaw, 0, "YXZ");
   }
   function spawn() {
@@ -2399,6 +2546,7 @@ const V3 = (() => {
   }
   function go(t) {
     if (!t) return;
+    if (t.kind === "person") { const n = npcs.find(x => x.p === t.ref); if (n) { n.hold = 8; n.path = null; } }
     if (t.kind === "door") { walkTo(t, () => enterDoor(t.ref)); return; }
     if (t.kind === "floor") { walkTo(t); return; }
     const dx = t.ref.x + .5 - cam.x, dz = t.ref.y + .5 - cam.z;
@@ -2470,15 +2618,28 @@ const V3 = (() => {
       const len = Math.hypot(f, st) || 1;
       if (tryMove(cam.x + (fx * f + rx * st) / len * SPEED * dt, cam.z + (fz * f + rz * st) / len * SPEED * dt) === "door") return;
     }
+    for (const n of npcs) updateNpc(n, dt, t);
     /* 자동 걷기 */
     if (walk && walk.i < walk.pts.length) {
       const [tx, tz] = walk.pts[walk.i], dx = tx - cam.x, dz = tz - cam.z, d = Math.hypot(dx, dz), stp = SPEED * 1.2 * dt;
       const L = layout(S.room), dd = doorAt(L, Math.floor(tx), Math.floor(tz));
+      if (L.people.some(o => o.x === Math.floor(tx) && o.y === Math.floor(tz))) {
+        walk.wait = (walk.wait || 0) + dt;
+        if (walk.wait > .8) { const w = walk; walk = null; walkTo(w.target, w.after); }
+        placeCamera(); renderer.render(scene, camera); return;
+      }
       if (dd && d < .55) { const w = walk; walk = null; if (w.after) w.after(); else enterDoor(dd); return; }
       if (d > .02) { const want = Math.atan2(-dx, -dz); let diff = want - cam.yaw; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); cam.yaw += diff * Math.min(1, dt * 8); }
       if (d <= stp) { cam.x = tx; cam.z = tz; walk.i++; syncPos(); if (walk.i >= walk.pts.length) finishWalk(); }
       else { cam.x += dx / d * stp; cam.z += dz / d * stp; }
     }
+    /* 걸을 때 시점이 살짝 흔들리고 발소리 */
+    const movingMe = !!walk || !!(f || st);
+    if (movingMe) {
+      bob += dt * 9;
+      const sgn = Math.sign(Math.sin(bob));
+      if (sgn !== lastStepSign) { lastStepSign = sgn; Sound.foot(); }
+    } else bob = Math.round(bob / Math.PI) * Math.PI;
     /* 물음표 통통 · 불꽃 */
     for (const m of marks) m.position.y = m.userData.baseY + Math.sin(t / 380 + m.position.x) * .04;
     for (const fl of flames) { if (fl.isLight) fl.intensity = .7 + Math.random() * .4; else fl.scale.y = .9 + Math.sin(t / 90) * .1; }
@@ -2524,8 +2685,11 @@ const V3 = (() => {
     },
     interact() { go(looking && looking.kind !== "floor" ? looking : null); },
     clearKeys() { for (const k in keys) keys[k] = false; },
-    debug() { return { cam: { ...cam }, looking, objs: clickables.length, walking: !!walk }; },
+    debug() { return { cam: { ...cam }, looking, objs: clickables.length, walking: !!walk, npcs: npcs.map(n => ({ name: n.p.name, x: +n.wx.toFixed(2), z: +n.wz.toFixed(2), tile: [n.p.x, n.p.y], walking: !!n.seg })) }; },
     go, pick,
+    /* 시험용: 카메라 위치 지정, 인물 멈추기 */
+    setCam(x, z, yaw, pitch = -.05) { cam.x = x; cam.z = z; cam.yaw = yaw; cam.pitch = pitch; syncPos(); },
+    freeze(sec = 30) { for (const n of npcs) { n.hold = sec; n.path = null; } },
   };
 })();
 
