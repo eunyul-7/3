@@ -25,6 +25,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { min-height: 100%; }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
@@ -325,6 +326,70 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .member { display: grid; justify-items: center; text-align: center; gap: 4px; }
 .member b { font-family: var(--f-display); font-size: 16px; }
 .member span { color: var(--muted); font-size: 12.5px; }
+/* ===== 픽셀 화면 ===== */
+.pxview { position: relative; width: 100%; aspect-ratio: 11 / 8; border: 3px solid #0b0e11; border-radius: 4px; box-shadow: 0 0 0 1px var(--line), 0 10px 30px rgba(0,0,0,.45); background: #0e1216; overflow: hidden; }
+.pxcanvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; cursor: pointer; touch-action: manipulation; outline: none; }
+.pxcanvas:focus-visible { box-shadow: inset 0 0 0 2px var(--lamp); }
+.px-labels { position: absolute; inset: 0; pointer-events: none; }
+.pxl { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font-size: clamp(9px, 1.7vw, 12px); line-height: 1.2; padding: 1px 5px; border-radius: 2px; background: rgba(8,10,14,.85); color: var(--ink); border: 1px solid rgba(255,255,255,.08); }
+.pxl.silent { color: var(--blood); }
+.pxl.ally { color: #1a1408; background: var(--lamp); font-weight: 600; }
+.pxl.ally.done { background: var(--ok); color: #0f1a12; }
+.pxl.door { transform: translate(-50%, -50%); background: rgba(46,34,25,.92); color: #f1e6d2; font-size: clamp(8px, 1.5vw, 11px); }
+.pxl.door.left { transform: translate(0, -50%); }
+.pxl.door.locked { background: var(--blood); color: #fff; }
+.pxview .map-lock { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; background: rgba(120,30,25,.35); color: #fff; font-family: var(--f-display); font-size: 22px; pointer-events: none; }
+.pxface { image-rendering: pixelated; image-rendering: crisp-edges; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; vertical-align: middle; flex: none; }
+.portrait .pxface { border: 3px solid #0b0e11; box-shadow: 0 0 0 1px var(--line); background: repeating-linear-gradient(to bottom, var(--surface) 0 7px, var(--line) 7px 8px); }
+.pad-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.dpad { display: grid; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(2, 40px); gap: 4px; flex: none; }
+.pad { background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); font-size: 14px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.pad:active { background: var(--lamp); color: #1a1408; }
+.pad.up { grid-column: 2; grid-row: 1; } .pad.left { grid-column: 1; grid-row: 2; } .pad.down { grid-column: 2; grid-row: 2; } .pad.right { grid-column: 3; grid-row: 2; }
+.pad-act { flex: 1 1 200px; min-width: 0; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.pad-act #near-px { flex: 1 1 160px; min-width: 0; }
+.pad-act .btn { padding: 12px 22px; }
+.room-here { display: inline-flex; align-items: center; gap: 4px; justify-self: start; font-family: var(--f-mono); font-size: 10.5px; color: var(--ink); }
+/* ===== 대화 ===== */
+.talk .portrait { display: inline-block; }
+.speech { display: grid; gap: 8px; }
+.line { border: 2px solid var(--line); border-radius: 6px; padding: 10px 12px; background: var(--surface-2); max-width: 66ch; }
+.line p { font-family: var(--f-display); font-size: 15.5px; line-height: 1.7; }
+.line.mine { justify-self: end; border-color: var(--lamp-dim); }
+.line.them.broken { border-color: var(--blood); }
+.line.them.secret { border-color: var(--ok); }
+.line.them.deflect, .line.them.closed { opacity: .85; }
+.who-tag { font-family: var(--f-mono); font-size: 11px; color: var(--muted); letter-spacing: .06em; }
+.choices { display: grid; gap: 6px; }
+.choice { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; text-align: left; background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--lamp-dim); border-radius: 4px; padding: 9px 12px; color: var(--ink); }
+.choice:hover:not(:disabled), .choice:focus-visible { border-color: var(--lamp); }
+.choice:disabled { opacity: .45; cursor: not-allowed; }
+.choice .ck { font-family: var(--f-mono); font-size: 11px; color: var(--lamp); letter-spacing: .06em; flex: none; }
+.choice span:nth-child(2) { flex: 1 1 200px; min-width: 0; }
+.choice .cost { font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+.choice.press { border-left-color: var(--blood); } .choice.press .ck { color: var(--blood); }
+.choice.heart { border-left-color: #e0607a; } .choice.heart .ck { color: #ff8aa0; }
+.choice.back { border-left-color: var(--line); color: var(--muted); }
+.step-title { font-weight: 600; }
+.adv-tag, .sus-tag { font-family: var(--f-mono); font-size: 10.5px; border-radius: 999px; padding: 1px 8px; }
+.adv-tag { background: var(--ok); color: #0f1a12; }
+.sus-tag { border: 1px solid var(--blood); color: var(--blood); }
+.advice { display: flex; gap: 8px; align-items: center; color: var(--ok); font-size: 14px; }
+.advice-btns { margin-top: 2px; }
+.heart { font-family: var(--f-mono); font-size: 11px; margin-left: 6px; } .heart.open { color: #ff8aa0; } .heart.closed { color: var(--muted); }
+.talklog summary { cursor: pointer; color: var(--muted); font-size: 13.5px; }
+.talklog .logq { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; display: grid; gap: 4px; }
+.talklog .q { font-weight: 500; }
+/* ===== 결단의 시간 · 게임 오버 ===== */
+#decision { position: fixed; inset: 0; z-index: 40; pointer-events: none; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 50%, rgba(226,178,92,.25), rgba(8,10,14,.75) 70%); }
+@media (prefers-reduced-motion: no-preference) { #decision .decision-card { animation: pop .5s ease-out; } @keyframes pop { from { transform: scale(.85); opacity: 0; } } }
+.decision-card { display: grid; gap: 4px; justify-items: center; text-align: center; background: rgba(8,10,14,.9); border: 2px solid var(--lamp); border-radius: 6px; padding: 16px 28px; color: var(--ink); }
+.decision-card b { font-family: var(--f-display); font-size: clamp(30px, 7vw, 46px); color: var(--lamp); letter-spacing: .04em; }
+.decision-card span:last-child { color: var(--muted); font-size: 14px; }
+.hint.decision { color: var(--lamp); font-weight: 600; }
+.gameover .grade { font-family: var(--f-mono); letter-spacing: .08em; }
+.spoiler summary { cursor: pointer; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { .timer.hit b { animation: hit .6s ease-out; } @keyframes hit { 0%, 40% { color: #fff; background: var(--blood); } } }
 .name-form { display: grid; gap: 6px; max-width: 360px; }
 .name-form label { font-family: var(--f-mono); font-size: 12px; letter-spacing: .12em; color: var(--muted); }
 .name-form input { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; color: var(--ink); font: inherit; font-size: 16px; min-width: 0; }
@@ -367,7 +432,6 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 <div class="toast" id="toast" role="status" hidden></div>
 <div id="flash" aria-hidden="true"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /* =====================================================================
    사건 데이터
@@ -381,7 +445,7 @@ const CASES = [
   id: "cheongram", no: "01", title: "청람장 사건", where: "강원도 산장 · 폭우",
   tag: "사건 번호 11-10 · 강원도 청람장 · 22:41 접수",
   lede: "폭우로 산길이 끊긴 밤, 은퇴한 제약회사 회장 한도윤(68)이 자신의 서재에서 숨진 채 발견되었다.",
-  brief: "당신은 우연히 같은 산장에 묵고 있던 탐정이다. 경찰은 무너진 도로를 우회해 오는 중이다.",
+  brief: "당신은 신고를 받고 폭우를 뚫고 출동한 강력팀 형사다. 산길이 끊겨 범인도 아직 산장 안에 있다. 정해진 시간 안에 범인을 가려내야 한다.",
   floors: [
     { label: "2층", rooms: ["study", "hall", "doctor", "choi"] },
     { label: "1층", rooms: ["parlor", "kitchen", "butler"], wide: ["parlor"] },
@@ -507,7 +571,7 @@ const CASES = [
   id: "theater", no: "02", title: "달빛극장 사건", where: "대학로 소극장 · 인터미션",
   tag: "사건 번호 11-14 · 달빛극장 · 20:31 접수",
   lede: "2막이 오르기 직전, 주연 배우 송하린(29)이 분장실 바닥에 쓰러진 채 발견되었다. 분장대 모서리에 피가 묻어 있었다.",
-  brief: "당신은 객석에 앉아 있던 관객이다. 극장 대표는 넘어진 사고라며 공연을 취소했다. 관객이 모두 빠져나가기 전에, 경찰이 오기 전에 진실을 밝혀야 한다.",
+  brief: "당신은 신고를 받고 출동한 강력팀 형사다. 극장 대표는 넘어진 사고라며 우긴다. 관객이 모두 빠져나가기 전에 진실을 밝혀야 한다.",
   floors: [
     { label: "무대 뒤", rooms: ["dressing", "backstage", "props", "green"] },
     { label: "객석 쪽", rooms: ["lobby", "booth", "office"], wide: ["lobby"] },
@@ -628,7 +692,7 @@ const CASES = [
   id: "train", no: "03", title: "은하 야간열차 사건", where: "서울→부산 침대열차 · 새벽",
   tag: "사건 번호 11-19 · 야간열차 ‘은하’ 3호차 · 02:47 접수",
   lede: "새벽 2시 40분, 침대열차 3호차 5번 칸에서 미술품 감정사 백승호(58)가 숨진 채 발견되었다. 문은 안쪽에서 걸쇠가 걸려 있었다.",
-  brief: "당신은 같은 열차의 승객이다. 다음 정차역에서 경찰이 오르기 전까지 열차 안의 누구도 내리지 못한다. 밀실은 정말 밀실이었을까?",
+  brief: "당신은 마침 이 열차에 타고 있던 강력팀 형사다. 다음 정차역에 닿기 전까지 열차 안의 누구도 내리지 못한다. 밀실은 정말 밀실이었을까?",
   floors: [
     { label: "3호차", rooms: ["c5", "hall3", "c4", "c6"] },
     { label: "다른 칸", rooms: ["car2", "dining", "crew"], wide: ["car2"] },
@@ -749,7 +813,7 @@ const CASES = [
   id: "museum", no: "04", title: "한빛 박물관 사건", where: "시립 박물관 · 폐관 후",
   tag: "사건 번호 11-23 · 한빛 시립박물관 · 08:12 접수",
   lede: "아침 개관 전, 관장 고명준(61)이 지하 수장고에서 숨진 채 발견되었다. 진열장 속 국보 ‘청자 학무늬 매병’은 감쪽같이 복제품으로 바뀌어 있었다.",
-  brief: "당신은 아침 일찍 박물관을 찾은 손님이다. 사라진 진품과 관장의 죽음은 같은 밤에 일어났다. 경찰이 도착하기 전에 범인을 밝혀내야 한다.",
+  brief: "당신은 신고를 받고 출동한 강력팀 형사다. 사라진 진품과 관장의 죽음은 같은 밤에 일어났다. 언론이 몰려오기 전에 범인을 밝혀내야 한다.",
   floors: [
     { label: "2층", rooms: ["gallery", "office"] },
     { label: "1층", rooms: ["security", "studio", "lounge"], wide: ["lounge"] },
@@ -1010,7 +1074,7 @@ const hm = m => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(((
 
 const SETTINGS = [
   { title: "파랑새 호텔", where: "해안 절벽 호텔 · 폭풍", intro: "폭풍으로 해안 도로가 끊긴 밤", victimRole: "호텔 소유주",
-    brief: "당신은 이 호텔에 묵던 투숙객이다. 폭풍이 잦아들면 경찰이 들어온다.",
+    brief: "당신은 폭풍을 뚫고 출동한 강력팀 형사다. 해안 도로가 끊겨 범인도 아직 호텔 안에 있다.",
     crime: { name: "펜트하우스", desc: "바다가 내려다보이는 넓은 방. 피해자는 소파 옆에 쓰러져 있다." },
     c1: { name: "라운지 바", desc: "재즈가 낮게 흐르던 바. 빈 잔들이 테이블에 남아 있다.", flavor: { label: "바텐더에게 묻는다", text: "“오늘 밤은 손님이 적었어요. 폭풍 때문에 다들 일찍 올라갔죠.”" } },
     pair: { spot: "바 계산서를 본다", name: "라운지 바 계산서", act: "같은 테이블에서 칵테일을 주문하며 자리를 지켰다. 바텐더 서명이 있다" },
@@ -1019,7 +1083,7 @@ const SETTINGS = [
     witness: { spot: "CCTV를 돌려 본다", name: "복도 CCTV", text: (n, t) => `복도 CCTV, ${t}. ${I(n)} 펜트하우스 쪽으로 걸어가는 뒷모습이 찍혀 있다.` },
     room: "객실", floors: ["꼭대기 층", "아래층"] },
   { title: "설봉 산장", where: "스키 리조트 산장 · 눈보라", intro: "눈보라로 케이블카가 멈춘 밤", victimRole: "리조트 회장",
-    brief: "당신은 산장에 고립된 손님이다. 눈보라가 그치면 구조대와 경찰이 올라온다.",
+    brief: "당신은 눈보라를 뚫고 올라온 강력팀 형사다. 케이블카가 멈춰 범인도 산장을 빠져나가지 못했다.",
     crime: { name: "회장실", desc: "사슴뿔 장식이 걸린 집무실. 피해자는 책상 앞에 쓰러져 있다." },
     c1: { name: "벽난로 홀", desc: "커다란 벽난로와 가죽 소파. 보드게임 상자가 열려 있다.", flavor: { label: "벽난로를 살핀다", text: "장작이 거의 다 탔다. 재 속에 특별한 것은 없다." } },
     pair: { spot: "보드게임 점수표를 본다", name: "보드게임 점수표", act: "번갈아 점수를 적으며 게임을 했다. 판마다 시각이 적혀 있다" },
@@ -1028,7 +1092,7 @@ const SETTINGS = [
     witness: { spot: "엘리베이터 운행 기록을 본다", name: "엘리베이터 운행 기록", text: (n, t) => `엘리베이터 운행 기록, ${t}. ${n}의 카드로 회장실 층이 호출되었다.` },
     room: "방", floors: ["2층", "1층"] },
   { title: "물안개 섬 별장", where: "외딴 섬 별장 · 짙은 안개", intro: "안개로 배가 끊긴 밤", victimRole: "베스트셀러 소설가",
-    brief: "당신은 출간 기념 모임에 초대된 손님이다. 안개가 걷히면 해경이 들어온다.",
+    brief: "당신은 마지막 배로 섬에 들어온 강력팀 형사다. 안개가 걷히면 범인이 섬을 빠져나갈지도 모른다.",
     crime: { name: "집필실", desc: "원고가 사방에 흩어진 방. 타자기 옆에 피해자가 쓰러져 있다." },
     c1: { name: "온실", desc: "열대 식물로 가득한 유리 온실. 탁자에 찻잔이 놓여 있다.", flavor: { label: "식물 사이를 살핀다", text: "물을 준 지 얼마 안 된 화분들. 흙이 축축하다. 별다른 건 없다." } },
     pair: { spot: "온실 관리 일지를 본다", name: "온실 관리 일지", act: "온실에서 함께 차를 마시며 식물을 돌봤다고 관리인이 적어 두었다" },
@@ -1037,7 +1101,7 @@ const SETTINGS = [
     witness: { spot: "도어락 기록을 본다", name: "도어락 기록", text: (n, t) => `본관 도어락 기록, ${t}. ${n}의 지문으로 집필실 쪽 중문이 열렸다.` },
     room: "손님방", floors: ["본관", "별채"] },
   { title: "구름다리 미술관", where: "미술관 개관 파티 · 폭우", intro: "개관 기념 파티가 끝난 밤", victimRole: "미술관장",
-    brief: "당신은 파티에 초대된 손님이다. 폭우로 다리가 통제되어 경찰이 늦어진다.",
+    brief: "당신은 폭우를 뚫고 출동한 강력팀 형사다. 다리가 통제되어 범인도 아직 미술관 안에 있다.",
     crime: { name: "관장실", desc: "현대 미술 작품이 걸린 넓은 방. 피해자는 책상 옆 카펫에 쓰러져 있다." },
     c1: { name: "전시홀", desc: "조명이 반쯤 꺼진 전시홀. 샴페인 잔이 여기저기 남아 있다.", flavor: { label: "작품 사이를 둘러본다", text: "파티의 흔적뿐이다. 작품들은 모두 제자리에 있다." } },
     pair: { spot: "전시홀 방명록을 본다", name: "전시홀 방명록", act: "도슨트의 작품 해설을 끝까지 들으며 방명록에 시각을 남겼다" },
@@ -1046,7 +1110,7 @@ const SETTINGS = [
     witness: { spot: "보안 카메라를 돌려 본다", name: "2층 복도 카메라", text: (n, t) => `2층 복도 카메라, ${t}. ${I(n)} 관장실 문을 두드리는 모습이 찍혀 있다.` },
     room: "대기실", floors: ["2층", "1층"] },
   { title: "은빛 물결호", where: "크루즈선 · 한밤의 바다", intro: "항구까지 열두 시간이 남은 밤", victimRole: "선박 회사 대표",
-    brief: "당신은 같은 배의 승객이다. 해경 헬기가 오기 전까지 배 안의 누구도 내릴 수 없다.",
+    brief: "당신은 마침 이 배에 타고 있던 강력팀 형사다. 항구에 닿기 전까지 배 안의 누구도 내릴 수 없다.",
     crime: { name: "대표 객실", desc: "바다 쪽 창이 넓은 특실. 피해자는 침대 발치에 쓰러져 있다." },
     c1: { name: "갑판 식당", desc: "밤바람이 드는 갑판 식당. 디저트 접시가 반쯤 치워져 있다.", flavor: { label: "남은 식기를 본다", text: "디저트 접시와 커피잔뿐이다. 별다른 건 없다." } },
     pair: { spot: "식당 주문표를 본다", name: "갑판 식당 주문표", act: "같은 테이블에서 디저트와 커피를 연달아 주문했다" },
@@ -1055,7 +1119,7 @@ const SETTINGS = [
     witness: { spot: "카드키 기록을 조회한다", name: "선내 카드키 기록", text: (n, t) => `선내 카드키 기록, ${t}. ${n}의 카드로 대표 객실 층 출입문이 열렸다.` },
     room: "선실", floors: ["상갑판", "하갑판"] },
   { title: "해담 와이너리", where: "포도밭 와이너리 · 수확제", intro: "수확제가 끝난 밤", victimRole: "와이너리 주인",
-    brief: "당신은 수확제에 초대된 손님이다. 산불 연기로 길이 막혀 경찰이 돌아오는 중이다.",
+    brief: "당신은 연기를 뚫고 출동한 강력팀 형사다. 길이 막혀 범인도 와이너리를 빠져나가지 못했다.",
     crime: { name: "지하 저장고", desc: "오크통이 줄지은 서늘한 저장고. 피해자는 통 사이에 쓰러져 있다." },
     c1: { name: "시음실", desc: "긴 원목 테이블과 시음 잔들. 와인 향이 짙다.", flavor: { label: "시음 잔을 본다", text: "잔마다 다른 와인이 조금씩 남아 있다. 특별한 건 없다." } },
     pair: { spot: "시음 기록표를 본다", name: "시음 기록표", act: "와인 여섯 종을 번갈아 시음하며 점수를 매겼다. 잔마다 시각이 있다" },
@@ -1259,44 +1323,33 @@ const turnsFor = c => {
 };
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
-  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], rebutNotes: {}, lawyerUsed: 0,
+  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], rebutNotes: {},
+  chances: 1, penalties: 0, decided: false, advice: {}, cleared: [], persona: {}, heart: {}, secrets: [], lastLine: null, dlg: null, wrongAccuse: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
-  mode: "3d", pos: null, dir: null, autopsyDone: false, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
+  mode: "pixel", pos: null, dir: null, autopsyDone: false, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
-/* 동료 탐정: 어려워지면 돕고, 어려움에서는 직접 현장에 보낼 수 있다 */
+/* 수사팀(경찰): 어려워지면 돕고, 직접 현장에 보낼 수 있다 */
 const PARTNERS = [
-  { id: "kang", name: "강무열", title: "베테랑 탐정", skill: "자물쇠 따기와 경찰 연락",
+  { id: "kang", name: "강무열", title: "베테랑 형사", rank: "경감", skill: "잠긴 문 열기·수사 시간 벌기",
     report: (room, list) => list ? `“자물쇠쯤이야. ${room}에서 이런 걸 건졌네. ${list}.”` : `“${room}엔 더 볼 게 없더군.”` },
-  { id: "yoon", name: "윤도경", title: "법의학 탐정", skill: "현장 감식",
-    report: (room, list) => list ? `“${room} 감식 끝났어요. 나온 건 ${list}입니다.”` : `“${room}에서는 새로 나온 게 없어요.”` },
-  { id: "seo", name: "서하루", title: "견습 탐정", skill: "거짓말 냄새 맡기",
+  { id: "yoon", name: "윤도경", title: "과학수사 경사", rank: "경사", skill: "현장 감식",
+    report: (room, list) => list ? `“${room} 감식 끝났습니다. 나온 건 ${list}입니다.”` : `“${room}에서는 새로 나온 게 없습니다.”` },
+  { id: "seo", name: "서하루", title: "순경", rank: "순경", skill: "거짓말 냄새 맡기",
     report: (room, list) => list ? `“선배님! ${room} 싹 다 뒤져 봤어요. ${list}!”` : `“${room}은 이미 다 조사돼 있던데요?”` },
 ];
 const partner = id => PARTNERS.find(x => x.id === id);
 
-/* 반박 탐정: 들은 말이 거짓이면 대신 반박해서 무너뜨린다 */
+/* 반박 담당: 들은 말이 거짓이면 대신 반박해서 무너뜨린다 */
 const REBUTTERS = [
-  { id: "prof", name: "한서진", title: "프로파일러",
-    hit: clue => `“이 사람 말은 행동 패턴과 안 맞아요. ${clue ? `‘${clue}’만 봐도 ` : ""}이 말은 성립하지 않아요.”`,
-    miss: "“기록과도 맞고 행동 패턴도 일관돼요. 이 말은 사실로 보여요.”" },
-  { id: "psy", name: "모은재", title: "견습 프로파일러",
-    hit: () => "“방금 시선이 아래로 떨어지고 말이 빨라졌어요. 거짓말할 때 나오는 반응이에요. 솔직하게 말씀하시죠.”",
+  { id: "prof", name: "한서진", title: "프로파일러 경위",
+    hit: clue => `“이 사람 말은 행동 패턴과 안 맞습니다. ${clue ? `‘${clue}’만 봐도 ` : ""}이 말은 성립하지 않아요.”`,
+    miss: "“기록과도 맞고 행동 패턴도 일관돼요. 이 말은 사실로 보입니다.”" },
+  { id: "psy", name: "모은재", title: "견습 프로파일러 경사",
+    hit: () => "“방금 시선이 아래로 떨어지고 말이 빨라졌어요. 거짓말할 때 나오는 반응이에요.”",
     miss: "“목소리도 표정도 흔들림이 없어요. 거짓말은 아닌 것 같아요.”" },
 ];
-/* 우리 쪽 변호사: 입을 닫은 용의자를 다시 말하게 한다. 보통 2번, 어려움 3번 */
-const LAWYER = { name: "차도율", title: "변호사" };
-const LAWYER_USES = { normal: 2, hard: 3 };
-const lawyerLeft = () => (LAWYER_USES[S.diff] || 0) - S.lawyerUsed;
-function callLawyer(sid) {
-  if (!S.silence[sid] || lawyerLeft() <= 0 || S.turns <= 0) return;
-  delete S.silence[sid]; S.lawyerUsed += 1;
-  const name = C().suspects[sid].name;
-  const msg = `${LAWYER.title} ${LAWYER.name}: “제가 ${name} 씨 곁에 있겠습니다. 이제 말씀하셔도 됩니다.”`;
-  S.events.push({ bad: false, msg });
-  toast(`<b>변호사 도착</b> — ${esc(EUN(name))} 다시 입을 열었다.`); Sound.help();
-}
 
 /* 범인 편: 변수 인물 2명 중 한 명은 공범. 보통·어려움에서만 */
 const VARIABLE_POOL = [
@@ -1344,13 +1397,35 @@ function accuseVar(i) {
     toast(`<b>공범 체포!</b> 이제 증거 훼손과 방 잠김이 멈춘다.`); Sound.lie(); flash();
   } else {
     S.accWrong.push(i);
-    toast(`헛짚었다. ${esc(EUN(v.name))} 공범이 아니다. (−2턴)`, true); Sound.wrong();
-    spend(2);
+    toast(`헛짚었다. ${esc(EUN(v.name))} 공범이 아니다.`, true); Sound.wrong();
+    penalty("공범을 잘못 지목했다");
+    spend();
   }
 }
 
-/* 반박 횟수: 보통은 프로파일러 1번·견습 프로파일러 2번, 어려움은 2번·2번, 쉬움은 없음 */
-const REBUT = { normal: { prof: 1, psy: 2 }, hard: { prof: 2, psy: 2 } };
+/* 틀린 추리의 대가: 남은 시간 10초 */
+const PENALTY_SEC = 10;
+function penalty(why) {
+  if (S.turns <= 0) return;
+  S.timeLeft = Math.max(0, S.timeLeft - PENALTY_SEC); S.penalties += 1;
+  toast(`<b>−${PENALTY_SEC}초</b> — ${esc(why)}`, true);
+  const el = document.getElementById("timer"); if (el) { el.classList.remove("hit"); void el.offsetWidth; el.classList.add("hit"); }
+  if (S.timeLeft <= 0) decisionTime("시간이 다 됐다");
+}
+
+/* ---------- 난이도: 쉬움은 쉽지만 짧고 도움이 적다 / 어려움은 어렵지만 길고 도움이 많다 ---------- */
+const DIFF = {
+  easy:   { label: "쉬움", turns: 24, time: 240, bonus: 0, chances: 1, fakes: 0, sab: null, villains: false, persona: "show", lieTags: true, helpMax: 0,
+            desc: "아주 쉬워요. 가짜 물건·방해·공범이 없고, 수상한 대답에는 표시가 붙어요. 대신 시간이 4분뿐이고 동료는 윤도경 경사 한 번, 한서진 경위 반박 한 번만 와요." },
+  normal: { label: "보통", turns: 34, time: 420, bonus: 3, chances: 1, fakes: 1, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 }, villains: true, persona: "show", lieTags: false, helpMax: 3,
+            desc: "가짜 물건과 방해, 공범이 있어요. 시간은 7분. 윤도경·서하루를 2번씩 출동시킬 수 있고, 반박은 한서진 1번·모은재 2번이에요." },
+  hard:   { label: "어려움", turns: 50, time: 720, bonus: 6, chances: 2, fakes: 2, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 }, villains: true, persona: "hint", lieTags: false, helpMax: 6,
+            desc: "아주 어려워요. 가짜 물건이 많고 방해가 거세며, 용의자 성격도 눈치로 알아내야 해요. 대신 시간 12분, 지목 기회 2번, 동료 셋 다 3번씩 출동하고 반박도 3번씩 도와줘요." },
+};
+/* 팀원 출동 횟수 */
+const DISPATCH = { easy: { each: 1, who: ["yoon"] }, normal: { each: 2, who: ["yoon", "seo"] }, hard: { each: 3 } };
+/* 반박 횟수 */
+const REBUT = { easy: { prof: 1, psy: 1 }, normal: { prof: 1, psy: 3 }, hard: { prof: 2, psy: 5 } };
 const rebutLeft = id => ((REBUT[S.diff] || {})[id] || 0) - S.rebuts.filter(x => x === id).length;
 const pfull = x => `${x.title} ${x.name}`;
 const MISSION_DELAY = 2;
@@ -1371,9 +1446,9 @@ const FAKE_POOL = [
   { type: "crate", label: "구석의 나무 궤짝을 연다", text: "낡은 신문지 뭉치뿐이다. 몇 년 전 신문이다." },
 ];
 function makeFakes() {
-  const c = C(), out = {}, per = S.diff === "hard" ? 2 : 1;
+  const c = C(), out = {}, per = DIFF[S.diff].fakes;
+  if (!per) return out;
   for (const rid of Object.keys(c.rooms)) {
-    if (S.diff === "easy" && Math.random() < .5) continue;   /* 쉬움은 절반 정도의 방에만 */
     const used = new Set(c.rooms[rid].spots.map(sp => furnType(sp.label)));
     out[rid] = RND.shuffle(FAKE_POOL).filter(f => !used.has(f.type)).slice(0, per)
       .map((f, i) => ({ id: `fk_${rid}_${i}`, label: f.label, type: f.type, text: f.text, clue: null, fake: true }));
@@ -1382,15 +1457,42 @@ function makeFakes() {
 }
 const allSpots = rid => C().rooms[rid].spots.concat((S.fakes && S.fakes[rid]) || []);
 
-/* 난이도: 첫 사건은 쉽게, 뒤로 갈수록 어렵게 */
-const DIFF = {
-  easy:   { label: "쉬움",   turns: 30, time: 720, bonus: 0, sab: null,
-            desc: "방해가 없어요. 처음 하는 사람에게 추천!" },
-  normal: { label: "보통",   turns: 35, time: 540, bonus: 3, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 },
-            desc: "중간쯤부터 가끔 방해가 들어와요. 윤도경이 알아서 시신을 살피고 단서를 찾아 주고, 서하루가 거짓말을 알려 줘요. 두 사람을 2번씩 출동시킬 수 있고, 프로파일러 1번·견습 프로파일러 2번 반박을 맡길 수 있어요. 변호사는 2번." },
-  hard:   { label: "어려움", turns: 45, time: 360, bonus: 6, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 },
-            desc: "일찍부터 방해가 자주 들어와요. 탐정 세 명이 모두 돕고, 탐정마다 3번씩 출동시킬 수 있어요. 프로파일러·견습 프로파일러 반박은 2번씩, 변호사는 3번." },
+/* ---------- 호감도: 성격에 맞는 말을 고르면 마음을 열고 숨은 증언을 들려준다 ---------- */
+const PERSONAS = {
+  timid:  { label: "겁이 많다", tell: "손을 자꾸 만지작거리고 눈을 피한다", right: "empathy" },
+  proud:  { label: "자존심이 세다", tell: "턱을 치켜들고 내려다보듯 말한다", right: "respect" },
+  blunt:  { label: "돌려 말하는 걸 싫어한다", tell: "팔짱을 낀 채 짧게만 대답한다", right: "direct" },
 };
+const TONES = [
+  { id: "empathy", label: "다독인다", line: "많이 놀라셨죠. 천천히, 편하게 말씀하셔도 됩니다." },
+  { id: "respect", label: "치켜세운다", line: "선생님 같은 분 말씀이라면 믿을 수 있습니다. 도와주시겠습니까?" },
+  { id: "direct",  label: "단도직입", line: "돌려 말하지 않겠습니다. 아는 걸 전부 말해 주세요." },
+];
+function secretHint(sid) {
+  const c = C(), cul = c.answer.culprit, culName = c.suspects[cul].name, crime = c.rooms[crimeRoomId()].name;
+  if (sid === cul) return `“저는 ${crime} 근처엔 가지도 않았어요. 정말이에요.” — 묻지도 않았는데 사건 현장 이야기를 먼저 꺼냈다.`;
+  const keys = c.key.filter(k => c.clues[k]), k1 = c.clues[keys[0]];
+  const spot = Object.entries(c.rooms).flatMap(([rid, r]) => r.spots.map(sp => ({ ...sp, rid }))).find(sp => keys.slice(1).includes(sp.clue) && !has(S.searched, sp.id));
+  return `“사실… 그날 밤 ${culName} 씨가 유난히 초조해 보였어요. ‘${k1.name}’ 얘기만 나오면 말을 돌렸고요.”` +
+    (spot ? ` “그리고 ${c.rooms[spot.rid].name} 쪽에서 뭔가 감추는 걸 본 것 같아요.”` : "");
+}
+function openHeart(sid, tone) {
+  if (S.turns <= 0 || S.heart[sid] || S.silence[sid]) return;
+  const p = C().suspects[sid], right = PERSONAS[S.persona[sid]].right === tone;
+  if (right) {
+    S.heart[sid] = "open";
+    const hint = secretHint(sid);
+    S.secrets.push({ sid, name: p.name, text: hint });
+    S.lastLine = { sid, q: TONES.find(t => t.id === tone).line, a: hint, kind: "secret" };
+    toast(`<b>마음을 열었다</b> — ${esc(p.name)}의 숨은 증언을 들었다.`); Sound.clue(); flash();
+  } else {
+    S.heart[sid] = "closed";
+    S.lastLine = { sid, q: TONES.find(t => t.id === tone).line, a: "“…그런 식이면 더 할 말 없습니다.” 굳게 입을 다물었다.", kind: "closed" };
+    toast(`<b>마음이 닫혔다</b> — ${esc(p.name)}의 숨은 증언은 이제 들을 수 없다.`, true); Sound.wrong();
+  }
+  S.dlg = null; spend();
+}
+
 const mmss = sec => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 let PLAYER = ""; try { PLAYER = localStorage.getItem("midnight-player") || ""; } catch {}
 const pname = () => PLAYER.trim() || "무명";
@@ -1398,22 +1500,23 @@ function openRandom() {
   toastQ.length = 0;
   const c = generateCase(), n = loadRecords().randomSolved || 0;
   const diff = n === 0 ? "easy" : n < 3 ? "normal" : "hard";
-  S = Object.assign(fresh(), { screen: "brief", caseId: "random", randomCase: c, room: "crime", suspect: "p0", diff, timed: diff !== "easy" });
+  S = Object.assign(fresh(), { screen: "brief", caseId: "random", randomCase: c, room: "crime", suspect: "p0", diff });
 }
-
 function openCase(id) {
   toastQ.length = 0;
   const c = caseById(id), idx = CASES.indexOf(c);
   const diff = idx === 0 ? "easy" : idx === 1 ? "normal" : "hard";
-  S = Object.assign(fresh(), { screen: "brief", caseId: id, diff, timed: diff !== "easy",
-    room: Object.keys(c.rooms)[0], suspect: Object.keys(c.suspects)[0] });
+  S = Object.assign(fresh(), { screen: "brief", caseId: id, diff, room: Object.keys(c.rooms)[0], suspect: Object.keys(c.suspects)[0] });
 }
 function beginCase() {
-  const d = DIFF[S.diff], t = d.turns;
-  S.turns = S.maxTurns = t;
-  S.timeLeft = S.timeMax = S.timed ? d.time : 0;
-  S.vars = S.diff === "easy" ? [] : makeVars();
+  const d = DIFF[S.diff];
+  S.turns = S.maxTurns = d.turns;
+  S.timed = true; S.timeLeft = S.timeMax = d.time;
+  S.chances = d.chances;
+  S.vars = d.villains ? makeVars() : [];
   S.fakes = makeFakes(); S.fakeSeed = Math.random();
+  const ids = Object.keys(PERSONAS);
+  S.persona = {}; for (const sid of Object.keys(C().suspects)) S.persona[sid] = RND.pick(ids);   /* 성격은 판마다 바뀐다 */
   S.screen = "game";
 }
 function nextCaseId() {
@@ -1434,9 +1537,10 @@ const findQ = id => { for (const [sid, p] of Object.entries(C().suspects)) { con
 const josa = (w, a, b) => { const ch = w.charCodeAt(w.length - 1); return w + ((ch >= 0xAC00 && ch <= 0xD7A3 && (ch - 0xAC00) % 28) ? a : b); };
 
 function spend(n = 1) {
+  if (S.turns <= 0) return;
   S.turns -= n;
   for (const m of [S.locks, S.silence]) for (const k in m) { m[k] -= n; if (m[k] <= 0) delete m[k]; }
-  if (S.turns <= 0) { policeArrive("턴이 모두 지났다"); return; }
+  if (S.turns <= 0) { decisionTime("수사 턴을 모두 썼다"); return; }
   S.sinceEvent += 1; S.sinceHelp += 1; S.actions += n;
   resolveMissions();
   autoAutopsy();
@@ -1444,16 +1548,16 @@ function spend(n = 1) {
   maybeHelp();
 }
 
-/* ---------- 조력자: 어려워질수록 도와주러 온다 ---------- */
+/* ---------- 동료의 자동 도움: 어려울수록 자주 ---------- */
 function maybeHelp() {
-  const p = progress();
-  if (S.turns <= 0 || p < 0.35 || S.helps >= 3 || !S.events.some(e => e.bad)) return;
-  if (S.sinceHelp < 4) return;
-  if (Math.random() > 0.15 + 0.35 * p) return;
+  const p = progress(), max = DIFF[S.diff].helpMax;
+  if (!max || S.turns <= 0 || p < 0.3 || S.helps >= max || !S.events.some(e => e.bad)) return;
+  if (S.sinceHelp < (S.diff === "hard" ? 3 : 4)) return;
+  if (Math.random() > (S.diff === "hard" ? 0.3 : 0.15) + 0.35 * p) return;
   help();
 }
 function help() {
-  if (S.diff === "easy") return;   /* 쉬움에는 동료 탐정이 나오지 않는다 */
+  if (!DIFF[S.diff].helpMax) return;
   const c = C(), opts = [];
   const blocked = Object.keys(S.locks).length || Object.keys(S.silence).length;
   const vet = S.diff === "hard";   /* 베테랑 강무열(문 열기·시간 벌기)은 어려움에서만 */
@@ -1475,44 +1579,44 @@ function help() {
   } else if (kind === "reveal") {
     const s = RND.pick(keySpots.length ? keySpots : spots);
     S.searched.push(s.id); S.found.push(s.clue);
-    msg = `${who}: “${pname()} 탐정님, ${c.rooms[s.rid].name}에서 이걸 찾았어요.” — ${c.clues[s.clue].name}`;
+    msg = `${who}: “${pname()} 형사님, ${c.rooms[s.rid].name}에서 이걸 찾았습니다.” — ${c.clues[s.clue].name}`;
   } else if (kind === "hint") {
     const { q, p } = RND.pick(lies); S.hints.push(q.id);
     msg = `${who}: “${pname()} 선배님, ${p.name} 씨가 ‘${q.q}’에 한 대답, 아무래도 냄새가 나요.”`;
   } else {
-    S.turns += 2; S.maxTurns = Math.max(S.maxTurns, S.turns);
-    msg = `${I(who)} 경찰에 무전을 넣어 시간을 벌어 주었다. 도착이 2턴 늦춰졌다.`;
+    S.turns += 2; S.maxTurns = Math.max(S.maxTurns, S.turns); S.timeLeft += 30; S.timeMax = Math.max(S.timeMax, S.timeLeft);
+    msg = `${I(who)} 윗선을 설득해 수사 시간을 벌었다. 2턴과 30초가 늘었다.`;
   }
   S.helps += 1; S.sinceHelp = 0;
   S.events.push({ bad: false, msg });
-  toast(`<b>동료 탐정</b> — ${esc(msg)}`); Sound.help();
+  toast(`<b>수사팀</b> — ${esc(msg)}`); Sound.help();
 }
 
-/* ---------- 반박 탐정: 턴을 쓰지 않고 대신 반박 ---------- */
+/* ---------- 반박: 턴을 쓰지 않고 동료가 대신 반박 ---------- */
 function rebut(rid, qid) {
   const f = findQ(qid); if (!f) return;
   const { q, p, sid } = f, x = REBUTTERS.find(r => r.id === rid);
   if (!x || rebutLeft(rid) <= 0 || S.turns <= 0 || S.silence[sid] || !has(S.asked, qid) || has(S.broken, qid) || S.rebutNotes[qid]) return;
-  S.rebuts.push(rid); S.challenge = null; S.deflectOn = null;
+  S.rebuts.push(rid); S.dlg = null;
   const who = `${x.title} ${x.name}`;
   if (q.lie) {
     const clue = q.lie.clues.map(id => C().clues[id]).find(Boolean);
     S.rebutNotes[qid] = { who, text: x.hit(clue && clue.name) };
     S.broken.push(qid); addTl(q.lie.tl);
+    S.lastLine = { sid, q: x.hit(clue && clue.name), a: q.lie.reply, kind: "broken", who };
     S.events.push({ bad: false, msg: `${I(who)} ${p.name}의 거짓말을 대신 반박했다.` });
     toast(`<b>${esc(who)}</b> — ${esc(EUN(p.name))} 말을 바꿨다!`); Sound.lie(); flash();
   } else {
     S.rebutNotes[qid] = { who, text: x.miss };
+    S.lastLine = { sid, q: `‘${q.q}’에 대한 대답을 따져 봤다.`, a: x.miss, kind: "rebut-miss", who };
     toast(`<b>${esc(who)}</b> — 이 말은 사실로 보인다.`); Sound.help();
   }
 }
 
-/* ---------- 어려움: 동료 탐정을 현장에 보내 직접 조사시키기 ---------- */
-/* 사건 현장의 첫 조사 지점 = 시신(박물관은 매병) */
+/* ---------- 팀원 출동: 장소에 보내면 턴을 쓰지 않고 대신 조사 ---------- */
+/* 사건 현장의 첫 조사 지점 = 시신(박물관은 시신) */
 const crimeRoomId = () => Object.keys(C().rooms).find(k => C().rooms[k].crime);
 const bodySpot = () => C().rooms[crimeRoomId()].spots[0];
-/* 탐정 출동 횟수: 보통은 윤도경·서하루가 2번씩(모두 4번), 어려움은 세 명이 3번씩, 쉬움은 없음 */
-const DISPATCH = { normal: { each: 2, who: ["yoon", "seo"] }, hard: { each: 3 } };
 const sentCount = pid => S.dispatched.filter(x => !pid || x === pid).length;
 function dispatchLeft(pid) {
   const rule = DISPATCH[S.diff];
@@ -1528,10 +1632,10 @@ function dispatch(pid) {
   if (!canDispatch(pid)) return;
   S.dispatched.push(pid);
   S.missions.push({ pid, room: S.room, due: S.actions + MISSION_DELAY, only: null });
-  V3.helperEnter(S.missions[S.missions.length - 1]);
+  PX.helperEnter(S.missions[S.missions.length - 1]);
   const x = partner(pid), rn = C().rooms[S.room].name;
-  toast(`<b>${esc(x.name)}</b> — “${esc(EUN(rn))} 제게 맡기세요. ${MISSION_DELAY}턴 뒤에 보고하겠습니다.”`);
-  Sound.ask();
+  toast(`<b>${esc(x.title)} ${esc(x.name)}</b> — “${esc(EUN(rn))} 제게 맡기십시오. ${MISSION_DELAY}턴 뒤에 보고하겠습니다.”`);
+  Sound.door();
 }
 const AUTOPSY_AFTER = 3;   /* 행동 3번 뒤 도착 */
 function autoAutopsy() {
@@ -1542,11 +1646,10 @@ function autoAutopsy() {
   S.searched.push(sp.id);
   if (sp.clue && !has(S.found, sp.clue)) S.found.push(sp.clue);
   const c = C(), rn = c.rooms[crimeRoomId()].name;
-  const msg = `법의학 탐정 윤도경의 감식 — “${pname()} 탐정님, ${rn} 감식 끝났어요. ${c.clues[sp.clue].text}”`;
+  const msg = `과학수사 경사 윤도경의 감식 — “${pname()} 형사님, ${rn} 감식 끝났습니다. ${c.clues[sp.clue].text}”`;
   S.events.push({ bad: false, msg });
-  toast(`<b>현장 감식</b> — 윤도경이 ${esc(EUL(c.clues[sp.clue].name))} 확인했다.`); Sound.clue();
+  toast(`<b>현장 감식</b> — 윤도경 경사가 ${esc(EUL(c.clues[sp.clue].name))} 확인했다.`); Sound.clue();
 }
-
 function resolveMissions() {
   const c = C(), done = S.missions.filter(m => S.actions >= m.due);
   S.missions = S.missions.filter(m => S.actions < m.due);
@@ -1561,50 +1664,37 @@ function resolveMissions() {
     S.events.push({ bad: false, msg });
     toast(`<b>현장 보고</b> — ${esc(msg)}`); names.length ? Sound.clue() : Sound.help();
   }
-  if (done.length) V3.prune();
+  if (done.length) PX.prune();
 }
 
-function policeArrive(why) {
-  S.turns = 0; S.challenge = null; S.locks = {}; S.silence = {}; S.missions = [];
-  toast(`<b>경찰 도착</b> — ${why}. 이제 범인을 지목해야 한다.`, true); Sound.siren();
-  if (policeShowing) return;
-  policeShowing = true;
-  const toAccuse = () => { policeShowing = false; hidePoliceOverlay(); S.tab = "accuse"; render(); window.scrollTo(0, 0); };
-  showPoliceOverlay(why);
-  if (!V3.policeScene(toAccuse)) { setTimeout(toAccuse, 3000); setTimeout(policeOnMap, 30); }   /* 3D가 아니면 경광등 + 지도 위 경찰 */
+/* ---------- 결단의 시간: 턴이나 시간이 다 되면 증거가 부족해도 범인을 골라야 한다 ---------- */
+let decisionShowing = false;
+function decisionTime(why) {
+  if (S.decided) return;
+  S.decided = true;
+  S.turns = 0; S.dlg = null; S.locks = {}; S.silence = {}; S.missions = [];
+  Sound.siren();
+  decisionShowing = true;
+  showDecisionOverlay(why);
+  setTimeout(() => { decisionShowing = false; hideDecisionOverlay(); if (S.screen === "game") { S.tab = "accuse"; render(); window.scrollTo(0, 0); } }, 2600);
 }
-let policeShowing = false;
-function showPoliceOverlay(why) {
-  let o = document.getElementById("police");
-  if (!o) { o = document.createElement("div"); o.id = "police"; o.setAttribute("role", "alert"); document.body.appendChild(o); }
-  o.innerHTML = `<div class="police-card"><span class="label">${esc(why)}</span><b>경찰 도착</b><span>이제 범인을 지목해야 한다</span></div>`;
-  o.hidden = false; o.className = S.tab === "rooms" && S.mode === "3d" ? "light" : "";
+function showDecisionOverlay(why) {
+  let o = document.getElementById("decision");
+  if (!o) { o = document.createElement("div"); o.id = "decision"; o.setAttribute("role", "alert"); document.body.appendChild(o); }
+  o.innerHTML = `<div class="decision-card"><span class="label">${esc(why)}</span><b>결단의 시간</b><span>증거가 부족해도 지금 범인을 지목해야 한다</span></div>`;
+  o.hidden = false;
 }
-function policeOnMap() {
-  const map = document.getElementById("map"); if (!map || S.mode !== "map") return;
-  ensurePos();
-  const L = layout(S.room), d = L.doors[0]; if (!d) return;
-  const cell = (x, y) => `left:${x / EXW * 100}%;top:${y / EXH * 100}%;width:${100 / EXW}%;height:${100 / EXH}%`;
-  const spots = [[1, 0], [-1, 0], [0, -1], [0, 1]].map(([dx, dy]) => [S.pos.x + dx, S.pos.y + dy]).filter(([x, y]) => x >= 1 && x <= EXW - 2 && y >= 1 && y <= EXH - 2);
-  ["김 경장", "박 순경", "최 형사"].forEach((nm, i) => {
-    const el = document.createElement("div");
-    el.className = "cop"; el.setAttribute("style", cell(d.x, d.y)); el.innerHTML = `<span class="cop-icon"></span><span class="nm">${nm}</span>`;
-    map.appendChild(el);
-    const [tx, ty] = spots[i % spots.length] || [S.pos.x, S.pos.y];
-    setTimeout(() => el.setAttribute("style", cell(tx, ty) + `;transition-delay:${i * .25}s`), 60);
-  });
-}
-function hidePoliceOverlay() { const o = document.getElementById("police"); if (o) o.hidden = true; }
+function hideDecisionOverlay() { const o = document.getElementById("decision"); if (o) o.hidden = true; }
 
 /* ---------- 시간 제한: 실제 초가 흐른다 ---------- */
 setInterval(() => {
   if (S.screen !== "game" || !S.timed || S.turns <= 0 || document.hidden) return;
   S.timeLeft = Math.max(0, S.timeLeft - 1);
-  if (S.timeLeft === 0) { policeArrive("시간이 다 됐다"); render(); return; }
+  if (S.timeLeft === 0) { decisionTime("시간이 다 됐다"); render(); return; }
   if (S.timeLeft <= 30) Sound.tick();
   const el = document.getElementById("timer");
   if (el) el.innerHTML = `남은 시간 <b>${mmss(S.timeLeft)}</b>`;
-  const ps = document.getElementById("police-sec"); if (ps) ps.textContent = mmss(S.timeLeft);
+  const ps = document.getElementById("near-sec"); if (ps) ps.textContent = mmss(S.timeLeft);
   if (S.timeLeft === 30 && S.tab === "rooms") render();
   if (S.timeLeft === 60) { toast("<b>1분 남았다</b> — 서둘러야 한다.", true); render(); }
 }, 1000);
@@ -1643,10 +1733,10 @@ function sabotage(late) {
     msg = `${josa(c.rooms[rid].name, "이", "가")} 잠겼다. 열쇠를 찾는 동안 ${dur}턴 들어갈 수 없다. 문 앞에 ${I(accomplice().trace)} 남아 있었다.`;
   } else if (kind === "silence") {
     const [sid, sp] = pickOne(silenceable); S.silence[sid] = dur;
-    msg = `${josa(sp.name, "이", "가")} “변호사가 오기 전엔 아무 말도 안 하겠다”며 입을 닫았다. ${dur}턴 동안 심문할 수 없다.${lawyerLeft() > 0 ? " 심문 화면에서 변호사를 부를 수 있다." : ""}`;
+    msg = `${josa(sp.name, "이", "가")} “더는 아무 말도 안 하겠다”며 입을 닫았다. ${dur}턴 동안 심문할 수 없다.`;
   } else {
     S.turns -= 1;
-    msg = "무전: “지름길을 찾았다.” 경찰 도착이 1턴 앞당겨졌다.";
+    msg = "무전: “윗선에서 결과를 독촉한다.” 수사 시간이 1턴 줄었다.";
     if (S.turns <= 0) S.turns = 1;
   }
   S.events.push({ bad: true, msg }); S.sinceEvent = 0;
@@ -1789,12 +1879,13 @@ const soundBtn = () => `<button class="sound-btn" data-act="sound" aria-pressed=
 
 function render() {
   Sound.tension();
-  if (policeShowing && (S.screen !== "game" || S.tab !== "rooms")) { policeShowing = false; hidePoliceOverlay(); V3.cancelPolice(); }
-  document.body.classList.toggle("urgent", S.screen === "game" && S.turns > 0 && (S.turns <= 6 || (S.timed && S.timeLeft <= 60)));
+  if (decisionShowing && S.screen !== "game") { decisionShowing = false; hideDecisionOverlay(); }
+  document.body.classList.toggle("urgent", S.screen === "game" && S.turns > 0 && (S.turns <= 6 || S.timeLeft <= 60));
   if (S.screen === "title") return renderTitle();
   if (S.screen === "files") return renderFiles();
   if (S.screen === "brief") return renderBrief();
   if (S.screen === "result") return renderResult();
+  if (S.screen === "gameover") return renderGameOver();
   const c = C(), out = S.turns <= 0;
   const alerts = [
     ...Object.entries(S.locks).map(([rid, n]) => `<span class="alert">잠김 · ${c.rooms[rid].name} ${n}턴</span>`),
@@ -1810,58 +1901,55 @@ function render() {
   app.innerHTML = `
     <header class="board">
       <div class="board-top">
-        <div><span class="label">탐정 ${esc(pname())}</span><h2>${c.title}</h2></div>
-        <div class="clock" aria-label="남은 행동 ${S.turns}회">
+        <div><span class="label">형사 ${esc(pname())}</span><h2>${c.title}</h2></div>
+        <div class="clock" aria-label="남은 행동 ${S.turns}회, 남은 시간 ${mmss(S.timeLeft)}">
           <div class="pips">${pips}</div>
-          <span class="mono">경찰 도착까지 <b>${S.turns}</b>턴</span>
-          ${S.timed ? `<span class="mono timer" id="timer">남은 시간 <b>${mmss(S.timeLeft)}</b></span>` : ""}
-          <span class="diff-chip">${DIFF[S.diff].label}</span>
+          <span class="mono">결단까지 <b>${S.turns}</b>턴</span>
+          <span class="mono timer" id="timer">남은 시간 <b>${mmss(S.timeLeft)}</b></span>
+          <span class="diff-chip">${DIFF[S.diff].label}${S.chances > 1 ? ` · 지목 기회 ${S.chances}` : ""}</span>
         </div>
       </div>
       <nav class="tabs" role="tablist">${tabs}<button class="tab quit" data-act="files">사건 목록</button>${soundBtn()}</nav>
       ${alertRow}
     </header>
     <main>${body}</main>`;
-  if (S.tab === "rooms" && S.mode === "3d") V3.mount(document.getElementById("view3d")); else V3.clearKeys();
+  if (S.tab === "rooms" && S.mode === "pixel") PX.mount(document.getElementById("pxview")); else PX.clearKeys();
 }
 
 function renderTitle() {
   app.innerHTML = `
     <section class="title">
-      <span class="label">텍스트 추리 게임 · 사건 ${CASES.length}개 + 무작위 사건</span>
+      <span class="label">픽셀 추리 게임 · 사건 ${CASES.length}개 + 무작위 사건</span>
       <h1>한밤의<br><span>사건 파일</span></h1>
-      <p class="lede">비 오는 밤마다 누군가 쓰러진다. 경찰이 도착하기 전까지, 거짓말 속에서 진실을 골라내야 한다.</p>
+      <p class="lede">비 오는 밤, 살인 사건 신고가 들어왔다. 강력팀이 출동한다. 정해진 시간 안에, 거짓말 속에서 범인을 골라내야 한다.</p>
       <form class="name-form" id="name-form">
-        <label for="player-name">탐정 이름</label>
+        <label for="player-name">형사 이름</label>
         <input id="player-name" name="player" maxlength="12" autocomplete="off" placeholder="이름을 지어 주세요" value="${esc(PLAYER)}">
       </form>
       <div class="btn-row">
         <button class="btn" data-act="enter">사건 파일 열기</button>
         ${soundBtn()}
       </div>
-      <h2>수사팀</h2>
+      <h2>강력팀</h2>
       <div class="team">
-        ${[...PARTNERS.map(x => [x.name, x.title]), ...REBUTTERS.map(x => [x.name, x.title]), [LAWYER.name, LAWYER.title]]
-          .map(([n, t]) => `<div class="member">${Face(n, 72)}<b>${n}</b><span>${t}</span></div>`).join("")}
+        ${[...PARTNERS.map(x => [x.name, x.title]), ...REBUTTERS.map(x => [x.name, x.title])]
+          .map(([n, t]) => `<div class="member">${pixelFace(n, 72)}<b>${n}</b><span>${t}</span></div>`).join("")}
       </div>
       <h2>조작 방법</h2>
       <div class="howto">
-        <div><b><span class="k">01</span>현장 조사</b><p>주인공 눈높이 3D 화면에서 직접 걸어 다녀요. 컴퓨터는 WASD로 걷고 마우스를 끌어 둘러보고, 휴대폰은 바닥을 누르면 걸어가고 끌면 둘러봐요. ‘지도’·‘목록’ 보기로 바꿀 수도 있어요. 물음표(?)가 붙은 물건을 누르면 걸어가서 조사해요(1턴). 사람을 누르면 말을 걸고, 문으로 나가면 옆 방이에요. 이동은 공짜.</p></div>
-        <div><b><span class="k">02</span>심문</b><p>용의자를 고르고 ‘묻는다’를 누른다. 단서를 찾을수록 물어볼 것이 늘어난다.</p></div>
-        <div><b><span class="k">03</span>모순 지적</b><p>들은 진술 아래 ‘모순 지적’을 누르고, 그 말과 맞지 않는 단서를 골라 들이민다. 맞으면 진술이 무너지고, 틀리면 1턴을 잃는다.</p></div>
-        <div><b><span class="k">04</span>수사 수첩</b><p>찾은 단서와 진술로 만든 시간표가 모인다. 거짓으로 밝혀진 진술에는 줄이 그어진다.</p></div>
-        <div><b><span class="k">05</span>범인 지목</b><p>범인·동기·수법·결정적 증거(최대 3개)를 골라 제출한다. 맞힌 만큼 S~F 등급.</p></div>
-        <div class="warn"><b><span class="k">주의</span>훼방</b><p>시간이 흐를수록 누군가 수사를 방해한다. 증거가 훼손되고, 방이 잠기고, 용의자가 입을 닫는다. 경찰이 앞당겨 오기도 한다.</p></div>
-        <div><b><span class="k">도움</span>동료 탐정</b><p>훼방이 심해지면 동료 탐정들이 달려온다. 보통·어려움에서는 법의학 탐정 윤도경(수사 초반 시신 감식, 단서 찾기)과 견습 탐정 서하루(수상한 진술 귀띔)가, 어려움에서는 베테랑 탐정 강무열(잠긴 문 열기·시간 벌기)까지 나온다.</p></div>
-        <div><b><span class="k">출동</span>탐정 출동</b><p>장소 화면 아래 ‘탐정 출동’ 버튼을 누르면 탐정이 그 장소를 대신 조사하고 2턴 뒤에 알려 줘요. 턴은 안 줄어요. 보통은 윤도경·서하루를 2번씩(모두 4번), 어려움은 세 명 모두 3번씩 쓸 수 있어요.</p></div>
-        <div><b><span class="k">난이도</span>쉬움 → 어려움</b><p>첫 사건은 쉬움, 뒤로 갈수록 어려워진다. 사건을 열 때 난이도와 시간 제한 모드를 직접 고를 수도 있다.</p></div>
-        <div><b><span class="k">변호사</span>변호사 차도율</b><p>용의자가 “변호사가 오기 전엔 말 안 해요”라며 입을 닫으면, 심문 화면에서 변호사를 불러 바로 다시 말하게 할 수 있어요. 턴은 안 줄어요. 보통 2번, 어려움 3번.</p></div>
-        <div class="warn"><b><span class="k">범인 편</span>공범</b><p>보통·어려움에는 변수 인물 두 명이 나와요. 그중 한 명은 범인 편 공범이라 증거를 망치고 문을 잠그며 현장에 흔적을 남겨요. 흔적을 비교해 공범을 잡으면 방해가 멈춰요. 누가 공범인지는 매번 바뀌어요.</p></div>
-        <div><b><span class="k">반박</span>프로파일러 한서진 · 견습 프로파일러 모은재</b><p>들은 말 아래 ‘반박’ 버튼을 누르면 탐정이 대신 따져 줘요. 거짓말이면 바로 무너지고, 사실이면 사실이라고 알려 줘요. 턴은 안 줄어요. 보통은 프로파일러 1번·견습 프로파일러 2번, 어려움은 2번·2번.</p></div>
-        <div class="warn"><b><span class="k">시간</span>시간 제한 모드</b><p>실제 시계가 흐른다. 쉬움 12분, 보통 9분, 어려움 6분. 마지막 30초엔 초침 소리가 들린다.</p></div>
-        <div><b><span class="k">무한</span>무작위 사건</b><p>무대·용의자·동기·수법·범인이 매번 새로 정해진다. 같은 사건은 두 번 나오지 않는다.</p></div>
+        <div><b><span class="k">01</span>현장 조사</b><p>픽셀 화면에서 주인공을 움직여요. 컴퓨터는 방향키·WASD, 휴대폰은 바닥을 누르거나 화면 아래 방향 버튼을 써요. 물음표(?)가 붙은 물건을 누르면 걸어가서 조사해요(1턴). 사람을 누르면 대화, 문으로 나가면 옆 방이에요.</p></div>
+        <div><b><span class="k">02</span>대화</b><p>대화 창에 질문이 여러 개 떠요. 하나를 골라 물어보세요(1턴). 단서를 찾을수록 물어볼 것이 늘어나요.</p></div>
+        <div><b><span class="k">03</span>모순 지적</b><p>‘모순을 지적한다’를 골라, 거짓말 같은 대답과 그 말과 맞지 않는 단서를 차례로 골라요. 맞으면 진술이 무너지고, 틀리면 1턴과 <b>10초</b>를 잃어요.</p></div>
+        <div class="warn"><b><span class="k">호감도</span>마음 열기</b><p>용의자마다 성격이 있어요. ‘마음을 연다’에서 성격에 맞는 말투를 고르면 숨은 증언을 들려줘요. 잘못 고르면 그 증언은 영영 들을 수 없어요.</p></div>
+        <div><b><span class="k">04</span>수사 수첩</b><p>찾은 단서, 시간표, 숨은 증언이 모여요. 거짓으로 밝혀진 진술에는 줄이 그어져요.</p></div>
+        <div class="warn"><b><span class="k">05</span>결단의 시간</b><p>턴이나 시간이 다 되면 증거가 부족해도 범인을 골라야 해요. 범인을 놓치면 그대로 게임 오버예요.</p></div>
+        <div><b><span class="k">출동</span>팀원 출동</b><p>장소에서 팀원을 보내면 문으로 들어와 대신 조사하고 2턴 뒤에 보고해요. 턴은 안 줄어요.</p></div>
+        <div><b><span class="k">반박</span>프로파일러</b><p>대화 중 프로파일러에게 반박을 맡기면 거짓말인지 대신 따져 줘요. 턴은 안 줄어요.</p></div>
+        <div class="warn"><b><span class="k">주의</span>방해 · 공범 · 가짜 물건</b><p>보통·어려움에서는 누군가 증거를 망치고 문을 잠가요. 변수 인물 중 한 명이 공범이에요. 가짜 물건도 섞여 있어요.</p></div>
+        <div><b><span class="k">난이도</span>쉬움 ↔ 어려움</b><p>쉬움은 아주 쉽지만 시간이 짧고 도움이 적어요. 어려움은 아주 어렵지만 시간·지목 기회·동료 도움이 많아요.</p></div>
+        <div><b><span class="k">무한</span>무작위 사건</b><p>무대·용의자·동기·수법·범인이 매번 새로 정해져요.</p></div>
       </div>
-      <p class="hint">효과음은 브라우저에서 바로 만들어 낸다. 남은 턴이 6 이하가 되면 심장 박동이 들린다.</p>
+      <p class="hint">효과음은 브라우저에서 바로 만들어 낸다. 남은 시간이 1분 이하가 되면 심장 박동이 들린다.</p>
     </section>`;
 }
 
@@ -1873,7 +1961,7 @@ function renderFiles() {
     <section class="files">
       <span class="label">해결 ${solved} / ${CASES.length}</span>
       <h1>한밤의 사건 파일</h1>
-      <p class="lede">${who} 탐정, 범인도 수법도 거짓말도 사건마다 다르다. 아직 풀지 않은 사건이나 무작위 사건을 골라 보자.</p>
+      <p class="lede">${who} 형사, 출동 명령이다. 범인도 수법도 거짓말도 사건마다 다르다.</p>
       <div class="file-list">
         <button class="file" data-random="1">
           <span class="no">FILE ∞</span><b>무작위 사건</b><span class="where">무대·용의자·범인이 매번 바뀐다</span>
@@ -1901,20 +1989,16 @@ function renderBrief() {
       <span class="label">${c.tag}</span>
       <h1>${c.title}</h1>
       <p class="lede">${c.lede}</p>
-      <div class="brief"><p><b>${esc(pname())} 탐정</b>, ${c.brief}</p></div>
+      <div class="brief"><p><b>${esc(pname())} 형사</b>, ${c.brief}</p></div>
       <fieldset class="setup">
         <legend>난이도</legend>
-        ${Object.entries(DIFF).map(([k, d]) => `<label class="opt"><input type="radio" name="diff" id="diff-${k}" value="${k}" ${S.diff === k ? "checked" : ""}><span><b>${d.label}</b> · ${d.turns}턴 — ${d.desc}</span></label>`).join("")}
-      </fieldset>
-      <fieldset class="setup">
-        <legend>시간 제한 모드</legend>
-        <label class="opt"><input type="checkbox" name="timed" id="timed" ${S.timed ? "checked" : ""}><span>실제 시간 <b>${mmss(DIFF[S.diff].time)}</b> 안에 범인을 지목한다. 시간이 다 되면 턴이 남아도 경찰이 들이닥친다. 성공하면 점수 +5.</span></label>
+        ${Object.entries(DIFF).map(([k, d]) => `<label class="opt"><input type="radio" name="diff" id="diff-${k}" value="${k}" ${S.diff === k ? "checked" : ""}><span><b>${d.label}</b> · ${mmss(d.time)} · ${d.turns}턴${d.chances > 1 ? ` · 지목 기회 ${d.chances}번` : ""} — ${d.desc}</span></label>`).join("")}
       </fieldset>
       <div class="cast">
-        ${Object.values(c.suspects).map(p => `<div class="person">${Face(p.name, 64, "", ageOf(p.role))}<b>${p.name}</b><span>${p.role}</span><span>${p.intro}</span></div>`).join("")}
+        ${Object.values(c.suspects).map(p => `<div class="person">${pixelFace(p.name, 64, p.role)}<b>${p.name}</b><span>${p.role}</span><span>${p.intro}</span></div>`).join("")}
       </div>
       <div class="btn-row">
-        <button class="btn" data-act="start">수사를 시작한다</button>
+        <button class="btn" data-act="start">출동한다</button>
         <button class="btn ghost" data-act="files">사건 목록</button>
       </div>
     </section>`;
@@ -1924,26 +2008,24 @@ function roomBtn(id, wide) {
   const r = C().rooms[id];
   const all = allSpots(id), done = all.filter(s => has(S.searched, s.id)).length, lk = S.locks[id];
   const allies = S.missions.filter(m => m.room === id).map(m => { const x = partner(m.pid);
-    return `<span class="room-ally">${Face(x.name, 18)}${x.name} 조사 중 · ${Math.max(0, m.due - S.actions)}턴</span>`; }).join("");
-  const cops = policeShowing && S.room === id ? `<span class="room-police"><span class="siren-dot"></span>경찰 진입</span>` : "";
-  return `<button class="room${r.crime ? " crime" : ""}${wide ? " wide" : ""}${lk ? " is-locked" : ""}${cops ? " has-police" : ""}" aria-pressed="${S.room === id}" data-room="${id}">
-    <span class="rname">${r.name}</span><span class="rstat">${lk ? `잠김 ${lk}턴` : `조사 ${done}/${all.length}`}</span>${allies}${cops}</button>`;
+    return `<span class="room-ally">${pixelFace(x.name, 18)}${x.name} 조사 중 · ${Math.max(0, m.due - S.actions)}턴</span>`; }).join("");
+  const here = S.room === id ? `<span class="room-here">${pixelFace(pname(), 18, "", true)}여기</span>` : "";
+  return `<button class="room${r.crime ? " crime" : ""}${wide ? " wide" : ""}${lk ? " is-locked" : ""}" aria-pressed="${S.room === id}" data-room="${id}">
+    <span class="rname">${r.name}</span><span class="rstat">${lk ? `잠김 ${lk}턴` : `조사 ${done}/${all.length}`}</span>${here}${allies}</button>`;
 }
-/* 방 목록 위: 경찰이 다가오면 경고 */
-function policeBanner() {
+/* 방 목록 위: 결단의 시간이 다가오면 경고 */
+function decisionBanner() {
   if (S.screen !== "game") return "";
-  if (policeShowing) return `<div class="police-near on"><span class="siren-dot"></span>경찰이 들이닥쳤다!</div>`;
-  const nearT = S.turns > 0 && S.turns <= 3, nearS = S.timed && S.turns > 0 && S.timeLeft <= 30;
+  if (decisionShowing || S.decided) return `<div class="police-near on"><span class="siren-dot"></span>결단의 시간!</div>`;
+  const nearT = S.turns > 0 && S.turns <= 3, nearS = S.turns > 0 && S.timeLeft <= 30;
   if (!nearT && !nearS) return "";
-  return `<div class="police-near"><span class="siren-dot"></span>경찰이 오고 있다 · ${nearT ? `${S.turns}턴` : ""}${nearT && nearS ? " · " : ""}${nearS ? `<span id="police-sec">${mmss(S.timeLeft)}</span>` : ""}</div>`;
+  return `<div class="police-near"><span class="siren-dot"></span>결단의 시간이 다가온다 · ${nearT ? `${S.turns}턴` : ""}${nearT && nearS ? " · " : ""}${nearS ? `<span id="near-sec">${mmss(S.timeLeft)}</span>` : ""}</div>`;
 }
 function renderRooms(out) {
-  if (S.mode !== "list") {
-    const c = C();
-    const plan = c.floors.map(f => `<div class="floor"><span class="label">${f.label}</span>
+  const c0 = C();
+  const plan0 = c0.floors.map(f => `<div class="floor"><span class="label">${f.label}</span>
       <div class="floor-grid">${f.rooms.map(id => roomBtn(id, (f.wide || []).includes(id))).join("")}</div></div>`).join("");
-    return S.mode === "map" ? renderExplore(out, plan) : render3D(out, plan);
-  }
+  if (S.mode !== "list") return renderPixel(out, plan0);
   const c = C(), r = c.rooms[S.room], lk = S.locks[S.room];
   const floorOf = c.floors.find(f => f.rooms.includes(S.room));
   const spots = allSpots(S.room).map(sp => {
@@ -1959,7 +2041,7 @@ function renderRooms(out) {
   const plan = c.floors.map(f => `<div class="floor"><span class="label">${f.label}</span>
     <div class="floor-grid">${f.rooms.map(id => roomBtn(id, (f.wide || []).includes(id))).join("")}</div></div>`).join("");
   return `<div class="split">
-    <div class="plan">${policeBanner()}${plan}</div>
+    <div class="plan">${decisionBanner()}${plan}</div>
     <section class="panel" aria-live="polite">
       <div class="room-head"><div><span class="label">${floorOf ? floorOf.label : ""}</span><h3 style="font-size:24px">${r.name}</h3></div>
         ${modeBtns()}</div>
@@ -2100,80 +2182,6 @@ function findPath(L, from, goals) {
 function ensurePos() {
   if (!S.pos || S.pos.room !== S.room) S.pos = { room: S.room, x: 5, y: 6 };
 }
-/* 바로 옆(정면 우선)에 있는 조사 대상 */
-function nearby() {
-  ensurePos();
-  const L = layout(S.room), dirs = S.dir ? [S.dir, ...NB.filter(d => d.join() !== S.dir.join())] : NB;
-  for (const [dx, dy] of dirs) {
-    const o = at(L, S.pos.x + dx, S.pos.y + dy);
-    if (o && o.type !== "plant") return o;
-  }
-  return null;
-}
-function nearText() {
-  const o = nearby(), c = C();
-  if (!o) return "방향키·WASD나 바닥을 눌러 움직이세요. 물건이나 사람 옆에서 조사할 수 있어요.";
-  if (o.spot) {
-    if (has(S.searched, o.spot)) return `${o.label} — 이미 조사했다.`;
-    return `${o.label} — 스페이스 또는 ‘조사하기’ (−${has(S.tampered, o.spot) ? 2 : 1}턴)`;
-  }
-  return `${o.name} — 스페이스 또는 ‘말 걸기’`;
-}
-function updateNear() {
-  const el = document.getElementById("near"), btn = document.getElementById("act-btn"), o = nearby();
-  if (el) el.textContent = nearText();
-  if (btn) { btn.disabled = !o || (o.spot && (has(S.searched, o.spot) || S.turns <= 0 || S.locks[S.room])); btn.textContent = o && !o.spot ? "말 걸기" : "조사하기"; }
-}
-function placeMe() {
-  const me = document.getElementById("me"); if (!me) return;
-  me.style.left = (S.pos.x / EXW * 100) + "%"; me.style.top = (S.pos.y / EXH * 100) + "%";
-  me.classList.remove("walk"); void me.offsetWidth; me.classList.add("walk");
-  const lt = document.getElementById("light");
-  if (lt) { lt.style.setProperty("--lx", ((S.pos.x + .5) / EXW * 100) + "%"); lt.style.setProperty("--ly", ((S.pos.y + .5) / EXH * 100) + "%"); }
-}
-let walkTimer = null;
-function stopWalk() { clearInterval(walkTimer); walkTimer = null; }
-function stepTo(x, y) {
-  const L = layout(S.room), d = doorAt(L, x, y);
-  S.dir = [Math.sign(x - S.pos.x), Math.sign(y - S.pos.y)];
-  if (d) { enterDoor(d); return false; }
-  if (!walkable(L, x, y)) { updateNear(); return false; }
-  S.pos.x = x; S.pos.y = y; placeMe(); updateNear();
-  return true;
-}
-function enterDoor(d) {
-  stopWalk();
-  if (S.locks[d.to]) { toast(`${esc(C().rooms[d.to].name)}은(는) 잠겨 있다. ${S.locks[d.to]}턴 뒤에 열린다.`, true); Sound.wrong(); return; }
-  const from = S.room; S.room = d.to;
-  const back = doorsOf(d.to).find(x => x.to === from);
-  S.pos = { room: d.to, x: back ? (back.side === "b" ? back.x : 1) : 5, y: back ? (back.side === "b" ? EXH - 2 : back.y) : 6 };
-  S.dir = back && back.side === "l" ? [1, 0] : [0, -1];
-  Sound.step(); render();
-}
-function walkPath(path, then) {
-  stopWalk();
-  if (!path) { toast("거기로는 갈 수 없다.", true); return; }
-  let i = 0;
-  const tick = () => {
-    if (i >= path.length) { stopWalk(); if (then) then(); return; }
-    const [x, y] = path[i++];
-    if (!stepTo(x, y)) stopWalk();
-  };
-  tick(); if (path.length > 1) walkTimer = setInterval(tick, 115);
-  else if (!path.length && then) then();
-}
-function interact(o) {
-  o = o || nearby(); if (!o) return;
-  if (o.kind === "h") { toast(`<b>${esc(o.name)}</b> — “여긴 제게 맡기세요! 곧 보고하겠습니다.”`); return; }
-  if (o.spot) { if (doSearch(o.spot)) render(); return; }
-  if (o.id) { stopWalk(); S.tab = "people"; S.suspect = o.id; S.challenge = null; S.deflectOn = null; render(); window.scrollTo(0, 0); }
-}
-/* 멀리 있는 물건·사람을 누르면 옆까지 걸어가서 조사 */
-function goTo(target) {
-  ensurePos();
-  const L = layout(S.room), goals = NB.map(([dx, dy]) => [target.x + dx, target.y + dy]).filter(([x, y]) => walkable(L, x, y) && !doorAt(L, x, y));
-  walkPath(findPath(L, S.pos, goals), () => { S.dir = [Math.sign(target.x - S.pos.x), Math.sign(target.y - S.pos.y)]; updateNear(); interact(target); });
-}
 function doSearch(id) {
   const rid = Object.keys(C().rooms).find(k => allSpots(k).some(s => s.id === id));
   const sp = rid && allSpots(rid).find(s => s.id === id);
@@ -2184,929 +2192,561 @@ function doSearch(id) {
   return true;
 }
 
-function renderExplore(out, plan) {
-  ensurePos();
-  const c = C(), rid = S.room, r = c.rooms[rid], L = layout(rid), lk = S.locks[rid];
-  const floorOf = c.floors.find(f => f.rooms.includes(rid));
-  const cell = (x, y) => `left:${x / EXW * 100}%;top:${y / EXH * 100}%;width:${100 / EXW}%;height:${100 / EXH}%`;
-  const hh = hashStr(rid + c.title);
-  const floorKind = /부엌|주방|식당|욕실|기관|장비|보안|경비|공방|창고|수장고|승무원/.test(r.name) ? "tile" : /의 방|객실|선실|손님|게스트|칸|대기실|숙소/.test(r.name) ? "carpet" : "wood";
-  const walls = `<div class="wall top" style="left:0;top:0;width:100%;height:${100 / EXH}%"></div><div class="wall bottom" style="left:0;bottom:0;width:100%;height:${100 / EXH}%"></div>
-    <div class="wall side" style="left:0;top:0;width:${100 / EXW}%;height:100%"></div><div class="wall side r" style="right:0;top:0;width:${100 / EXW}%;height:100%"></div>
-    <div class="wall-deco frame" style="left:${(3 + hh % 2) / EXW * 100}%;top:${0.18 / EXH * 100}%;width:${1.1 / EXW * 100}%;height:${0.62 / EXH * 100}%"></div>
-    <div class="wall-deco sconce" style="left:${(6.4 + hh % 3 * .3) / EXW * 100}%;top:${0.28 / EXH * 100}%;width:${0.5 / EXW * 100}%;height:${0.45 / EXH * 100}%"></div>`;
-  const rugColor = ["#6b2f2f", "#2f4a5c", "#4a3b59", "#5a4a2a"][hh % 4];
-  const rug = `<div class="floor-rug" style="--rug:${rugColor};left:${3 / EXW * 100}%;top:${2.5 / EXH * 100}%;width:${5 / EXW * 100}%;height:${3 / EXH * 100}%"></div>`;
-  const items = L.items.map(it => {
-    const done = has(S.searched, it.spot), tam = has(S.tampered, it.spot);
-    return `<button class="obj${done ? " done" : ""}${tam && !done ? " tam" : ""}" style="${cell(it.x, it.y)}" data-obj="${it.spot}" aria-label="${esc(it.label)}" title="${esc(it.label)}"><span class="obj-art">${furnSVG(it.type)}</span><span class="mark">${done ? "✓" : tam ? "!" : "?"}</span></button>`;
-  }).join("");
-  const deco = L.deco.map(d => `<div class="deco" style="${cell(d.x, d.y)}">${furnSVG(d.type)}</div>`).join("");
-  const people = L.people.map(pp => {
-    const sl = S.silence[pp.id], caught = pp.kind === "v" && S.accCaught && S.vars[+pp.id[1]].acc;
-    if (pp.kind === "h") {   /* 출동한 탐정: 금색 테두리, 막 들어왔으면 문에서 걸어 들어오는 동작 */
-      const fresh = Date.now() - (pp.enteredAt || 0) < 1600, from = pp.from || "b";
-      return `<button class="npc ally${fresh ? " enter-" + from : ""}" style="${cell(pp.x, pp.y)}" data-talk="${pp.id}" aria-label="${esc(pp.name)} 탐정">${Face(pp.name, 0)}<span class="nm">${esc(pp.name)} · 조사 중</span></button>`;
-    }
-    return `<button class="npc${sl ? " silent" : ""}" style="${cell(pp.x, pp.y)}" data-talk="${pp.id}" aria-label="${esc(pp.name)}에게 말 걸기">${Face(pp.name, 0, "", ageOf(pp.role))}<span class="nm">${esc(pp.name)}${caught ? " · 체포" : ""}</span></button>`;
-  }).join("");
-  const doors = L.doors.map(d => {
-    const name = d.stairs ? `계단 ${d.stairs}` : c.rooms[d.to].name;
-    return `<button class="door ${d.side}${S.locks[d.to] ? " locked" : ""}" style="${cell(d.x, d.y)}" data-door="${d.to}" data-dx="${d.x}" data-dy="${d.y}" aria-label="${esc(name)}(으)로 가기" title="${esc(name)}"><span>${esc(name)}</span></button>`;
-  }).join("");
-  const me = `<div class="me" id="me" style="${cell(S.pos.x, S.pos.y)}"><span class="shadow"></span>${Face(pname(), 0)}</div>`;
-  const light = `<div class="light" id="light" style="--lx:${(S.pos.x + .5) / EXW * 100}%;--ly:${(S.pos.y + .5) / EXH * 100}%"></div>`;
-  const found = allSpots(rid).filter(sp => has(S.searched, sp.id));
-  const left = allSpots(rid).length - found.length;
-  const results = found.map(sp => `<div class="spot"><b>${esc(sp.label)}</b><p class="result">${esc(sp.text)}</p>
-    ${sp.fake ? `<span class="found-chip fake">헛수고 · 사건과 관계없음</span>` : ""}${sp.clue ? `<span class="found-chip">단서 · ${esc(c.clues[sp.clue].name)}</span><p class="result">${esc(c.clues[sp.clue].text)}</p>` : ""}</div>`).join("");
-  return `<div class="split explore">
-    <div class="plan">${policeBanner()}${plan}<p class="hint">방 이름을 누르면 바로 이동해요.</p></div>
-    <section class="panel" aria-live="polite">
-      <div class="room-head"><div><span class="label">${floorOf ? floorOf.label : ""}</span><h3 style="font-size:24px">${r.name}</h3></div>
-        ${modeBtns()}</div>
-      <div class="map floor-${floorKind}" id="map" tabindex="0" role="application" aria-label="${esc(r.name)} 지도. 방향키로 움직이고 스페이스로 조사">
-        ${rug}${walls}${deco}${items}${people}${doors}${light}${me}
-        ${lk ? `<div class="map-lock">잠김 · ${lk}턴</div>` : ""}
-      </div>
-      <div class="explore-bar"><span id="near" class="hint">${esc(nearText())}</span>
-        <button class="act press" id="act-btn" data-act="interact">조사하기</button></div>
-      <p class="desc">${r.desc}</p>
-      ${lk ? `<p class="locked-room">이 방이 잠겼다. 문으로 나가서 ${lk}턴 뒤에 다시 오자.</p>` : ""}
-      ${left ? `<p class="hint">이 방에 아직 조사하지 않은 곳(?)이 ${left}곳 있다.</p>` : `<p class="hint">이 방은 모두 조사했다.</p>`}
-      <div class="spots">${results}</div>
-      ${!out ? renderDispatch(r) : ""}
-    </section>
-  </div>`;
-}
-
 /* =====================================================================
-   3D 1인칭: 주인공 눈높이로 방 안을 걸어 다닌다 (Three.js)
-   - 지도와 같은 칸(11×8) 배치를 그대로 3D로 세운다: 칸 1개 = 1m
-   - WASD·방향키로 걷고, 드래그로 둘러보고, 가구·사람·문을 누르면 걸어가서 조사
+   픽셀 화면: 위에서 내려다본 픽셀 방 (칸 하나 = 16px, 방 11×8칸)
+   - 방·가구·인물을 모두 코드로 그린 픽셀 그림으로 표시한다 (그림 파일 없음)
+   - 방향키·WASD, 화면 터치, 방향 버튼으로 움직이고, 물건·사람·문을 누르면 걸어가서 조사·대화·이동
    ===================================================================== */
+const TS = 16, PW = EXW * TS, PH = EXH * TS;
 const modeBtns = () => `<div class="mode-btns" role="group" aria-label="보기 방식">
-  ${[["3d", "3D"], ["map", "지도"], ["list", "목록"]].map(([m, t]) => `<button class="act${S.mode === m ? " on" : ""}" data-act="mode" data-m="${m}" aria-pressed="${S.mode === m}">${t}</button>`).join("")}</div>`;
+  ${[["pixel", "픽셀"], ["list", "목록"]].map(([m, t]) => `<button class="act${S.mode === m ? " on" : ""}" data-act="mode" data-m="${m}" aria-pressed="${S.mode === m}">${t}</button>`).join("")}</div>`;
 const floorKindOf = name => /부엌|주방|식당|욕실|기관|장비|보안|경비|공방|창고|수장고|승무원/.test(name) ? "tile" : /의 방|객실|선실|손님|게스트|칸|대기실|숙소/.test(name) ? "carpet" : "wood";
-/* 사건·무대마다 3D 방 분위기: 벽 무늬·색, 바닥, 조명, 창 */
+/* 사건·무대마다 방 분위기: 벽 무늬·색, 바닥, 창 */
 const THEMES = {
   default:            { wall: "stripe" },
-  theater:            { wall: "curtain", wallC: "#5c1d22", floor: "wood", lamp: 0xffcfae, amb: .5 },
-  train:              { wall: "panel", wallC: "#5e4229", floor: "carpet", carpetC: "#2c3b56", lamp: 0xffe0b0, windows: "night", narrow: true },
-  museum:             { wall: "plain", wallC: "#dcd7cc", floor: "stone", lamp: 0xf6f2ea, amb: .72 },
-  "파랑새 호텔":       { wall: "damask", wallC: "#2d3d58", floor: "carpet", carpetC: "#5a2a30", lamp: 0xffd9a8 },
-  "설봉 산장":         { wall: "log", wallC: "#7c5634", floor: "wood", lamp: 0xffc98a, windows: "snow" },
-  "물안개 섬 별장":     { wall: "plain", wallC: "#c9d6d2", floor: "wood", lamp: 0xf3ecdc, amb: .65, windows: "fog" },
-  "구름다리 미술관":    { wall: "plain", wallC: "#e4e1d9", floor: "stone", lamp: 0xf6f4ee, amb: .75 },
-  "은빛 물결호":       { wall: "panel", wallC: "#4c3625", floor: "carpet", carpetC: "#1f3a4a", lamp: 0xffe2b5, windows: "porthole" },
-  "해담 와이너리":     { wall: "stone", wallC: "#6e6152", floor: "tile", lamp: 0xffc480, amb: .45 },
+  theater:            { wall: "curtain", wallC: "#5c1d22", floor: "wood" },
+  train:              { wall: "panel", wallC: "#5e4229", floor: "carpet", carpetC: "#2c3b56", windows: "night" },
+  museum:             { wall: "plain", wallC: "#cfc9bd", floor: "stone" },
+  "파랑새 호텔":       { wall: "damask", wallC: "#2d3d58", floor: "carpet", carpetC: "#5a2a30" },
+  "설봉 산장":         { wall: "log", wallC: "#7c5634", floor: "wood", windows: "snow" },
+  "물안개 섬 별장":     { wall: "plain", wallC: "#b9c8c4", floor: "wood", windows: "fog" },
+  "구름다리 미술관":    { wall: "plain", wallC: "#d6d2c8", floor: "stone" },
+  "은빛 물결호":       { wall: "panel", wallC: "#4c3625", floor: "carpet", carpetC: "#1f3a4a", windows: "porthole" },
+  "해담 와이너리":     { wall: "stone", wallC: "#6e6152", floor: "tile" },
 };
 const themeOf = () => { const c = C(); return (c.random ? THEMES[c.title.replace(/ 사건$/, "")] : THEMES[c.id]) || THEMES.default; };
-const wallSideOf = it => it.y === 1 ? "n" : it.x === 1 ? "w" : it.x === EXW - 2 ? "e" : it.y === EXH - 2 ? "s" : null;
 
-const V3 = (() => {
-  let renderer = null, scene = null, camera = null, raf = 0, sceneKey = "", host = null, failed = false;
-  let clickables = [], marks = [], flames = [], npcs = [], last = 0, hoverT = 0, looking = null, bob = 0, lastStepSign = 0;
-  const helpers = {};          /* 출동한 탐정: pid → 상태 (장면이 다시 지어져도 유지) */
-  let sceneRoom = null, cutscene = null;
-  const cam = { room: null, x: 5.5, z: 6.5, yaw: 0, pitch: -0.08 };
-  const keys = {};
-  let walk = null;           /* { pts: [[x,z]...], i, done } */
-  const EYE = 1.55, SPEED = 2.4;
-  const texCache = new Map();
-
-  /* ---------- 텍스처 ---------- */
-  function svgTexture(svg, w = 256, h = 256) {
-    const key = svg + w + h;
-    if (texCache.has(key)) return texCache.get(key);
-    const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
-    const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding;
-    const img = new Image();
-    img.onload = () => { cv.getContext("2d").drawImage(img, 0, 0, w, h); tex.needsUpdate = true; };
-    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" '));
-    texCache.set(key, tex); return tex;
-  }
-  function canvasTexture(key, w, h, draw, repeat) {
-    if (texCache.has(key)) return texCache.get(key);
-    const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
-    draw(cv.getContext("2d"), w, h);
-    const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding;
-    if (repeat) { tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(repeat[0], repeat[1]); }
-    tex.anisotropy = 4;
-    texCache.set(key, tex); return tex;
-  }
-  const rnd = seed => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  function floorTex(kind, seed, carpetC) {
-    return canvasTexture("floor" + kind + seed + (carpetC || ""), 512, 512, (g, w, h) => {
-      const r = rnd(seed + 11);
-      if (kind === "wood") {
-        g.fillStyle = "#5b4330"; g.fillRect(0, 0, w, h);
-        for (let row = 0; row < 8; row++) {
-          let x = -r() * 200;
-          while (x < w) {
-            const len = 140 + r() * 160, tone = 70 + r() * 40;
-            g.fillStyle = `rgb(${tone + 25},${tone - 5},${tone - 30})`; g.fillRect(x, row * 64 + 1, len - 2, 62);
-            g.strokeStyle = "rgba(0,0,0,.12)"; for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(x, row * 64 + 10 + k * 13 + r() * 6); g.lineTo(x + len, row * 64 + 10 + k * 13 + r() * 6); g.stroke(); }
-            x += len;
-          }
-        }
-      } else if (kind === "tile") {
-        for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { g.fillStyle = (i + j) % 2 ? "#6c7178" : "#8c9198"; g.fillRect(i * 64, j * 64, 64, 64); }
-        g.strokeStyle = "rgba(0,0,0,.25)"; g.lineWidth = 2; for (let i = 0; i <= 8; i++) { g.beginPath(); g.moveTo(i * 64, 0); g.lineTo(i * 64, h); g.stroke(); g.beginPath(); g.moveTo(0, i * 64); g.lineTo(w, i * 64); g.stroke(); }
-      } else if (kind === "stone") {
-        g.fillStyle = "#8f8a82"; g.fillRect(0, 0, w, h);
-        for (let k = 0; k < 40; k++) { const grd = g.createRadialGradient(r() * w, r() * h, 0, r() * w, r() * h, 60 + r() * 80); grd.addColorStop(0, `rgba(${r() < .5 ? "255,255,255" : "0,0,0"},.07)`); grd.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = grd; g.fillRect(0, 0, w, h); }
-        g.strokeStyle = "rgba(0,0,0,.18)"; g.lineWidth = 2; for (let i = 0; i <= 4; i++) { g.beginPath(); g.moveTo(i * 128, 0); g.lineTo(i * 128, h); g.stroke(); g.beginPath(); g.moveTo(0, i * 128); g.lineTo(w, i * 128); g.stroke(); }
-      } else {
-        g.fillStyle = carpetC || "#463a52"; g.fillRect(0, 0, w, h);
-        for (let k = 0; k < 9000; k++) { g.fillStyle = r() < .5 ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.12)"; g.fillRect(r() * w, r() * h, 2, 2); }
-      }
-    }, kind === "carpet" ? [3, 2] : [3, 2]);
-  }
-  function wallTex(seed, th) {
-    const style = th.wall || "stripe", base = th.wallC || ["#6a5d50", "#55626c", "#6b5552", "#58665a"][seed % 4];
-    return canvasTexture("wall" + style + base, 512, 512, (g, w, h) => {
-      const r = rnd(seed + 5);
-      g.fillStyle = base; g.fillRect(0, 0, w, h);
-      if (style === "stripe") {
-        for (let x = 0; x < w; x += 64) { g.fillStyle = "rgba(255,255,255,.035)"; g.fillRect(x, 0, 28, h); }
-        g.fillStyle = "rgba(0,0,0,.18)"; g.fillRect(0, h * .62, w, 10);
-      } else if (style === "curtain") {          /* 주름진 무대 커튼 */
-        for (let x = 0; x < w; x++) { const v = Math.sin(x / w * Math.PI * 12); g.fillStyle = v > 0 ? `rgba(255,190,180,${v * .12})` : `rgba(0,0,0,${-v * .35})`; g.fillRect(x, 0, 1, h); }
-        g.fillStyle = "rgba(0,0,0,.25)"; g.fillRect(0, h - 30, w, 30);
-      } else if (style === "panel") {            /* 열차·선실 나무 벽판 */
-        g.fillStyle = "rgba(0,0,0,.25)"; g.fillRect(0, h * .55, w, 8);
-        for (let x = 0; x < w; x += 128) { g.strokeStyle = "rgba(0,0,0,.3)"; g.lineWidth = 4; g.strokeRect(x + 14, 20, 100, h * .55 - 40); g.strokeRect(x + 14, h * .55 + 22, 100, h * .45 - 44);
-          g.strokeStyle = "rgba(255,230,190,.08)"; g.lineWidth = 2; g.strokeRect(x + 18, 24, 92, h * .55 - 48); }
-        for (let k = 0; k < 160; k++) { g.strokeStyle = "rgba(0,0,0,.05)"; g.beginPath(); const y = r() * h; g.moveTo(0, y); g.lineTo(w, y + r() * 6); g.stroke(); }
-      } else if (style === "plain") {            /* 전시실·별장 흰 벽 */
-        for (let k = 0; k < 4000; k++) { g.fillStyle = r() < .5 ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.035)"; g.fillRect(r() * w, r() * h, 2, 2); }
-      } else if (style === "damask") {           /* 호텔 무늬 벽지 */
-        for (let y = 0; y < h; y += 64) for (let x = (y / 64) % 2 ? 32 : 0; x < w; x += 64) {
-          g.fillStyle = "rgba(220,190,120,.12)"; g.beginPath(); g.moveTo(x + 32, y + 8); g.quadraticCurveTo(x + 52, y + 32, x + 32, y + 56); g.quadraticCurveTo(x + 12, y + 32, x + 32, y + 8); g.fill(); }
-        g.fillStyle = "rgba(0,0,0,.22)"; g.fillRect(0, h * .62, w, 10);
-      } else if (style === "log") {              /* 산장 통나무 */
-        for (let y = 0; y < h; y += 64) { const grd = g.createLinearGradient(0, y, 0, y + 64); grd.addColorStop(0, "rgba(0,0,0,.35)"); grd.addColorStop(.25, "rgba(255,220,170,.10)"); grd.addColorStop(.75, "rgba(0,0,0,.05)"); grd.addColorStop(1, "rgba(0,0,0,.4)"); g.fillStyle = grd; g.fillRect(0, y, w, 64); }
-      } else if (style === "stone") {            /* 와인 저장고 돌벽 */
-        for (let y = 0, row = 0; y < h; y += 48, row++) for (let x = row % 2 ? -48 : 0; x < w; x += 96) {
-          const tone = r() * .18; g.fillStyle = `rgba(${r() < .5 ? "0,0,0" : "255,240,220"},${tone})`; g.fillRect(x + 3, y + 3, 90, 42); }
-        g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = 3; for (let y = 0; y < h; y += 48) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
-      }
-    }, [style === "log" || style === "stone" ? 3 : 2, 1]);
-  }
-  function textSprite(text, color = "#f4ecdc", bg = "rgba(10,14,18,.82)", scale = .22) {
-    const tex = canvasTexture("txt" + text + color + bg, 512, 96, (g, w, h) => {
-      g.font = "600 44px 'IBM Plex Sans KR', 'Apple SD Gothic Neo', sans-serif";
-      const tw = Math.min(w - 20, g.measureText(text).width + 36);
-      g.fillStyle = bg; const x = (w - tw) / 2; g.beginPath(); g.roundRect ? g.roundRect(x, 14, tw, 68, 14) : g.rect(x, 14, tw, 68); g.fill();
-      g.fillStyle = color; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, w / 2, 50);
-    });
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
-    sp.scale.set(scale * 5.33, scale, 1); sp.renderOrder = 10; return sp;
-  }
-  function markSprite(kind) {
-    const col = kind === "done" ? "#7fb59a" : kind === "tam" ? "#d06a5c" : "#e2b25c";
-    const ch = kind === "done" ? "✓" : kind === "tam" ? "!" : "?";
-    const tex = canvasTexture("mark" + kind, 128, 128, (g) => {
-      g.fillStyle = col; g.beginPath(); g.arc(64, 56, 44, 0, Math.PI * 2); g.fill();
-      g.beginPath(); g.moveTo(48, 92); g.lineTo(80, 92); g.lineTo(64, 118); g.fill();
-      g.fillStyle = kind === "q" ? "#1a1408" : "#fff"; g.font = "700 60px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(ch, 64, 60);
-    });
-    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
-    sp.scale.set(kind === "done" ? .16 : .24, kind === "done" ? .16 : .24, 1); sp.renderOrder = 11; return sp;
-  }
-
-  /* ---------- 모형 도우미 ---------- */
-  const lin = c => new THREE.Color(c).convertSRGBToLinear();   /* 색을 제대로(덜 바래게) */
-  const mat = (c, o = {}) => new THREE.MeshStandardMaterial({ color: lin(c), roughness: o.r ?? .8, metalness: o.m ?? .05, emissive: lin(o.e ?? 0), emissiveIntensity: o.ei ?? 1, transparent: !!o.t, opacity: o.op ?? 1, map: o.map || null, side: o.side || THREE.FrontSide });
-  const box = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); return o; };
-  const cyl = (rt, rb, h, m, x, y, z, seg = 18) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), m); o.position.set(x, y, z); return o; };
-  const sph = (r, m, x, y, z) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 12), m); o.position.set(x, y, z); return o; };
-  const plane = (w, h, m, x, y, z) => { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); o.position.set(x, y, z); return o; };
-  const WOOD = () => mat(0x6e4c34, { r: .7 }), DARKW = () => mat(0x4a3324, { r: .7 }), PAPER = () => mat(0xe8e1d1, { r: .9 }), METAL = () => mat(0x8a959e, { r: .4, m: .6 }), GOLD = () => mat(0xd8b46a, { r: .35, m: .8 });
-  function table(g, w, d, h, m) { g.add(box(w, .05, d, m, 0, h, 0)); for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) g.add(box(.05, h, .05, m, sx * (w / 2 - .05), h / 2, sz * (d / 2 - .05))); }
-
-  function model(type, wall) {
-    const g = new THREE.Group();
-    const W = WOOD();
-    switch (type) {
-      case "desk": table(g, .95, .55, .74, W); g.add(box(.3, .01, .22, PAPER(), -.15, .77, .02)); g.add(box(.18, .01, .24, PAPER(), .05, .772, -.05));
-        g.add(cyl(.05, .07, .02, METAL(), .32, .76, -.15)); g.add(cyl(.01, .01, .3, METAL(), .32, .9, -.15)); g.add(sph(.06, mat(0xffe2a0, { e: 0xffc76a, ei: .9 }), .32, 1.06, -.15));
-        g.add(box(.85, .14, .5, DARKW(), 0, .62, 0)); break;
-      case "drawer": g.add(box(.7, 1.0, .45, W, 0, .5, -.02));
-        for (let i = 0; i < 3; i++) { g.add(box(.62, .26, .03, DARKW(), 0, .2 + i * .3, .215)); g.add(sph(.025, GOLD(), 0, .2 + i * .3, .24)); } break;
-      case "body": {
-        const p = plane(1.25, 1.25, mat(0xffffff, { map: svgTexture(furnSVG("body"), 256, 256), t: true }), 0, .012, 0); p.rotation.x = -Math.PI / 2; g.add(p);
-        const st = new THREE.Mesh(new THREE.CircleGeometry(.16, 20), mat(0x6a1c18, { r: .3 })); st.rotation.x = -Math.PI / 2; st.position.set(.22, .014, .25); g.add(st); break; }
-      case "window": { const y = 1.45; g.add(box(1.0, .9, .05, mat(0x2b3a48, { e: 0x1c3550, ei: .8 }), 0, y, -.47));
-        for (const [w, h, x, yy] of [[1.08, .06, 0, y + .45], [1.08, .06, 0, y - .45], [.06, .96, -.51, y], [.06, .96, .51, y], [.04, .9, 0, y], [1.0, .04, 0, y]]) g.add(box(w, h, .08, mat(0xcfc6b5), x, yy, -.44));
-        g.add(box(1.1, .05, .16, mat(0xcfc6b5), 0, y - .5, -.4)); break; }
-      case "fireplace": g.add(box(1.1, 1.05, .4, mat(0x6b5d55, { r: .95 }), 0, .52, -.3)); g.add(box(.62, .55, .1, mat(0x120e0c), 0, .3, -.06));
-        g.add(box(1.25, .08, .5, mat(0x4f4540), 0, 1.07, -.28));
-        { const f = new THREE.Mesh(new THREE.ConeGeometry(.12, .3, 10), mat(0xff8a30, { e: 0xff6a10, ei: 2, t: true, op: .9 })); f.position.set(0, .22, -.08); g.add(f); flames.push(f);
-          const f2 = new THREE.Mesh(new THREE.ConeGeometry(.07, .2, 8), mat(0xffd060, { e: 0xffc040, ei: 2 })); f2.position.set(.08, .18, -.05); g.add(f2); } break;
-      case "teatable": g.add(cyl(.42, .42, .04, W, 0, .62, 0, 28)); g.add(cyl(.05, .07, .6, DARKW(), 0, .31, 0));
-        g.add(cyl(.05, .04, .07, PAPER(), -.15, .67, .05)); g.add(sph(.09, PAPER(), .12, .7, -.05)); g.add(cyl(.01, .01, .1, PAPER(), .23, .72, -.05)); break;
-      case "chess": table(g, .6, .6, .62, DARKW());
-        g.add(plane(.5, .5, mat(0xffffff, { map: svgTexture(furnSVG("chess"), 128, 128) }), 0, .65, 0).rotateX(-Math.PI / 2));
-        for (const [x, z, c] of [[-.1, -.1, 0x1b1716], [.12, .06, 0xf4efe4], [-.05, .14, 0xf4efe4]]) g.add(cyl(.02, .025, .07, mat(c), x, .69, z)); break;
-      case "sofa": { const F = mat(0x5b4a6b, { r: .95 }); g.add(box(1.0, .42, .7, F, 0, .21, 0)); g.add(box(1.0, .45, .16, F, 0, .62, -.27)); g.add(box(.14, .3, .7, F, -.43, .55, 0)); g.add(box(.14, .3, .7, F, .43, .55, 0)); break; }
-      case "bed": g.add(box(.9, .3, 1.0, DARKW(), 0, .15, 0)); g.add(box(.86, .14, .96, mat(0xece6da), 0, .37, 0)); g.add(box(.6, .1, .26, mat(0xffffff), 0, .48, -.32)); g.add(box(.9, .06, .6, mat(0x5b6f84), 0, .46, .18)); g.add(box(.9, .7, .06, DARKW(), 0, .35, -.48)); break;
-      case "trash": g.add(new THREE.Mesh(new THREE.CylinderGeometry(.18, .15, .42, 20, 1, true), mat(0x7f8b94, { m: .5, r: .5, side: THREE.DoubleSide }))); g.children[0].position.y = .21;
-        g.add(sph(.08, PAPER(), .02, .4, 0)); break;
-      case "terminal": table(g, .9, .5, .74, DARKW()); g.add(box(.55, .36, .04, mat(0x1d2126), 0, 1.0, -.1)); g.add(plane(.5, .31, mat(0x2f6b62, { e: 0x2f8b72, ei: .9 }), 0, 1.0, -.077)); g.add(box(.06, .2, .06, mat(0x1d2126), 0, .84, -.12)); break;
-      case "board": { const y = wall ? 1.35 : 1.1; if (!wall) { g.add(box(.04, 1.1, .04, W, -.2, .55, 0)); g.add(box(.04, 1.1, .04, W, .2, .55, 0)); }
-        g.add(box(.42, .58, .03, W, 0, y, wall ? -.47 : .03)); g.add(plane(.34, .46, mat(0xffffff, { map: svgTexture(furnSVG("board"), 128, 128) }), 0, y, wall ? -.45 : .05)); break; }
-      case "safe": g.add(box(.6, .7, .55, mat(0x4c555d, { m: .5, r: .45 }), 0, .35, -.2)); g.add(cyl(.09, .09, .03, mat(0x2c3238, { m: .6 }), 0, .4, .09).rotateX(Math.PI / 2)); break;
-      case "vanity": table(g, .9, .45, .72, W); g.add(cyl(.32, .32, .02, mat(0x9fb6c6, { r: .1, m: .7 }), 0, 1.15, -.2).rotateX(Math.PI / 2));
-        for (let i = 0; i < 5; i++) g.add(sph(.03, mat(0xfff0b0, { e: 0xffd060, ei: 1.2 }), -.28 + i * .14, 1.52, -.2)); break;
-      case "rail": for (let i = 0; i < 4; i++) { g.add(cyl(.012, .012, 2.2, mat(0xb9a98a), -.3 + i * .2, 1.1, -.3)); g.add(box(.12, .22, .12, mat(0x7b6a4e), -.3 + i * .2, .4 + (i % 3) * .2, -.3)); } break;
-      case "box": g.add(box(.55, .4, .45, mat(0x9a7a52), 0, .2, 0)); g.add(box(.56, .05, .46, mat(0xc9b48a), 0, .3, 0)); break;
-      case "tv": g.add(box(.9, .45, .4, DARKW(), 0, .22, -.1)); g.add(box(.8, .48, .05, mat(0x15181c), 0, .75, -.2)); g.add(plane(.74, .42, mat(0x3b4c5c, { e: 0x2a4a6a, ei: .7 }), 0, .75, -.172)); break;
-      case "photo": { const y = 1.45, z = wall ? -.47 : 0; if (!wall) { g.add(box(.04, 1.4, .04, W, 0, .7, -.05)); }
-        g.add(box(.55, .45, .04, GOLD(), 0, y, z)); g.add(plane(.45, .35, mat(0xffffff, { map: svgTexture(furnSVG("photo"), 128, 128) }), 0, y, z + .025)); break; }
-      case "cart": g.add(box(.6, .5, .4, mat(0x5f7f8f), 0, .4, 0)); for (const x of [-.22, .22]) for (const z of [-.15, .15]) g.add(sph(.05, mat(0x222222), x, .06, z)); g.add(box(.2, .15, .15, mat(0xe3e8ea), -.1, .73, 0)); break;
-      case "plant": g.add(cyl(.16, .12, .3, mat(0x7a5236), 0, .15, 0)); g.add(sph(.25, mat(0x3f6b45), 0, .52, 0)); g.add(sph(.18, mat(0x5b8f60), .12, .68, .05)); g.add(sph(.16, mat(0x4c7d52), -.12, .7, -.04)); break;
-      case "npc": g.add(cyl(.2, .22, 1.05, mat(0x56616b), 0, .53, 0)); g.add(sph(.15, mat(0xe4bd9b), 0, 1.25, 0)); break;
-      case "wallear": g.add(plane(.5, .5, mat(0xffffff, { map: svgTexture(furnSVG("wallear"), 128, 128) }), 0, 1.3, -.47)); break;
-      case "display": g.add(box(.5, .8, .5, mat(0xe9e4da), 0, .4, 0)); g.add(box(.46, .5, .46, mat(0xbcd4e0, { t: true, op: .22, r: .05 }), 0, 1.05, 0));
-        g.add(new THREE.Mesh(new THREE.SphereGeometry(.12, 18, 14), mat(0x8fb5a8, { r: .25 }))); g.children[2].scale.set(1, 1.6, 1); g.children[2].position.set(0, 1.0, 0); break;
-      case "bag": g.add(box(.6, .4, .22, mat(0x7a4e32, { r: .6 }), 0, .2, 0)); g.add(box(.2, .05, .04, mat(0x4a2f1f), 0, .44, 0)); g.add(box(.6, .03, .23, mat(0x5c3a24), 0, .28, 0)); break;
-      default: g.add(box(.55, .55, .55, mat(0x5a6168), 0, .28, 0));
+/* ---------- 픽셀 도구 ---------- */
+const pxCanvas = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
+const hexRgb = h => { const n = parseInt(String(h).replace("#", ""), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const shadeHex = (h, k) => { const [r, g, b] = hexRgb(h), f = v => Math.max(0, Math.min(255, Math.round(v * k))); return `rgb(${f(r)},${f(g)},${f(b)})`; };
+function outlinePass(cv, color = "#16110f") {
+  const g = cv.getContext("2d"), w = cv.width, h = cv.height, img = g.getImageData(0, 0, w, h), d = img.data, o = new Uint8ClampedArray(d), [r, gg, b] = hexRgb(color);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 4; if (d[i + 3] > 0) continue;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+      if (d[(ny * w + nx) * 4 + 3] > 0) { o[i] = r; o[i + 1] = gg; o[i + 2] = b; o[i + 3] = 255; break; }
     }
-    return g;
   }
-  /* ---------- 게임 캐릭터 그림체: 툰 셰이딩 + 외곽선 ---------- */
-  let toonGrad = null;
-  const toon = (c, map) => {
-    if (!toonGrad) {   /* 밝기를 3단계로 끊어 칠하는 만화풍 음영 */
-      toonGrad = new THREE.DataTexture(new Uint8Array([90, 90, 90, 255, 175, 175, 175, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat);
-      toonGrad.minFilter = toonGrad.magFilter = THREE.NearestFilter; toonGrad.generateMipmaps = false; toonGrad.needsUpdate = true;
+  g.putImageData(new ImageData(o, w, h), 0, 0); return cv;
+}
+
+/* ---------- 인물 픽셀 그림 (16×20, 방향 4개 × 걸음 3장) ---------- */
+const LOOK_OVERRIDE = {
+  강무열: { cloth: "#7a5a3a", top: "coat" },
+  윤도경: { cloth: "#e6e3dc", pants: "#c9c4b9", top: "shirt" },
+  서하루: { cloth: "#22314f", pants: "#1b2335", top: "suit", cap: true },
+  한서진: { cloth: "#2b3540", top: "suit" },
+  모은재: { cloth: "#9a7f6a", top: "cardigan" },
+};
+function lookFor(name, role, isPlayer) {
+  if (isPlayer) return { skin: "#e4bd9b", hair: "#241c18", cloth: "#8a6a48", pants: "#2a2d33", F: false, style: "short", glasses: null, facial: null, top: "coat", skirt: false };
+  const T = Face.traits(name, ageOf(role));
+  return { ...T, skirt: T.F && hashStr(name) % 2 === 0, ...(LOOK_OVERRIDE[name] || {}) };
+}
+function drawChar(g, L, dir, frame) {
+  const P = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+  const sk = L.skin, hr = L.hair, cl = L.cloth, clS = shadeHex(L.cloth, .78), pn = L.pants, pnS = shadeHex(L.pants, .75), shoe = "#2a1f1a";
+  const eye = "#22160f", white = "#f2eee6";
+  const liftL = frame === 1 ? 1 : 0, liftR = frame === 2 ? 1 : 0;
+  if (dir === "down" || dir === "up") {
+    const back = dir === "up";
+    /* 긴 머리는 몸 뒤에 */
+    if (["long", "wave"].includes(L.style) && !back) { P(3, 5, 2, 9, hr); P(11, 5, 2, 9, hr); }
+    if (L.style === "bob" && !back) { P(3, 5, 2, 5, hr); P(11, 5, 2, 5, hr); }
+    /* 다리 · 신발 */
+    if (L.skirt) {
+      P(5, 17, 2, 2 - liftL, sk); P(9, 17, 2, 2 - liftR, sk);
+      P(5, 19 - liftL, 2, 1, shoe); P(9, 19 - liftR, 2, 1, shoe);
+      P(4, 14, 8, 3, pn); P(3, 16, 10, 1, pnS);
+    } else {
+      P(5, 15, 3, 4 - liftL, pn); P(8, 15, 3, 4 - liftR, pnS);
+      P(5, 19 - liftL, 3, 1, shoe); P(8, 19 - liftR, 3, 1, shoe);
+      P(4, 15, 8, 1, pn);
     }
-    return new THREE.MeshToonMaterial({ color: lin(c), map: map || null, gradientMap: toonGrad });
-  };
-  const OUTLINE = new Map();
-  function outline(obj, k = 1.06) {   /* 뒤집은 껍데기를 살짝 키워 검은 테두리를 만든다 */
-    obj.traverse(o => {
-      if (!o.isMesh || o.userData.noOutline || o.userData.isOutline) return;
-      let m = OUTLINE.get("o"); if (!m) { m = new THREE.MeshBasicMaterial({ color: lin(0x1b1512), side: THREE.BackSide }); OUTLINE.set("o", m); }
-      const sh = new THREE.Mesh(o.geometry, m); sh.scale.setScalar(k); sh.userData.isOutline = true; o.add(sh);
-    });
-  }
-  /* 얼굴 무늬(게임 캐릭터): 조금 큰 눈 + 반짝이, 짧은 눈썹, 작은 입 */
-  function faceTexture(T, name) {
-    return canvasTexture("face3dgame" + name + T.age, 512, 256, (g, w, h) => {
-      g.fillStyle = T.skin; g.fillRect(0, 0, w, h);
-      const cx = w * .25, ey = h * .55, sep = 27, hc = T.hair === "#c7c1b6" ? "#6a655e" : T.hair;
-      g.fillStyle = "rgba(235,125,115,.22)"; for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(cx + sx * 38, ey + 18, 11, 6.5, 0, 0, Math.PI * 2); g.fill(); }
-      if (T.facial === "stubble") { g.fillStyle = "rgba(50,35,28,.18)"; g.beginPath(); g.ellipse(cx, ey + 32, 34, 15, 0, 0, Math.PI * 2); g.fill(); }
-      g.strokeStyle = hc; g.lineCap = "round"; g.lineWidth = T.F ? 3.6 : 5.5;
-      for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(cx + sx * (sep - 9), ey - 19); g.quadraticCurveTo(cx + sx * sep, ey - (T.F ? 24 : 22), cx + sx * (sep + 9), ey - 19); g.stroke(); }
-      for (const sx of [-1, 1]) {
-        const x = cx + sx * sep;
-        g.fillStyle = "#231713"; g.beginPath(); g.ellipse(x, ey, 7.5, 10, 0, 0, Math.PI * 2); g.fill();
-        g.fillStyle = "#5a3a2a"; g.beginPath(); g.ellipse(x, ey + 2.5, 5, 6, 0, 0, Math.PI * 2); g.fill();
-        g.fillStyle = "#fff"; g.beginPath(); g.ellipse(x + 2.4, ey - 3.6, 2.6, 3, 0, 0, Math.PI * 2); g.fill();
-        g.beginPath(); g.arc(x - 2.4, ey + 4, 1.2, 0, Math.PI * 2); g.fill();
-        if (T.F) { g.strokeStyle = "#231713"; g.lineWidth = 2.2; g.beginPath(); g.moveTo(x + sx * 7, ey - 7); g.lineTo(x + sx * 11, ey - 10); g.stroke(); }
-      }
-      g.fillStyle = "rgba(160,90,70,.4)"; g.beginPath(); g.ellipse(cx, ey + 14, 2.2, 1.5, 0, 0, Math.PI * 2); g.fill();
-      if (T.F) { g.fillStyle = "#c06a62"; g.beginPath(); g.moveTo(cx - 7, ey + 24); g.quadraticCurveTo(cx, ey + 22, cx + 7, ey + 24); g.quadraticCurveTo(cx, ey + 29, cx - 7, ey + 24); g.fill(); }
-      else { g.strokeStyle = "#7a3a32"; g.lineWidth = 2.8; g.lineCap = "round"; g.beginPath(); g.moveTo(cx - 7, ey + 24); g.quadraticCurveTo(cx, ey + 27, cx + 7, ey + 24); g.stroke(); }
-      if (T.old) { g.strokeStyle = "rgba(90,55,40,.32)"; g.lineWidth = 1.4; for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(cx + sx * 40, ey - 2); g.lineTo(cx + sx * 46, ey + 2); g.stroke(); } }
-    });
-  }
-  /* 게임 캐릭터: 3.5등신(키 약 1.45m), 둥근 몸, 적당히 짧은 팔다리, 무릎·팔꿈치 관절 */
-  function person(p) {
-    let T = Face.traits(p.name, ageOf(p.role)); const root = new THREE.Group(), body = new THREE.Group();
-    if (p.police) T = { ...T, cloth: "#22314f", pants: "#1b2335", top: "suit", glasses: null, style: T.F ? "bun" : "short" };
-    body.scale.setScalar(T.F ? .96 : 1); root.add(body);
-    const skin = toon(T.skin), cloth = toon(T.cloth), pants = toon(T.pants), hairM = toon(T.hair), shoe = toon(0x2a201c);
-    const skirt = T.F && hashStr(p.name) % 2 === 0;
-    const seg = (r0, r1, len, m) => { const g = new THREE.Group(); g.add(cyl(r0, r1, len, m, 0, -len / 2, 0, 16)); g.add(sph(r0, m, 0, 0, 0)); return g; };
-    /* 다리 */
-    const legM = skirt ? skin : pants, legs = [], knees = [];
-    for (const sx of [-1, 1]) {
-      const hip = seg(.078, .07, .24, legM); hip.position.set(sx * .09, .52, 0);
-      const knee = seg(.068, .06, .22, legM); knee.position.y = -.24; hip.add(knee);
-      const foot = sph(.075, shoe, 0, -.24, .035); foot.scale.set(1, .62, 1.5); knee.add(foot);
-      body.add(hip); legs.push(hip); knees.push(knee);
-    }
-    const pel = sph(.18, pants, 0, .55, 0); pel.scale.set(1, .55, .78); body.add(pel);
-    if (skirt) { const sk = cyl(.17, .26, .26, toon(T.pants === "#1f2226" ? "#3a3340" : T.pants), 0, .44, 0, 28); sk.scale.z = .85; body.add(sk); }
-    /* 몸통: 둥글둥글한 윤곽 */
-    const torso = new THREE.Group(); torso.position.y = .54; body.add(torso);
-    const W = T.F ? [.16, .165, .17, .185, .175, .12, .055] : [.175, .18, .19, .21, .2, .13, .06];
-    const prof = [0, .07, .16, .28, .36, .41, .43].map((y, i) => new THREE.Vector2(W[i], y));
-    const trunk = new THREE.Mesh(new THREE.LatheGeometry(prof, 28), cloth); trunk.scale.z = .75; torso.add(trunk);
-    const front = W[3] * .75;
-    /* 옷 장식: 깃 · 단추 · 넥타이 */
-    if (T.top !== "knit") for (const sx of [-1, 1]) { const col = box(.075, .055, .015, toon(0xf2eee6), sx * .038, .4, front - .045); col.rotation.set(-.55, 0, sx * .55); col.userData.noOutline = true; torso.add(col); }
-    if (T.top === "suit") { const tie = box(.035, .17, .015, toon(0x8a2c2c), 0, .27, front + .006); tie.userData.noOutline = true; torso.add(tie); }
-    if (T.top === "suit" || T.top === "jacket") for (const sx of [-1, 1]) { const lp = box(.05, .2, .014, toon(T.cloth), sx * .05, .29, front + .004); lp.rotation.z = sx * .28; lp.userData.noOutline = true; torso.add(lp); }
-    if (["shirt", "blouse", "cardigan"].includes(T.top)) for (let i = 0; i < 3; i++) { const bt = sph(.011, toon(0xf2eee6), 0, .1 + i * .08, front + .003); bt.userData.noOutline = true; torso.add(bt); }
-    /* 팔 */
-    const arms = [], elbows = [];
-    for (const sx of [-1, 1]) {
-      const shoulder = seg(.06, .054, .19, cloth); shoulder.position.set(sx * (W[4] + .03), .36, 0);
-      const elbow = seg(.053, .046, .17, cloth); elbow.position.y = -.19; shoulder.add(elbow);
-      elbow.add(sph(.055, skin, 0, -.19, .005));
-      torso.add(shoulder); arms.push(shoulder); elbows.push(elbow);
+    /* 몸통 · 팔 */
+    P(4, 11, 8, 4, cl); P(10, 11, 2, 4, clS);
+    if (L.top === "coat") { P(4, 14, 8, 2, cl); P(7, 11, 1, 5, clS); }
+    const swing = frame === 1 ? 1 : frame === 2 ? -1 : 0;
+    P(3, 11, 1, 4 + swing, cl); P(12, 11, 1, 4 - swing, clS);
+    P(3, 15 + swing, 1, 1, sk); P(12, 15 - swing, 1, 1, sk);
+    if (!back) {
+      if (["suit", "shirt", "jacket", "blouse", "cardigan", "coat"].includes(L.top)) { P(6, 11, 1, 1, white); P(9, 11, 1, 1, white); }
+      if (L.top === "suit") P(7, 12, 2, 2, "#8a2c2c");
+      if (L.top === "shirt" || L.top === "blouse") P(7, 12, 1, 3, shadeHex(L.cloth, .88));
     }
     /* 머리 */
-    torso.add(cyl(.055, .06, .06, skin, 0, .45, 0, 14));
-    const head = new THREE.Group(); head.position.y = .44; torso.add(head);
-    const HR = .2;
-    const skull = new THREE.Mesh(new THREE.SphereGeometry(HR, 40, 28), toon(0xffffff, faceTexture(T, p.name)));
-    skull.position.y = .19; skull.scale.set(1, .98, .96); head.add(skull);
-    for (const sx of [-1, 1]) { const ear = sph(.042, skin, sx * .198, .18, 0); ear.scale.set(.55, 1, .8); head.add(ear); }
-    const cap = (tl, tilt, sz = 1.06) => { const m = new THREE.Mesh(new THREE.SphereGeometry(HR * sz, 36, 18, 0, Math.PI * 2, 0, Math.PI * tl), hairM); m.position.y = .195; m.rotation.x = tilt; m.scale.set(1, 1, .98); head.add(m); return m; };
-    const fringe = (n, wdt, r = .055) => { for (let i = 0; i < n; i++) { const t = (i / (n - 1) - .5) * wdt; const f = sph(r, hairM, Math.sin(t) * HR * .9, .3 - Math.abs(t) * .045, Math.cos(t) * HR * .86); f.scale.set(1.1, .72, .55); head.add(f); } };
-    const back = (len, wide) => {
-      const m = sph(HR, hairM, 0, .17 - len * .26, -.09); m.scale.set(wide, 1 + len, .62); head.add(m);
-      for (const sx of [-1, 1]) { const side = sph(HR * .42, hairM, sx * HR * .86, .13 - len * .16, -.01); side.scale.set(.55, 1.05 + len * 1.3, .8); head.add(side); }
-    };
-    const st = T.style;
-    if (st === "short") { cap(.44, -.36); fringe(3, .6); }
-    if (st === "side") { const c0 = cap(.44, -.36); c0.rotation.z = .12; fringe(4, .8); }
-    if (st === "crew") cap(.4, -.3, 1.04);
-    if (st === "thin") for (const sx of [-1, 1]) { const tf = sph(.07, hairM, sx * .175, .18, -.04); tf.scale.set(.55, 1, 1.25); head.add(tf); }
-    if (st === "long" || st === "wave") { cap(.48, -.24); fringe(5, 1.2); back(.5, st === "wave" ? 1.15 : 1.02); }
-    if (st === "bob") { cap(.48, -.24); fringe(5, 1.2); back(.18, 1.07); }
-    if (st === "bun") { cap(.46, -.3); fringe(4, 1.0); head.add(sph(.085, hairM, 0, .43, -.08)); }
-    if (T.glasses) { const gm = toon(0x2f2724);
-      for (const sx of [-1, 1]) { const ring = new THREE.Mesh(T.glasses === "round" ? new THREE.TorusGeometry(.045, .009, 8, 20) : new THREE.TorusGeometry(.05, .009, 4, 4), gm); ring.position.set(sx * .066, .2, .182); ring.rotation.y = sx * .2; ring.userData.noOutline = true; if (T.glasses === "rect") ring.rotation.z = Math.PI / 4; head.add(ring); }
-      const br = box(.045, .008, .008, gm, 0, .205, .195); br.userData.noOutline = true; head.add(br); }
-    if (T.facial === "mustache") { const ms = sph(.04, hairM, 0, .12, .186); ms.scale.set(1.6, .45, .5); ms.userData.noOutline = true; head.add(ms); }
-    if (p.police) {   /* 경찰모 · 모자 휘장 · 가슴 배지 */
-      const navy = toon(0x1c2740), gold = toon(0xd8b46a);
-      head.add(cyl(HR * .98, HR * .9, .1, navy, 0, .37, 0, 28));
-      const top = cyl(HR * 1.08, HR * 1.0, .03, navy, 0, .43, -.01, 28); head.add(top);
-      const brim = cyl(HR * .75, HR * .75, .015, toon(0x111111), 0, .33, .1, 24); brim.scale.z = .7; head.add(brim);
-      const emb = sph(.03, gold, 0, .38, HR * .98); emb.scale.set(1, 1.2, .4); emb.userData.noOutline = true; head.add(emb);
-      const badge = box(.05, .06, .012, gold, .08, .3, front + .01); badge.userData.noOutline = true; torso.add(badge);
+    P(4, 4, 8, 7, sk); P(5, 3, 6, 1, sk);
+    if (!back) {
+      P(6, 7, 1, 1, eye); P(9, 7, 1, 1, eye);
+      if (L.glasses) { P(5, 7, 1, 1, "#3a3a44"); P(7, 7, 2, 1, "#3a3a44"); P(10, 7, 1, 1, "#3a3a44"); }
+      if (L.F) { P(5, 8, 1, 1, "#e8968c"); P(10, 8, 1, 1, "#e8968c"); }
+      P(7, 9, 2, 1, L.F ? "#c0605a" : shadeHex(L.skin, .72));
+      if (L.facial === "mustache") P(6, 9, 4, 1, hr);
+      if (L.facial === "stubble") { P(5, 9, 1, 1, shadeHex(L.skin, .82)); P(10, 9, 1, 1, shadeHex(L.skin, .82)); }
     }
-    outline(body, 1.07);
-    const nm = textSprite(p.name, p.police ? "#cfe0ff" : undefined); nm.position.y = 1.62; root.add(nm);
-    return { root, body, torso, head, legs, knees, arms, elbows };
+    /* 머리카락 */
+    const st = L.style;
+    if (L.cap) { P(4, 1, 8, 4, "#1c2740"); P(3, 5, 10, 1, "#0f1626"); P(7, 2, 2, 1, "#d8b46a"); }
+    else if (st === "thin") { P(4, 5, 1, 3, hr); P(11, 5, 1, 3, hr); }
+    else {
+      const top = st === "crew" ? 2 : 1;
+      P(5, top, 6, 1, hr); P(4, top + 1, 8, 4 - top + (st === "crew" ? 0 : 1), hr);
+      if (back) { P(4, 2, 8, 8, hr); if (["long", "wave"].includes(st)) P(4, 10, 8, 4, hr); if (st === "bob") P(4, 10, 8, 1, hr); }
+      else {
+        if (st === "short") { P(4, 5, 1, 2, hr); P(11, 5, 1, 2, hr); }
+        if (st === "side") { P(4, 5, 4, 1, hr); P(4, 6, 1, 1, hr); P(11, 5, 1, 2, hr); }
+        if (["long", "wave", "bob", "bun"].includes(st)) { P(4, 5, 2, 1, hr); P(10, 5, 2, 1, hr); P(4, 6, 1, 3, hr); P(11, 6, 1, 3, hr); }
+      }
+      if (st === "bun") P(6, 0, 4, 2, hr);
+    }
+  } else {
+    /* 옆모습(오른쪽) — 왼쪽은 좌우 반전 */
+    const a = frame === 1 ? 1 : frame === 2 ? -1 : 0;
+    if (["long", "wave"].includes(L.style)) P(4, 5, 3, 9, hr);
+    /* 다리 */
+    if (L.skirt) { P(5, 14, 6, 3, pn); P(6, 17, 2, 2, sk); P(8 + a, 17, 2, 2, sk); P(6, 19, 3, 1, shoe); P(8 + a, 19, 3, 1, shoe); }
+    else { P(6 - a, 15, 3, 4, pnS); P(8 + a, 15, 3, 4, pn); P(6 - a, 19, 3, 1, shoe); P(8 + a, 19, 4, 1, shoe); }
+    /* 몸통 · 앞팔 */
+    P(5, 11, 6, 4, cl); P(5, 11, 1, 4, clS);
+    if (L.top === "coat") P(5, 14, 6, 2, cl);
+    P(7 + a, 11, 2, 4, clS); P(7 + a * 2, 15, 2, 1, sk);
+    if (L.top === "suit" || L.top === "shirt" || L.top === "coat") P(10, 11, 1, 1, white);
+    /* 머리 */
+    P(5, 4, 7, 7, sk); P(12, 7, 1, 1, sk);
+    P(10, 7, 1, 1, eye);
+    if (L.glasses) P(9, 7, 3, 1, "#3a3a44"), P(10, 7, 1, 1, eye);
+    P(10, 9, 2, 1, L.F ? "#c0605a" : shadeHex(L.skin, .72));
+    if (L.facial === "mustache") P(10, 9, 2, 1, hr);
+    if (L.F) P(9, 8, 1, 1, "#e8968c");
+    const st = L.style;
+    if (L.cap) { P(5, 1, 7, 4, "#1c2740"); P(11, 4, 3, 1, "#0f1626"); }
+    else if (st === "thin") P(5, 5, 2, 3, hr);
+    else {
+      P(5, 1, 6, 1, hr); P(5, 2, 7, st === "crew" ? 2 : 3, hr); P(5, 4, 2, 3, hr);
+      if (["long", "wave", "bob"].includes(st)) P(4, 4, 3, st === "bob" ? 6 : 8, hr);
+      if (st === "bun") P(4, 0, 3, 3, hr);
+      if (st === "side" || st === "long" || st === "bob") P(10, 4, 2, 1, hr);
+    }
   }
+}
+const spriteCache = new Map();
+function charSprites(name, role, isPlayer) {
+  const key = (isPlayer ? "@" : "") + name + "|" + role;
+  if (spriteCache.has(key)) return spriteCache.get(key);
+  const L = lookFor(name, role, isPlayer), out = {};
+  for (const dir of ["down", "up", "right"]) out[dir] = [0, 1, 2].map(f => { const cv = pxCanvas(16, 20); drawChar(cv.getContext("2d"), L, dir, f); return outlinePass(cv); });
+  out.left = out.right.map(src => { const cv = pxCanvas(16, 20), g = cv.getContext("2d"); g.translate(16, 0); g.scale(-1, 1); g.drawImage(src, 0, 0); return cv; });
+  spriteCache.set(key, out); return out;
+}
+/* 작은 픽셀 얼굴(목록·대화창용) */
+const faceCache = new Map();
+function pixelFace(name, size = 40, role = "", isPlayer = false) {
+  const key = (isPlayer ? "@" : "") + name + "|" + role;
+  if (!faceCache.has(key)) {
+    const sp = charSprites(name, role, isPlayer).down[0], cv = pxCanvas(16, 16), g = cv.getContext("2d");
+    g.drawImage(sp, 0, 0, 16, 16, 0, 0, 16, 16);
+    faceCache.set(key, cv.toDataURL());
+  }
+  return `<img class="pxface" src="${faceCache.get(key)}" width="${size}" height="${size}" alt="">`;
+}
 
-  /* ---------- 장면 ---------- */
-  function dispose(obj) { obj.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && !o.material.map) o.material.dispose(); }); }
-  function build() {
-    if (scene) dispose(scene);
-    const c = C(), rid = S.room, r = c.rooms[rid], L = layout(rid), hh = hashStr(rid + c.title);
-    scene = new THREE.Scene(); clickables = []; marks = []; flames = []; npcs = [];
-    scene.background = lin(0x0b0e12); scene.fog = new THREE.Fog(lin(0x0b0e12), 5, 15);
-    const X0 = 1, X1 = EXW - 1, Z0 = 1, Z1 = EXH - 1, CW = X1 - X0, CD = Z1 - Z0, CX = (X0 + X1) / 2, CZ = (Z0 + Z1) / 2, HGT = 2.8;
-    const TH = themeOf(), fk0 = floorKindOf(r.name), fk = fk0 === "tile" && TH.floor !== "stone" ? "tile" : TH.floor || fk0;
-    const floor = plane(CW, CD, mat(0xffffff, { map: floorTex(fk, hh % 97, TH.carpetC), r: fk === "stone" ? .5 : .85 }), CX, 0, CZ); floor.rotation.x = -Math.PI / 2; floor.userData.floor = true; scene.add(floor); clickables.push(floor);
-    const ceil = plane(CW, CD, mat(0x1c1f23, { r: 1 }), CX, HGT, CZ); ceil.rotation.x = Math.PI / 2; scene.add(ceil);
-    const wm = mat(0xffffff, { map: wallTex(hh, TH), r: .95 });
-    const walls = [[CW, CX, Z0, 0], [CW, CX, Z1, Math.PI], [CD, X0, CZ, Math.PI / 2], [CD, X1, CZ, -Math.PI / 2]];
-    for (const [w, x, z, ry] of walls) {
-      const p = plane(w, HGT, wm, x, HGT / 2, z); p.rotation.y = ry; scene.add(p);
-      const base = box(w, .12, .03, DARKW(), x, .06, z); base.rotation.y = ry; base.translateZ(.015); scene.add(base);
-    }
-    /* 깔개 · 액자 · 천장 등 */
-    const rugC = [0x6b2f2f, 0x2f4a5c, 0x4a3b59, 0x5a4a2a][hh % 4];
-    const rug = plane(4.6, 2.8, mat(rugC, { r: 1 }), CX, .006, CZ); rug.rotation.x = -Math.PI / 2; scene.add(rug);
-    const fr = box(.9, .65, .04, GOLD(), X0 + 3.5 + hh % 2, 1.7, Z0 + .03); scene.add(fr); scene.add(plane(.78, .53, mat(0x6f7f72), fr.position.x, 1.7, Z0 + .055));
-    const lampY = HGT - .35;
-    scene.add(cyl(.005, .005, .35, mat(0x111111), CX, HGT - .17, CZ));
-    scene.add(sph(.13, mat(0xfff0c8, { e: 0xffd890, ei: 1.4 }), CX, lampY, CZ));
-    scene.add(new THREE.AmbientLight(lin(0x8d99ac), TH.amb ?? .55));
-    scene.add(new THREE.HemisphereLight(lin(0xffe2b0), lin(0x141a22), .45));
-    const lamp = new THREE.PointLight(lin(TH.lamp ?? 0xffd59a), 1.6, 13, 1.5); lamp.position.set(CX, lampY - .05, CZ); scene.add(lamp);
-    /* 테마 창문: 동쪽 벽에 두 개 */
-    if (TH.windows) {
-      for (const wz of [CZ - 1.4, CZ + 1.2]) {
-        const g = new THREE.Group(); g.position.set(X1 - .02, 0, wz); g.rotation.y = -Math.PI / 2;
-        const sky = { night: 0x0e1626, snow: 0x9fb2c4, fog: 0xb9c6c8, porthole: 0x0d1b2c }[TH.windows];
-        if (TH.windows === "porthole") {
-          const glass = new THREE.Mesh(new THREE.CircleGeometry(.32, 28), mat(sky, { e: sky, ei: .6 })); glass.position.set(0, 1.5, .01); g.add(glass);
-          const rim = new THREE.Mesh(new THREE.TorusGeometry(.33, .045, 10, 32), mat(0xb08a4a, { m: .7, r: .35 })); rim.position.set(0, 1.5, .02); g.add(rim);
-        } else {
-          g.add(plane(1.1, .8, mat(sky, { e: sky, ei: TH.windows === "night" ? .5 : .9 }), 0, 1.5, .01));
-          for (const [w2, h2, x, y] of [[1.2, .06, 0, 1.92], [1.2, .06, 0, 1.08], [.06, .9, -.58, 1.5], [.06, .9, .58, 1.5], [.04, .8, 0, 1.5]]) g.add(box(w2, h2, .06, mat(0x3a2a1c), x, y, .03));
-          if (TH.windows === "night") for (let k = 0; k < 3; k++) { const l = plane(.18, .03, mat(0xffe6a8, { e: 0xffd27a, ei: 1.5 }), -.5 + k * .3, 1.35 + k * .12, .015); l.userData.slide = { base: -.5, speed: .9 + k * .4 }; g.add(l); flames.push(l); }
-        }
-        scene.add(g);
-      }
-    }
-    /* 가구 */
-    for (const it of L.items) {
-      const side = WALL_T.has(it.type) || ["window", "board", "photo", "wallear"].includes(it.type) ? wallSideOf(it) : null;
-      const g = model(it.type, !!side);
-      g.position.set(it.x + .5, 0, it.y + .5);
-      const face = wallSideOf(it);
-      g.rotation.y = face === "w" ? Math.PI / 2 : face === "e" ? -Math.PI / 2 : face === "s" && side ? Math.PI : 0;
-      g.userData = { kind: "obj", ref: it };
-      g.traverse(o => { if (o.isMesh) clickables.push(o); o.userData.root = g; });
-      scene.add(g);
-      const done = has(S.searched, it.spot), tam = has(S.tampered, it.spot);
-      const mk = markSprite(done ? "done" : tam ? "tam" : "q");
-      const topY = ({ window: 2.05, board: 1.8, photo: 1.85, wallear: 1.75, rail: 2.3, vanity: 1.75, fireplace: 1.35, terminal: 1.35, display: 1.45, drawer: 1.2, body: .55 })[it.type] || 1.05;
-      mk.position.set(it.x + .5, topY, it.y + .5); mk.userData.baseY = topY; mk.userData.root = g; scene.add(mk); marks.push(mk);
-      if (it.type === "fireplace") { const fl = new THREE.PointLight(0xff8a3c, .9, 4, 2); fl.position.set(it.x + .5, .5, it.y + .9); scene.add(fl); flames.push(fl); }
-    }
-    for (const d of L.deco) { const g = model(d.type); g.position.set(d.x + .5, 0, d.y + .5); scene.add(g); }
-    /* 사람 */
-    sceneRoom = rid;
-    for (const p of L.people) {
-      if (p.kind === "h") continue;   /* 출동한 탐정은 아래에서 따로 */
-      const rig = person(p), g = rig.root;
-      g.position.set(p.x + .5, 0, p.y + .5);
-      g.userData = { kind: "person", ref: p };
-      g.traverse(o => { if ((o.isMesh && !o.userData.isOutline) || o.isSprite) clickables.push(o); o.userData.root = g; });
-      scene.add(g);
-      npcs.push({ p, rig, wx: p.x + .5, wz: p.y + .5, heading: Math.atan2(5.5 - p.x, 6 - p.y), path: null, seg: null,
-        timer: 1.5 + Math.random() * 3, hold: 0, phase: Math.random() * 6, look: 0, lookT: 0, home: { x: p.homeX ?? p.x, y: p.homeY ?? p.y } });
-      if (p.homeX === undefined) { p.homeX = p.x; p.homeY = p.y; }
-    }
-    /* 출동한 탐정 다시 세우기 */
-    for (const h of Object.values(helpers)) {
-      if (h.room !== rid) continue;
-      if (!missionAlive(h) && h.state !== "out") {
-        if (!h.rig) { dropHelper(h); continue; }   /* 안 보는 사이 끝났으면 조용히 퇴장 */
-        h.state = "out"; h.path = null; h.pending = null; h.cur = null; h.timer = 1.2;   /* 보고 장면은 보여 준다 */
-      }
-      addHelperRig(h);
+/* ---------- 가구: 벡터 그림을 16px로 줄여 픽셀처럼 ---------- */
+const furnCache = new Map();
+function furnPixel(type) {
+  if (furnCache.has(type)) return furnCache.get(type);
+  const cv = pxCanvas(16, 16), rec = { cv, ready: false };
+  const img = new Image();
+  img.onload = () => {
+    const g = cv.getContext("2d"); g.imageSmoothingEnabled = true; g.drawImage(img, 0, 0, 16, 16);
+    const d = g.getImageData(0, 0, 16, 16); for (let i = 3; i < d.data.length; i += 4) d.data[i] = d.data[i] > 110 ? 255 : 0;
+    g.putImageData(d, 0, 0); outlinePass(cv); rec.ready = true;
+  };
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(furnSVG(type).replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" '));
+  furnCache.set(type, rec); return rec;
+}
+
+/* ---------- 바닥·벽 무늬 (16×16) ---------- */
+function floorTile(kind, th) {
+  const cv = pxCanvas(16, 16), g = cv.getContext("2d"), P = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+  if (kind === "wood") { P(0, 0, 16, 16, "#6a4c34"); for (let y = 0; y < 16; y += 4) { P(0, y, 16, 1, "#4f3726"); P((y * 5) % 16, y + 1, 1, 3, "#4f3726"); P(((y * 5) + 3) % 16, y + 2, 3, 1, "#755539"); } }
+  else if (kind === "tile") { P(0, 0, 16, 16, "#8a8f96"); P(0, 0, 8, 8, "#6e737a"); P(8, 8, 8, 8, "#6e737a"); P(0, 0, 16, 1, "#5a5e64"); P(0, 0, 1, 16, "#5a5e64"); }
+  else if (kind === "stone") { P(0, 0, 16, 16, "#8c877f"); P(0, 0, 16, 1, "#6f6b64"); P(0, 0, 1, 16, "#6f6b64"); P(5, 6, 2, 1, "#9a958d"); P(11, 11, 3, 1, "#7d7972"); }
+  else { const base = th.carpetC || "#463a52"; P(0, 0, 16, 16, base); for (let i = 0; i < 16; i++) P((i * 7) % 16, (i * 11) % 16, 1, 1, shadeHex(base, 1.25)); for (let i = 0; i < 10; i++) P((i * 5 + 3) % 16, (i * 9 + 5) % 16, 1, 1, shadeHex(base, .75)); }
+  return cv;
+}
+function wallTile(th, seed) {
+  const style = th.wall || "stripe", base = th.wallC || ["#6a5d50", "#55626c", "#6b5552", "#58665a"][seed % 4];
+  const cv = pxCanvas(16, 16), g = cv.getContext("2d"), P = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+  P(0, 0, 16, 16, base);
+  const lt = shadeHex(base, 1.15), dk = shadeHex(base, .78);
+  if (style === "stripe") { P(0, 4, 2, 10, lt); P(8, 4, 2, 10, lt); }
+  if (style === "curtain") { for (let x = 0; x < 16; x += 4) { P(x, 0, 1, 16, lt); P(x + 2, 0, 1, 16, dk); } }
+  if (style === "panel") { P(1, 4, 6, 9, dk); P(9, 4, 6, 9, dk); P(2, 5, 4, 7, base); P(10, 5, 4, 7, base); }
+  if (style === "plain") { P(3, 7, 1, 1, lt); P(11, 10, 1, 1, dk); }
+  if (style === "damask") { P(4, 6, 1, 1, "#c9a65a"); P(3, 7, 3, 1, "#c9a65a"); P(4, 8, 1, 1, "#c9a65a"); P(12, 10, 1, 1, "#c9a65a"); P(11, 11, 3, 1, "#c9a65a"); P(12, 12, 1, 1, "#c9a65a"); }
+  if (style === "log") { for (let y = 2; y < 16; y += 4) { P(0, y, 16, 1, lt); P(0, y + 3, 16, 1, dk); } }
+  if (style === "stone") { P(0, 7, 16, 1, dk); P(7, 2, 1, 5, dk); P(3, 8, 1, 6, dk); P(12, 8, 1, 6, dk); P(0, 2, 16, 1, dk); }
+  P(0, 0, 16, 3, "#1e2429"); P(0, 14, 16, 2, "#3a2a1c");   /* 위 테두리 · 걸레받이 */
+  return cv;
+}
+
+const PX = (() => {
+  let cv = null, g = null, labels = null, host = null, raf = 0, last = 0, bg = null, bgKey = "", room = null, hoverT = 0;
+  const keys = {};
+  const me = { fx: 5, fy: 6, dir: "up", path: null, after: null, seg: null, frameT: 0, frame: 0 };
+  let npcs = [], hint = null;
+  const helpers = {};
+  const SPEED = 4.6;   /* 칸/초 */
+
+  /* ---------- 방 배경(바닥·벽·깔개·문) ---------- */
+  function buildBg() {
+    const c = C(), r = c.rooms[S.room], L = layout(S.room), th = themeOf(), hh = hashStr(S.room + c.title);
+    const fk0 = floorKindOf(r.name), fk = fk0 === "tile" && th.floor !== "stone" ? "tile" : th.floor || fk0;
+    bg = pxCanvas(PW, PH); const b = bg.getContext("2d"), P = (x, y, w, h, col) => { b.fillStyle = col; b.fillRect(x, y, w, h); };
+    P(0, 0, PW, PH, "#0e1216");
+    b.fillStyle = b.createPattern(floorTile(fk, th), "repeat"); b.fillRect(TS, TS, PW - 2 * TS, PH - 2 * TS);
+    /* 깔개 */
+    const rugC = ["#6b2f2f", "#2f4a5c", "#4a3b59", "#5a4a2a"][hh % 4];
+    P(3 * TS, 2.5 * TS, 5 * TS, 3 * TS, rugC); b.strokeStyle = "#c9a65a"; b.lineWidth = 1; b.strokeRect(3 * TS + 2.5, 2.5 * TS + 2.5, 5 * TS - 5, 3 * TS - 5);
+    /* 벽 */
+    b.fillStyle = b.createPattern(wallTile(th, hh), "repeat-x"); b.fillRect(0, 0, PW, TS);
+    P(0, 0, TS, PH, "#20272d"); P(PW - TS, 0, TS, PH, "#20272d"); P(TS - 2, TS, 2, PH - 2 * TS, "#151a1e"); P(PW - TS, TS, 2, PH - 2 * TS, "#151a1e");
+    P(0, PH - TS, PW, TS, "#151a1e"); P(TS, PH - TS, PW - 2 * TS, 2, "#2c3540");
+    /* 벽 장식: 액자 · 벽등 · 창 */
+    const fx = (3 + hh % 2) * TS + 3;
+    P(fx, 3, 10, 8, "#b48d4c"); P(fx + 2, 5, 6, 4, "#6f7f72");
+    const sx = (6 + hh % 3) * TS + 6; P(sx, 4, 4, 4, "#f5d78a"); P(sx + 1, 8, 2, 2, "#8a6a2e");
+    if (th.windows) for (const wx of [1, 8]) {
+      const X = wx * TS + 3, sky = { night: "#0e1626", snow: "#a8bccd", fog: "#bcc8ca", porthole: "#0d1b2c" }[th.windows];
+      if (th.windows === "porthole") { b.fillStyle = "#b08a4a"; b.beginPath(); b.arc(X + 5, 8, 5, 0, Math.PI * 2); b.fill(); b.fillStyle = sky; b.beginPath(); b.arc(X + 5, 8, 3.5, 0, Math.PI * 2); b.fill(); }
+      else { P(X, 3, 11, 9, "#3a2a1c"); P(X + 1, 4, 9, 7, sky); P(X + 5, 4, 1, 7, "#3a2a1c"); if (th.windows === "snow") { P(X + 2, 6, 1, 1, "#fff"); P(X + 7, 8, 1, 1, "#fff"); } }
     }
     /* 문 */
     for (const d of L.doors) {
-      const g = new THREE.Group(), locked = !!S.locks[d.to];
-      g.add(box(.92, 2.05, .06, mat(locked ? 0x7a2e28 : 0x6b4a30, { r: .6 }), 0, 1.03, 0));
-      g.add(box(1.04, 2.14, .04, mat(0x2e2219), 0, 1.07, -.02));
-      g.add(sph(.035, GOLD(), .33, 1.0, .05));
-      const label = textSprite(d.stairs ? `계단 · ${d.stairs}` : C().rooms[d.to].name, locked ? "#ffd2cc" : "#f4ecdc"); label.position.set(0, 2.32, .1); g.add(label);
-      if (d.side === "b") { g.position.set(d.x + .5, 0, Z1 - .04); g.rotation.y = Math.PI; }
-      else { g.position.set(X0 + .04, 0, d.y + .5); g.rotation.y = Math.PI / 2; }
-      g.userData = { kind: "door", ref: d };
-      g.traverse(o => { if (o.isMesh || o.isSprite) clickables.push(o); o.userData.root = g; });
-      scene.add(g);
+      const X = d.x * TS, Y = d.y * TS, locked = !!S.locks[d.to];
+      const wood = locked ? "#8a3a33" : "#7a5a3c";
+      if (d.side === "b") { P(X + 2, Y, 12, TS, "#2e2219"); P(X + 3, Y, 10, TS - 1, wood); P(X + 3, Y, 10, 2, shadeHex(wood, 1.2)); P(X + 11, Y + 7, 1, 2, "#d8b46a"); }
+      else { P(X, Y + 1, TS, 14, "#2e2219"); P(X, Y + 2, TS - 2, 12, wood); for (let k = 0; k < 4; k++) P(X + 2 + k * 3, Y + 3 + k * 2, 3, 1, shadeHex(wood, .7)); }
     }
-    /* 손전등: 카메라에 달린 스포트라이트 */
-    while (camera.children.length) camera.remove(camera.children[0]);
-    scene.add(camera);
-    const torch = new THREE.SpotLight(lin(0xfff1d6), 1.1, 10, .55, .6, 1.3); torch.position.set(0, -.1, 0); camera.add(torch);
-    const tgt = new THREE.Object3D(); tgt.position.set(0, -.15, -1); camera.add(tgt); torch.target = tgt;
   }
 
-  /* ---------- 인물: 돌아다니기 · 쳐다보기 · 걷기/숨쉬기 동작 ---------- */
+  /* ---------- 인물 상태 ---------- */
   function npcBlocked(L, n, x, y) {
     if (x < 1 || x > EXW - 2 || y < 1 || y > EXH - 2 || doorAt(L, x, y)) return true;
     if (L.items.some(o => o.x === x && o.y === y) || L.deco.some(o => o.x === x && o.y === y)) return true;
     if (L.people.some(o => o !== n.p && o.x === x && o.y === y)) return true;
-    if (Math.floor(cam.x) === x && Math.floor(cam.z) === y) return true;
-    if (L.doors.some(d => (d.side === "b" ? d.x === x && y === EXH - 2 : x === 1 && d.y === y))) return true;   /* 문 앞은 비워 둔다 */
+    const mx = Math.round(me.fx), my = Math.round(me.fy);
+    if ((mx === x && my === y) || (me.seg && me.seg[0] === x && me.seg[1] === y)) return true;
+    if (L.doors.some(d => (d.side === "b" ? d.x === x && y === EXH - 2 : x === 1 && d.y === y))) return true;
     return false;
   }
-  function npcPlan(L, n) {
-    const cand = [];
-    for (let y = 1; y <= EXH - 2; y++) for (let x = 1; x <= EXW - 2; x++) {
-      if (Math.abs(x - n.home.x) + Math.abs(y - n.home.y) > 3 || (x === n.p.x && y === n.p.y) || npcBlocked(L, n, x, y)) continue;
-      cand.push([x, y]);
-    }
-    if (!cand.length) return null;
-    const [gx, gy] = cand[Math.floor(Math.random() * cand.length)], key = (x, y) => x + "," + y;
-    const prev = new Map([[key(n.p.x, n.p.y), null]]), q = [[n.p.x, n.p.y]];
+  function bfs(L, from, goalFn, blockedFn) {
+    const key = (x, y) => x + "," + y, prev = new Map([[key(from.x, from.y), null]]), q = [[from.x, from.y]];
     while (q.length) {
       const [x, y] = q.shift();
-      if (x === gx && y === gy) { const out = []; let c = [x, y]; while (c && key(...c) !== key(n.p.x, n.p.y)) { out.unshift(c); c = prev.get(key(...c)); } return out; }
-      for (const [dx, dy] of NB) { const nx = x + dx, ny = y + dy; if (prev.has(key(nx, ny)) || npcBlocked(L, n, nx, ny)) continue; prev.set(key(nx, ny), [x, y]); q.push([nx, ny]); }
+      if (goalFn(x, y) && !(x === from.x && y === from.y)) { const out = []; let c = [x, y]; while (c && key(...c) !== key(from.x, from.y)) { out.unshift(c); c = prev.get(key(...c)); } return out; }
+      for (const [dx, dy] of NB) { const nx = x + dx, ny = y + dy; if (prev.has(key(nx, ny)) || blockedFn(nx, ny)) continue; prev.set(key(nx, ny), [x, y]); q.push([nx, ny]); }
     }
     return null;
   }
-  const angTo = (cur, want, k) => { let d = want - cur; d = Math.atan2(Math.sin(d), Math.cos(d)); return cur + d * k; };
-  function updateNpc(n, dt, t) {
-    const L = layout(S.room), dPlayer = Math.hypot(cam.x - n.wx, cam.z - n.wz);
+  function makeNpcs() {
+    const L = layout(S.room);
+    npcs = L.people.filter(p => p.kind !== "h").map(p => {
+      if (p.homeX === undefined) { p.homeX = p.x; p.homeY = p.y; }
+      return { p, fx: p.x, fy: p.y, dir: "down", seg: null, path: null, timer: 1 + Math.random() * 3, hold: 0, frameT: Math.random(), look: 0 };
+    });
+  }
+  const dirOf = (dx, dy) => Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
+  function updateNpc(n, dt) {
+    const L = layout(S.room);
     if (n.hold > 0) n.hold -= dt;
-    let moving = false;
     if (!n.seg && n.path && n.path.length && n.hold <= 0) {
       const [tx, ty] = n.path[0];
       if (npcBlocked(L, n, tx, ty)) { n.path = null; n.timer = 1 + Math.random() * 2; }
-      else { n.path.shift(); n.p.x = tx; n.p.y = ty; n.seg = [tx + .5, ty + .5]; }   /* 다음 칸을 먼저 차지한다 */
+      else { n.path.shift(); n.p.x = tx; n.p.y = ty; n.seg = [tx, ty]; }
     }
     if (n.seg) {
-      const dx = n.seg[0] - n.wx, dz = n.seg[1] - n.wz, d = Math.hypot(dx, dz), stp = .85 * dt;
-      n.heading = angTo(n.heading, Math.atan2(dx, dz), Math.min(1, dt * 7));
-      if (d <= stp) { n.wx = n.seg[0]; n.wz = n.seg[1]; n.seg = null; } else { n.wx += dx / d * stp; n.wz += dz / d * stp; }
-      moving = true;
+      const dx = n.seg[0] - n.fx, dy = n.seg[1] - n.fy, d = Math.hypot(dx, dy), st = 1.6 * dt;
+      n.dir = dirOf(dx, dy);
+      if (d <= st) { n.fx = n.seg[0]; n.fy = n.seg[1]; n.seg = null; } else { n.fx += dx / d * st; n.fy += dy / d * st; }
+      n.frameT += dt * 7;
     } else {
+      n.frameT = 0;
       n.timer -= dt;
-      if (n.timer <= 0 && n.hold <= 0 && dPlayer > 1.6) { n.path = npcPlan(L, n); n.timer = 3 + Math.random() * 5; }
-      if (dPlayer < 2.8 || n.hold > 0) n.heading = angTo(n.heading, Math.atan2(cam.x - n.wx, cam.z - n.wz), Math.min(1, dt * 4));
+      const dPlayer = Math.hypot(me.fx - n.fx, me.fy - n.fy);
+      if (n.timer <= 0 && n.hold <= 0 && dPlayer > 1.6) {
+        const home = { x: n.p.homeX, y: n.p.homeY };
+        n.path = bfs(L, { x: n.p.x, y: n.p.y }, (x, y) => Math.abs(x - home.x) + Math.abs(y - home.y) <= 3 && Math.random() < .3, (x, y) => npcBlocked(L, n, x, y));
+        n.timer = 2.5 + Math.random() * 4;
+      }
+      if (dPlayer < 2.5 || n.hold > 0) n.dir = dirOf(me.fx - n.fx, me.fy - n.fy);
     }
-    /* 고개: 가까우면 나를 보고, 아니면 가끔 두리번 */
-    n.lookT -= dt;
-    if (n.lookT <= 0) { n.look = (Math.random() - .5) * 1.1; n.lookT = 2 + Math.random() * 3; }
-    let lookWant = n.look;
-    if (dPlayer < 3.2) { const rel = Math.atan2(cam.x - n.wx, cam.z - n.wz) - n.heading; lookWant = Math.max(-.9, Math.min(.9, Math.atan2(Math.sin(rel), Math.cos(rel)))); }
-    const R = n.rig;
-    R.head.rotation.y = angTo(R.head.rotation.y, lookWant, Math.min(1, dt * 3));
-    R.head.rotation.x = dPlayer < 3.2 ? -.1 : 0;
-    /* 걷기: 팔다리 흔들기 / 서 있기: 숨쉬기 */
-    const sw = moving ? 1 : 0;
-    n.walkAmt = (n.walkAmt || 0) + (sw - (n.walkAmt || 0)) * Math.min(1, dt * 6);
-    n.phase += dt * (moving ? 8.5 : 1.6);
-    const a = Math.sin(n.phase), wa = n.walkAmt;
-    /* 엉덩이 관절이 뒤로 갈 때 무릎이 굽고, 팔은 반대로 흔들며 앞으로 갈 때 팔꿈치가 굽는다 */
-    R.legs[0].rotation.x = a * .55 * wa; R.legs[1].rotation.x = -a * .55 * wa;
-    R.knees[0].rotation.x = (Math.max(0, a) * .85 + .08) * wa; R.knees[1].rotation.x = (Math.max(0, -a) * .85 + .08) * wa;
-    const idle = Math.sin(t / 900 + n.phase) * .03 * (1 - wa);
-    R.arms[0].rotation.x = -a * .45 * wa + idle; R.arms[1].rotation.x = a * .45 * wa - idle;
-    R.elbows[0].rotation.x = -(.12 + Math.max(0, a) * .45 * wa); R.elbows[1].rotation.x = -(.12 + Math.max(0, -a) * .45 * wa);
-    R.arms[0].rotation.z = -.1; R.arms[1].rotation.z = .1;
-    R.body.position.y = Math.abs(Math.sin(n.phase)) * .035 * wa;              /* 걸을 때 살짝 통통 */
-    R.body.rotation.z = Math.sin(n.phase) * .03 * wa;
-    R.head.rotation.z = Math.sin(t / 1500 + n.phase) * .04 * (1 - wa);
-    R.torso.scale.y = 1 + Math.sin(t / 700 + n.phase) * .012 * (1 - wa);
-    R.torso.rotation.y = a * .08 * wa;
-    R.root.position.set(n.wx, 0, n.wz); R.root.rotation.y = n.heading;
   }
 
-  /* ---------- 탐정 출동 연출: 문으로 들어와 ? 물건을 뒤적이고, 보고 후 나간다 ---------- */
+  /* ---------- 팀원 출동: 문으로 들어와 ?마다 뒤적이고, 보고 후 나간다 ---------- */
   const missionAlive = h => S.missions.some(m => m.pid === h.pid && m.room === h.room);
   function helperBlocked(L, h, x, y) {
     if (x < 1 || x > EXW - 2 || y < 1 || y > EXH - 2) return !doorAt(L, x, y);
     if (L.items.some(o => o.x === x && o.y === y) || L.deco.some(o => o.x === x && o.y === y)) return true;
     if (L.people.some(o => o !== h.p && o.x === x && o.y === y)) return true;
-    if (S.room === h.room && Math.floor(cam.x) === x && Math.floor(cam.z) === y) return true;
+    if (S.room === h.room && Math.round(me.fx) === x && Math.round(me.fy) === y) return true;
     return false;
-  }
-  function helperPath(L, h, goals) {
-    const key = (x, y) => x + "," + y, goal = new Set(goals.map(([x, y]) => key(x, y)));
-    const prev = new Map([[key(h.p.x, h.p.y), null]]), q = [[h.p.x, h.p.y]];
-    while (q.length) {
-      const [x, y] = q.shift();
-      if (goal.has(key(x, y))) { const out = []; let c = [x, y]; while (c && key(...c) !== key(h.p.x, h.p.y)) { out.unshift(c); c = prev.get(key(...c)); } return out; }
-      for (const [dx, dy] of NB) { const nx = x + dx, ny = y + dy; if (prev.has(key(nx, ny)) || helperBlocked(L, h, nx, ny)) continue; prev.set(key(nx, ny), [x, y]); q.push([nx, ny]); }
-    }
-    return null;
-  }
-  function addHelperRig(h) {
-    const rig = person({ name: h.p.name, role: h.p.role }), g = rig.root;
-    g.userData = { kind: "person", ref: h.p };
-    const bub = textSprite("조사 중…", "#1a1408", "rgba(226,178,92,.95)"); bub.position.y = 1.86; g.add(bub);
-    const done = textSprite("보고 완료!", "#0f1a12", "rgba(127,181,154,.95)"); done.position.y = 1.86; done.visible = h.state === "out"; g.add(done);
-    bub.visible = h.state !== "out";
-    rig.bubble = bub; rig.done = done;
-    g.traverse(o => { if ((o.isMesh && !o.userData.isOutline) || o.isSprite) clickables.push(o); o.userData.root = g; });
-    g.position.set(h.wx, 0, h.wz); g.rotation.y = h.heading;
-    scene.add(g); h.rig = rig;
-  }
-  function dropHelper(h) {
-    const L = layout(h.room), i = L.people.indexOf(h.p);
-    if (i >= 0) L.people.splice(i, 1);
-    if (h.rig && scene) { scene.remove(h.rig.root); clickables = clickables.filter(o => o.userData.root !== h.rig.root); }
-    delete helpers[h.pid];
   }
   function helperEnter(m) {
     const L = layout(m.room), d = L.doors[0]; if (!d) return;
     const x = partner(m.pid), inX = d.side === "b" ? d.x : 1, inY = d.side === "b" ? EXH - 2 : d.y;
     const p = { kind: "h", id: "h_" + m.pid, name: x.name, role: x.title, x: d.x, y: d.y, enteredAt: Date.now(), from: d.side };
-    if (S.mode !== "3d" && !L.people.some(o => o.x === inX && o.y === inY) && !(S.pos && S.pos.room === m.room && S.pos.x === inX && S.pos.y === inY)) { p.x = inX; p.y = inY; }
     L.people.push(p);
-    const h = { pid: m.pid, room: m.room, p, door: d, wx: d.x + .5, wz: d.y + .5, heading: Math.atan2(inX - d.x, inY - d.y),
-      path: [[inX, inY]], seg: null, state: "in", targets: L.items.filter(it => !has(S.searched, it.spot)), pending: null, cur: null, timer: 0, phase: 0, walkAmt: 0, rig: null };
-    helpers[m.pid] = h;
-    if (scene && sceneRoom === m.room && host && S.mode === "3d") {
-      addHelperRig(h);
-      cutscene = { pid: m.pid, t: 3.2 };   /* 들어오는 탐정을 눈으로 따라간다 */
-      Sound.door();
-    }
+    helpers[m.pid] = { pid: m.pid, room: m.room, p, door: d, fx: d.x, fy: d.y, dir: d.side === "b" ? "up" : "right", path: [[inX, inY]], seg: null,
+      state: "in", targets: L.items.filter(it => !has(S.searched, it.spot)), pending: null, cur: null, timer: 0, frameT: 0 };
   }
-  function updateHelper(h, dt, t) {
-    const L = layout(h.room), R = h.rig;
-    if (!missionAlive(h) && h.state !== "out") { h.state = "out"; h.path = null; h.pending = null; h.cur = null; R.bubble.visible = false; R.done.visible = true; h.timer = 1.2; }
-    let moving = false, searching = false;
+  function dropHelper(h) {
+    const L = layout(h.room), i = L.people.indexOf(h.p); if (i >= 0) L.people.splice(i, 1);
+    delete helpers[h.pid];
+  }
+  function updateHelper(h, dt) {
+    const L = layout(h.room);
+    if (!missionAlive(h) && h.state !== "out") { h.state = "out"; h.path = null; h.pending = null; h.cur = null; h.timer = 1; }
     if (!h.seg && h.path && h.path.length) {
       const [tx, ty] = h.path[0];
-      if (helperBlocked(L, h, tx, ty)) { h.path = null; h.timer = .6; }
-      else { h.path.shift(); h.p.x = tx; h.p.y = ty; h.seg = [tx + .5, ty + .5]; }
+      if (helperBlocked(L, h, tx, ty)) { h.path = null; h.timer = .5; }
+      else { h.path.shift(); h.p.x = tx; h.p.y = ty; h.seg = [tx, ty]; }
     }
     if (h.seg) {
-      const dx = h.seg[0] - h.wx, dz = h.seg[1] - h.wz, d = Math.hypot(dx, dz), stp = 1.15 * dt;
-      h.heading = angTo(h.heading, Math.atan2(dx, dz), Math.min(1, dt * 8));
-      if (d <= stp) { h.wx = h.seg[0]; h.wz = h.seg[1]; h.seg = null; if (!h.path || !h.path.length) { if (h.pending) { h.cur = h.pending; h.pending = null; h.timer = 2.4; h.state = "search"; } } }
-      else { h.wx += dx / d * stp; h.wz += dz / d * stp; }
-      moving = true;
-    } else if (h.state === "out") {
+      const dx = h.seg[0] - h.fx, dy = h.seg[1] - h.fy, d = Math.hypot(dx, dy), st = 2.4 * dt;
+      h.dir = dirOf(dx, dy); h.frameT += dt * 8;
+      if (d <= st) { h.fx = h.seg[0]; h.fy = h.seg[1]; h.seg = null; if ((!h.path || !h.path.length) && h.pending) { h.cur = h.pending; h.pending = null; h.timer = 2.2; } }
+      else { h.fx += dx / d * st; h.fy += dy / d * st; }
+      return;
+    }
+    h.frameT = 0;
+    if (h.state === "out") {
       h.timer -= dt;
       if (doorAt(L, h.p.x, h.p.y)) { if (S.room === h.room) Sound.door(); dropHelper(h); return; }
-      if (h.timer <= 0) { h.path = helperPath(L, h, [[h.door.x, h.door.y]]); h.timer = .8; }
-    } else if (h.cur && h.timer > 0) {
-      h.timer -= dt; searching = true;
-      h.heading = angTo(h.heading, Math.atan2(h.cur.x + .5 - h.wx, h.cur.y + .5 - h.wz), Math.min(1, dt * 6));
-    } else {
-      h.cur = null; h.timer -= dt;
-      if (h.timer <= 0) {
-        const next = h.targets.shift();
-        if (next) {
-          const goals = NB.map(([dx, dy]) => [next.x + dx, next.y + dy]).filter(([x, y]) => !helperBlocked(L, h, x, y) && !doorAt(L, x, y));
-          const adj = goals.some(([x, y]) => x === h.p.x && y === h.p.y);
-          if (adj) { h.cur = next; h.timer = 2.4; }
-          else { const path = helperPath(L, h, goals); if (path) { h.path = path; h.pending = next; } else h.targets.push(next); }
-        } else { h.targets = L.items.filter(it => !has(S.searched, it.spot)); h.timer = 1.5; }
-        if (!h.cur && !h.path) h.timer = .4;
-      }
+      if (h.timer <= 0) { h.path = bfs(L, { x: h.p.x, y: h.p.y }, (x, y) => x === h.door.x && y === h.door.y, (x, y) => helperBlocked(L, h, x, y)); h.timer = .8; }
+      return;
     }
-    /* 동작: 걷기 / 허리 숙여 뒤적이기 / 서서 숨쉬기 */
-    h.walkAmt += ((moving ? 1 : 0) - h.walkAmt) * Math.min(1, dt * 6);
-    h.phase += dt * (moving ? 8.5 : 1.6);
-    const a = Math.sin(h.phase), wa = h.walkAmt, k = Math.min(1, dt * 5);
-    R.legs[0].rotation.x = a * .55 * wa; R.legs[1].rotation.x = -a * .55 * wa;
-    R.knees[0].rotation.x = (Math.max(0, a) * .85 + .08) * wa; R.knees[1].rotation.x = (Math.max(0, -a) * .85 + .08) * wa;
-    const rummage = searching ? Math.sin(t / 140) * .25 : 0;
-    R.torso.rotation.x += ((searching ? .38 : 0) - R.torso.rotation.x) * k;
-    R.head.rotation.x += ((searching ? .3 : -.05) - R.head.rotation.x) * k;
-    R.arms[0].rotation.x += ((searching ? -.95 + rummage : -a * .45 * wa) - R.arms[0].rotation.x) * Math.min(1, dt * 10);
-    R.arms[1].rotation.x += ((searching ? -.95 - rummage : a * .45 * wa) - R.arms[1].rotation.x) * Math.min(1, dt * 10);
-    R.elbows[0].rotation.x = searching ? -.5 : -(.12 + Math.max(0, a) * .45 * wa); R.elbows[1].rotation.x = searching ? -.5 : -(.12 + Math.max(0, -a) * .45 * wa);
-    R.arms[0].rotation.z = -.1; R.arms[1].rotation.z = .1;
-    R.body.position.y = Math.abs(Math.sin(h.phase)) * .035 * wa;
-    R.root.position.set(h.wx, 0, h.wz); R.root.rotation.y = h.heading;
-    R.bubble.position.y = 1.86 + Math.sin(t / 300) * .03;
+    if (h.cur && h.timer > 0) { h.timer -= dt; h.dir = dirOf(h.cur.x - h.fx, h.cur.y - h.fy); return; }
+    h.cur = null; h.timer -= dt;
+    if (h.timer > 0) return;
+    const next = h.targets.shift();
+    if (!next) { h.targets = L.items.filter(it => !has(S.searched, it.spot)); h.timer = 1.2; return; }
+    const adj = (x, y) => Math.abs(x - next.x) + Math.abs(y - next.y) === 1;
+    if (adj(h.p.x, h.p.y)) { h.cur = next; h.timer = 2.2; return; }
+    const path = bfs(L, { x: h.p.x, y: h.p.y }, (x, y) => adj(x, y) && !doorAt(L, x, y), (x, y) => helperBlocked(L, h, x, y));
+    if (path) { h.path = path; h.pending = next; } else { h.targets.push(next); h.timer = .5; }
   }
 
-  /* ---------- 경찰 출동 장면: 경광등이 번쩍이고 경찰 3명이 문으로 들어와 나에게 걸어온다 ---------- */
-  let police = null;
-  function policeScene(onDone) {
-    if (!scene || !host || !renderer || sceneRoom !== S.room || S.mode !== "3d" || S.tab !== "rooms" || !document.body.contains(renderer.domElement)) return false;
-    const L = layout(S.room), d = L.doors[0];
-    if (!d) return false;
-    walk = null; for (const k in keys) keys[k] = false;
-    const inX = d.side === "b" ? d.x : 1, inY = d.side === "b" ? EXH - 2 : d.y;
-    const names = [["김 경장", "m"], ["박 순경", "f"], ["최 형사", "m"]];
-    const me = [Math.floor(cam.x), Math.floor(cam.z)];
-    const blocked = (x, y) => x < 1 || x > EXW - 2 || y < 1 || y > EXH - 2 || L.items.some(o => o.x === x && o.y === y) || L.deco.some(o => o.x === x && o.y === y) || (x === me[0] && y === me[1]);
-    const near = NB.map(([dx, dy]) => [me[0] + dx, me[1] + dy]).filter(([x, y]) => !blocked(x, y)).concat([[inX, inY]]);
-    const officers = names.map(([nm, g], i) => {
-      GENDER[nm] = g;
-      const rig = person({ name: nm, role: "경찰", police: true });
-      const goal = near[i % near.length];
-      const key = (x, y) => x + "," + y, prev = new Map([[key(inX, inY), null]]), q = [[inX, inY]];
-      let path = [[inX, inY]];
-      while (q.length) { const [x, y] = q.shift(); if (x === goal[0] && y === goal[1]) { const out = []; let c = [x, y]; while (c) { out.unshift(c); c = prev.get(key(...c)); } path = out; break; }
-        for (const [dx, dy] of NB) { const nx = x + dx, ny = y + dy; if (prev.has(key(nx, ny)) || blocked(nx, ny)) continue; prev.set(key(nx, ny), [x, y]); q.push([nx, ny]); } }
-      const o = { rig, wx: d.x + .5, wz: d.y + .5, pts: path.map(([x, y]) => [x + .5, y + .5]), i: 0, delay: i * .7, heading: Math.atan2(inX - d.x, inY - d.y), phase: 0, walkAmt: 0 };
-      rig.root.position.set(o.wx, 0, o.wz); rig.root.visible = false; scene.add(rig.root);
-      return o;
-    });
-    const red = new THREE.PointLight(lin(0xff2a2a), 0, 9, 1.6), blue = new THREE.PointLight(lin(0x2a5bff), 0, 9, 1.6);
-    red.position.set(d.x + .5, 2.2, Math.min(d.y + .5, EXH - 1.4)); blue.position.set(d.x + .5, 2.2, Math.min(d.y + .5, EXH - 1.4));
-    scene.add(red, blue);
-    police = { officers, red, blue, t: 0, start: performance.now(), onDone, door: d };
-    Sound.door();
-    return true;
-  }
-  function updatePolice(dt, t) {
-    const P = police; P.t += dt;
-    const on = Math.floor(t / 180) % 2;   /* 빨강·파랑 번갈아 */
-    P.red.intensity = on ? 2.4 : .2; P.blue.intensity = on ? .2 : 2.4;
-    let lead = null;
-    for (const o of P.officers) {
-      if (P.t < o.delay) continue;
-      o.rig.root.visible = true;
-      let moving = false;
-      if (o.i < o.pts.length) {
-        const [tx, tz] = o.pts[o.i], dx = tx - o.wx, dz = tz - o.wz, dd = Math.hypot(dx, dz), stp = 1.5 * dt;
-        o.heading = angTo(o.heading, Math.atan2(dx, dz), Math.min(1, dt * 8));
-        if (dd <= stp) { o.wx = tx; o.wz = tz; o.i++; } else { o.wx += dx / dd * stp; o.wz += dz / dd * stp; }
-        moving = true;
-      } else o.heading = angTo(o.heading, Math.atan2(cam.x - o.wx, cam.z - o.wz), Math.min(1, dt * 5));
-      if (!lead) lead = o;
-      const R = o.rig;
-      o.walkAmt += ((moving ? 1 : 0) - o.walkAmt) * Math.min(1, dt * 6); o.phase += dt * (moving ? 10 : 1.5);
-      const a = Math.sin(o.phase), wa = o.walkAmt;
-      R.legs[0].rotation.x = a * .6 * wa; R.legs[1].rotation.x = -a * .6 * wa;
-      R.knees[0].rotation.x = (Math.max(0, a) * .9 + .08) * wa; R.knees[1].rotation.x = (Math.max(0, -a) * .9 + .08) * wa;
-      R.arms[0].rotation.x = -a * .5 * wa; R.arms[1].rotation.x = a * .5 * wa;
-      R.elbows[0].rotation.x = -(.15 + Math.max(0, a) * .5 * wa); R.elbows[1].rotation.x = -(.15 + Math.max(0, -a) * .5 * wa);
-      R.arms[0].rotation.z = -.1; R.arms[1].rotation.z = .1;
-      R.body.position.y = Math.abs(Math.sin(o.phase)) * .04 * wa;
-      R.root.position.set(o.wx, 0, o.wz); R.root.rotation.y = o.heading;
-    }
-    if (lead) { cam.yaw = angTo(cam.yaw, Math.atan2(-(lead.wx - cam.x), -(lead.wz - cam.z)), Math.min(1, dt * 3)); cam.pitch += (-.1 - cam.pitch) * Math.min(1, dt * 3); }
-    const allIn = P.officers.every(o => o.i >= o.pts.length), real = (performance.now() - P.start) / 1000;
-    if ((allIn && real > 4) || real > 9) { const done = P.onDone; police = null; done(); }   /* 느린 기기에서도 최대 9초 */
-  }
-
-  /* ---------- 카메라 · 이동 ---------- */
-  function placeCamera() {
-    camera.position.set(cam.x, EYE + Math.sin(bob) * .028, cam.z);
-    camera.rotation.set(cam.pitch, cam.yaw, 0, "YXZ");
-  }
-  function spawn() {
+  /* ---------- 주인공 이동 ---------- */
+  function ensureMe() {
     ensurePos();
-    cam.room = S.room; cam.x = S.pos.x + .5; cam.z = S.pos.y + .5;
-    cam.yaw = Math.atan2(-(5.5 - cam.x), -(4 - cam.z)); cam.pitch = -.08; walk = null;
+    if (room !== S.room) { room = S.room; me.fx = S.pos.x; me.fy = S.pos.y; me.seg = null; me.path = null; me.after = null; makeNpcs(); bgKey = ""; }
   }
-  function syncPos() { S.pos = { room: S.room, x: Math.floor(cam.x), y: Math.floor(cam.z) }; }
-  function tryMove(nx, nz) {
-    const L = layout(S.room), R = .22;
-    const tile = (x, z) => [Math.floor(x), Math.floor(z)];
-    const [tx, tz] = tile(nx, nz), d = doorAt(L, tx, tz);
-    if (d) { enterDoor(d); return "door"; }
-    const ok = (x, z) => [[x - R, z - R], [x + R, z - R], [x - R, z + R], [x + R, z + R]].every(([a, b]) => { const [ax, az] = tile(a, b); return !doorAt(L, ax, az) && walkable(L, ax, az); });
-    if (ok(nx, nz)) { cam.x = nx; cam.z = nz; }
-    else if (ok(nx, cam.z)) cam.x = nx;
-    else if (ok(cam.x, nz)) cam.z = nz;
-    syncPos();
+  function tryStep(dx, dy) {
+    const L = layout(S.room), x = S.pos.x + dx, y = S.pos.y + dy;
+    me.dir = dirOf(dx, dy);
+    const d = doorAt(L, x, y);
+    if (d) { goDoor(d); return; }
+    if (walkable(L, x, y)) { me.seg = [x, y]; S.pos = { room: S.room, x, y }; }
   }
-  function walkTo(target, after) {
-    syncPos();
+  function goDoor(d) {
+    if (S.locks[d.to]) { toast(`${esc(C().rooms[d.to].name)}은(는) 잠겨 있다. ${S.locks[d.to]}턴 뒤에 열린다.`, true); Sound.wrong(); me.path = null; return; }
+    const from = S.room; S.room = d.to;
+    const back = doorsOf(d.to).find(x => x.to === from);
+    S.pos = { room: d.to, x: back ? (back.side === "b" ? back.x : 1) : 5, y: back ? (back.side === "b" ? EXH - 2 : back.y) : 6 };
+    me.dir = back && back.side === "l" ? "right" : "up";
+    me.path = null; me.after = null; Sound.step(); render();
+  }
+  function walkTo(goals, after) {
+    ensureMe();
     const L = layout(S.room);
-    let goals;
-    if (target.kind === "floor") goals = [[target.x, target.y]];
-    else if (target.kind === "door") goals = [[target.ref.x, target.ref.y]];
-    else goals = NB.map(([dx, dy]) => [target.ref.x + dx, target.ref.y + dy]).filter(([x, y]) => walkable(L, x, y) && !doorAt(L, x, y));
+    if (goals.some(([x, y]) => x === S.pos.x && y === S.pos.y) && !me.seg) { me.path = []; if (after) after(); return; }
     const path = findPath(L, S.pos, goals);
     if (!path) { toast("거기로는 갈 수 없다.", true); return; }
-    walk = { pts: path.map(([x, y]) => [x + .5, y + .5]), i: 0, after, target };
-    if (!path.length) finishWalk();
+    me.path = path; me.after = after || null;
   }
-  function finishWalk() {
-    const w = walk; walk = null; if (!w) return;
-    const t = w.target;
-    if (t && t.ref && t.kind !== "door") cam.yaw = Math.atan2(-(t.ref.x + .5 - cam.x), -(t.ref.y + .5 - cam.z));
-    if (w.after) w.after();
+  function go(t) {
+    if (!t) return;
+    const L = layout(S.room);
+    if (t.kind === "door") { walkTo([[t.ref.x, t.ref.y]]); return; }
+    if (t.kind === "floor") { if (walkable(L, t.x, t.y) && !doorAt(L, t.x, t.y)) walkTo([[t.x, t.y]]); return; }
+    if (t.kind === "person") { const n = npcs.find(x => x.p === t.ref); if (n) { n.hold = 8; n.path = null; } }
+    const goals = NB.map(([dx, dy]) => [t.ref.x + dx, t.ref.y + dy]).filter(([x, y]) => walkable(L, x, y) && !doorAt(L, x, y));
+    walkTo(goals, () => { me.dir = dirOf(t.ref.x - S.pos.x, t.ref.y - S.pos.y); act(t); });
   }
   function act(t) {
     if (!t) return;
     if (t.kind === "obj") { if (doSearch(t.ref.spot)) render(); }
-    else if (t.kind === "person" && t.ref.kind === "h") toast(`<b>${esc(t.ref.name)}</b> — “여긴 제게 맡기세요! 곧 보고하겠습니다.”`);
-    else if (t.kind === "person") { S.tab = "people"; S.suspect = t.ref.id; S.challenge = null; S.deflectOn = null; render(); window.scrollTo(0, 0); }
+    else if (t.kind === "person" && t.ref.kind === "h") toast(`<b>${esc(t.ref.name)}</b> — “여긴 제게 맡기십시오! 곧 보고하겠습니다.”`);
+    else if (t.kind === "person") { S.tab = "people"; S.suspect = t.ref.id; S.dlg = null; render(); window.scrollTo(0, 0); }
   }
-  function go(t) {
-    if (!t || police) return;
-    if (t.kind === "person" && t.ref.kind === "h") { act(t); return; }
-    if (t.kind === "person") { const n = npcs.find(x => x.p === t.ref); if (n) { n.hold = 8; n.path = null; } }
-    if (t.kind === "door") { walkTo(t, () => enterDoor(t.ref)); return; }
-    if (t.kind === "floor") { walkTo(t); return; }
-    const dx = t.ref.x + .5 - cam.x, dz = t.ref.y + .5 - cam.z;
-    if (Math.abs(Math.floor(cam.x) - t.ref.x) + Math.abs(Math.floor(cam.z) - t.ref.y) <= 1 && Math.hypot(dx, dz) < 1.6) { cam.yaw = Math.atan2(-dx, -dz); act(t); }
-    else walkTo(t, () => act(t));
-  }
-
-  /* ---------- 고르기(레이캐스트) ---------- */
-  let ray = null, v2 = null;   /* THREE가 없을 때도 게임이 멈추지 않게 필요할 때 만든다 */
-  function pick(nx, ny, maxDist = 30) {
-    if (!scene || !camera) return null;
-    if (!ray) { ray = new THREE.Raycaster(); v2 = new THREE.Vector2(); }
-    v2.set(nx, ny); ray.setFromCamera(v2, camera);
-    for (const h of ray.intersectObjects(clickables, false)) {
-      if (h.distance > maxDist) break;
-      const root = h.object.userData.root;
-      if (root) return { kind: root.userData.kind, ref: root.userData.ref, dist: h.distance };
-      if (h.object.userData.floor) return { kind: "floor", x: Math.floor(h.point.x), y: Math.floor(h.point.z), dist: h.distance };
+  function nearby() {
+    const L = layout(S.room), order = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] }[me.dir];
+    for (const [dx, dy] of [order, ...NB]) {
+      const x = S.pos.x + dx, y = S.pos.y + dy;
+      const it = L.items.find(o => o.x === x && o.y === y); if (it) return { kind: "obj", ref: it };
+      const p = L.people.find(o => o.x === x && o.y === y); if (p) return { kind: "person", ref: p };
     }
     return null;
   }
   function describe(t) {
-    if (!t || t.kind === "floor") return "WASD·방향키로 걷고, 드래그로 둘러봐요. 물음표(?) 가구나 사람을 누르면 걸어가요.";
-    if (t.kind === "door") return `${t.ref.stairs ? "계단 · " + t.ref.stairs : C().rooms[t.ref.to].name} — 누르면 이동`;
-    if (t.kind === "person") return `${t.ref.name} — 누르거나 E 키: 말 걸기`;
+    if (!t) return "방향키·WASD, 화면 터치, 아래 방향 버튼으로 움직여요. 물음표(?) 물건이나 사람 옆에서 ‘조사’를 눌러요.";
+    if (t.kind === "person") return t.ref.kind === "h" ? `${t.ref.name} — 조사 중` : `${t.ref.name} — ‘조사’ 또는 스페이스: 대화`;
     if (has(S.searched, t.ref.spot)) return `${t.ref.label} — 이미 조사했다.`;
-    return `${t.ref.label} — 누르거나 E 키 (−${has(S.tampered, t.ref.spot) ? 2 : 1}턴)`;
+    return `${t.ref.label} — ‘조사’ 또는 스페이스 (−${has(S.tampered, t.ref.spot) ? 2 : 1}턴)`;
   }
 
-  /* ---------- 입력 ---------- */
-  function bindInput(el) {
-    let down = null, moved = 0;
-    el.addEventListener("pointerdown", e => { down = { x: e.clientX, y: e.clientY }; moved = 0; el.setPointerCapture(e.pointerId); Sound.init(); });
-    el.addEventListener("pointermove", e => {
-      if (!down) return;
-      const dx = e.clientX - down.x, dy = e.clientY - down.y; moved += Math.abs(dx) + Math.abs(dy);
-      cam.yaw -= dx * .006; cam.pitch = Math.max(-1.1, Math.min(.9, cam.pitch - dy * .004));
-      down = { x: e.clientX, y: e.clientY };
-    });
-    el.addEventListener("pointerup", e => {
-      const wasClick = down && moved < 8; down = null;
-      if (!wasClick) return;
-      const rc = el.getBoundingClientRect();
-      go(pick((e.clientX - rc.left) / rc.width * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1));
-    });
-    el.addEventListener("pointercancel", () => { down = null; });
-    addEventListener("resize", () => host && resize());
+  /* ---------- 그리기 ---------- */
+  function drawSprite(sp, dir, frameT, fx, fy, dy = 0) {
+    const seq = [0, 1, 0, 2], f = frameT ? seq[Math.floor(frameT) % 4] : 0;
+    g.drawImage(sp[dir][f], Math.round(fx * TS), Math.round(fy * TS + TS - 20 + dy));
   }
-  function resize() {
-    if (!host || !renderer) return;
-    const w = host.clientWidth, h = Math.round(Math.min(w * .66, innerHeight * .62));
-    renderer.setSize(w, h, false); renderer.domElement.style.width = "100%"; renderer.domElement.style.height = h + "px";
-    camera.aspect = w / h; camera.fov = w < 520 ? 80 : 70; camera.updateProjectionMatrix();
+  function draw(t) {
+    const L = layout(S.room);
+    const key = [S.room, C().title, JSON.stringify(S.locks), S.fakeSeed].join("|");
+    if (key !== bgKey || !bg) { bgKey = key; buildBg(); }
+    g.drawImage(bg, 0, 0);
+    /* 가구 */
+    for (const it of L.items) {
+      const f = furnPixel(it.type); if (!f.ready) continue;
+      const done = has(S.searched, it.spot);
+      g.globalAlpha = done ? .65 : 1; g.drawImage(f.cv, it.x * TS, it.y * TS); g.globalAlpha = 1;
+    }
+    for (const d of L.deco) { const f = furnPixel(d.type); if (f.ready) g.drawImage(f.cv, d.x * TS, d.y * TS); }
+    /* 인물: 위에서부터 차례로 */
+    const ents = [];
+    for (const n of npcs) ents.push({ y: n.fy, draw: () => drawSprite(charSprites(n.p.name, n.p.role), n.dir, n.frameT, n.fx, n.fy) });
+    for (const h of Object.values(helpers)) if (h.room === S.room) {
+      const rummage = h.cur && h.timer > 0 ? (Math.floor(t / 180) % 2) : 0;
+      ents.push({ y: h.fy, draw: () => drawSprite(charSprites(h.p.name, h.p.role), h.dir, h.frameT || rummage * 1, h.fx, h.fy, rummage) });
+    }
+    ents.push({ y: me.fy, draw: () => drawSprite(charSprites(pname(), "", true), me.dir, me.frameT, me.fx, me.fy) });
+    ents.sort((a, b) => a.y - b.y).forEach(e => e.draw());
+    /* 손전등 같은 조명 */
+    const lx = (me.fx + .5) * TS, ly = (me.fy + .5) * TS, grd = g.createRadialGradient(lx, ly, 10, lx, ly, 120);
+    grd.addColorStop(0, "rgba(255,220,160,0.06)"); grd.addColorStop(.35, "rgba(6,9,13,0.12)"); grd.addColorStop(1, "rgba(6,9,13,0.5)");
+    g.fillStyle = grd; g.fillRect(0, 0, PW, PH);
+    /* ? · ✓ · ! 표시 (조명 위) */
+    for (const it of L.items) {
+      const done = has(S.searched, it.spot), tam = has(S.tampered, it.spot), X = it.x * TS + 8, bob = done ? 0 : Math.round(Math.sin(t / 260 + it.x) * 1.5), Y = it.y * TS - 5 + bob;
+      const col = done ? "#7fb59a" : tam ? "#d06a5c" : "#e2b25c";
+      g.fillStyle = "#16110f"; g.fillRect(X - 4, Y - 4, 9, 9); g.fillStyle = col; g.fillRect(X - 3, Y - 3, 7, 7); g.fillRect(X, Y + 4, 1, 2);
+      g.fillStyle = done ? "#0f1a12" : tam ? "#fff" : "#1a1408";
+      if (done) { g.fillRect(X - 2, Y, 1, 1); g.fillRect(X - 1, Y + 1, 1, 1); g.fillRect(X, Y, 1, 1); g.fillRect(X + 1, Y - 1, 1, 1); g.fillRect(X + 2, Y - 2, 1, 1); }
+      else if (tam) { g.fillRect(X, Y - 2, 1, 3); g.fillRect(X, Y + 2, 1, 1); }
+      else { g.fillRect(X - 1, Y - 2, 3, 1); g.fillRect(X + 1, Y - 1, 1, 1); g.fillRect(X, Y, 1, 1); g.fillRect(X, Y + 2, 1, 1); }
+    }
+  }
+  /* 이름표·말풍선·문 이름(글자는 화면 위에 얹는다) */
+  function placeLabels() {
+    if (!labels) return;
+    const L = layout(S.room), list = [];
+    for (const n of npcs) list.push([n.p.id, n.fx + .5, n.fy - .2, `${n.p.name}${S.silence[n.p.id] ? " · 침묵" : ""}`, "nm" + (S.silence[n.p.id] ? " silent" : "")]);
+    for (const h of Object.values(helpers)) if (h.room === S.room) list.push(["h" + h.pid, h.fx + .5, h.fy - .2, `${h.p.name} · ${h.state === "out" ? "보고 완료!" : "조사 중…"}`, "nm ally" + (h.state === "out" ? " done" : "")]);
+    for (const d of L.doors) list.push(["d" + d.x + d.y, d.side === "b" ? d.x + .5 : .9, d.side === "b" ? EXH - .35 : d.y + .55, d.stairs ? `계단 ${d.stairs}` : C().rooms[d.to].name, "door" + (S.locks[d.to] ? " locked" : "") + (d.side === "l" ? " left" : "")]);
+    const seen = new Set();
+    for (const [id, x, y, text, cls] of list) {
+      seen.add(id);
+      let el = labels.querySelector(`[data-l="${id}"]`);
+      if (!el) { el = document.createElement("span"); el.dataset.l = id; labels.appendChild(el); }
+      if (el.textContent !== text) el.textContent = text;
+      if (el.className !== "pxl " + cls) el.className = "pxl " + cls;
+      el.style.left = (x / EXW * 100) + "%"; el.style.top = (y / EXH * 100) + "%";
+    }
+    for (const el of [...labels.children]) if (!seen.has(el.dataset.l)) el.remove();
   }
 
   /* ---------- 반복 ---------- */
+  let heldDir = null;
   function loop(t) {
     raf = requestAnimationFrame(loop);
-    if (!host || !document.body.contains(renderer.domElement)) { cancelAnimationFrame(raf); raf = 0; return; }
+    if (!cv || !document.body.contains(cv)) { cancelAnimationFrame(raf); raf = 0; return; }
     const dt = Math.min(.05, (t - last) / 1000 || 0); last = t;
-    /* 키보드 이동 */
-    if (police) for (const k in keys) keys[k] = false;
-    const f = (keys.w || keys.arrowup ? 1 : 0) - (keys.s || keys.arrowdown ? 1 : 0);
-    const st = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
-    if (keys.arrowleft) cam.yaw += dt * 2.2;
-    if (keys.arrowright) cam.yaw -= dt * 2.2;
-    if ((f || st) && S.room === cam.room) {
-      walk = null;
-      const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw), rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
-      const len = Math.hypot(f, st) || 1;
-      if (tryMove(cam.x + (fx * f + rx * st) / len * SPEED * dt, cam.z + (fz * f + rz * st) / len * SPEED * dt) === "door") return;
+    ensureMe();
+    /* 키·버튼으로 걷기 */
+    const kd = keys.up ? [0, -1] : keys.down ? [0, 1] : keys.left ? [-1, 0] : keys.right ? [1, 0] : null;
+    if (!me.seg) {
+      if (me.path && me.path.length) {
+        const [nx, ny] = me.path[0], L = layout(S.room), d = doorAt(L, nx, ny);
+        if (d) { me.path = null; goDoor(d); return; }
+        if (!walkable(L, nx, ny)) { const after = me.after, goals = [me.path[me.path.length - 1]]; me.path = null; setTimeout(() => walkTo(goals, after), 300); }
+        else { me.path.shift(); me.dir = dirOf(nx - S.pos.x, ny - S.pos.y); me.seg = [nx, ny]; S.pos = { room: S.room, x: nx, y: ny }; }
+      } else if (me.path && !me.path.length) { const after = me.after; me.path = null; me.after = null; if (after) after(); }
+      else if (kd && S.turns > 0) tryStep(kd[0], kd[1]);
     }
-    for (const n of npcs) updateNpc(n, dt, t);
-    if (police) updatePolice(dt, t);
-    for (const h of Object.values(helpers)) if (h.room === S.room && h.rig && sceneRoom === S.room) updateHelper(h, dt, t);
-    if (cutscene) {
-      const h = helpers[cutscene.pid];
-      if (h) { cam.yaw = angTo(cam.yaw, Math.atan2(-(h.wx - cam.x), -(h.wz - cam.z)), Math.min(1, dt * 3)); cam.pitch += (-.12 - cam.pitch) * Math.min(1, dt * 3); }
-      cutscene.t -= dt; if (!h || cutscene.t <= 0 || f || st || walk) cutscene = null;
-    }
-    /* 자동 걷기 */
-    if (walk && walk.i < walk.pts.length) {
-      const [tx, tz] = walk.pts[walk.i], dx = tx - cam.x, dz = tz - cam.z, d = Math.hypot(dx, dz), stp = SPEED * 1.2 * dt;
-      const L = layout(S.room), dd = doorAt(L, Math.floor(tx), Math.floor(tz));
-      if (L.people.some(o => o.x === Math.floor(tx) && o.y === Math.floor(tz))) {
-        walk.wait = (walk.wait || 0) + dt;
-        if (walk.wait > .8) { const w = walk; walk = null; walkTo(w.target, w.after); }
-        placeCamera(); renderer.render(scene, camera); return;
-      }
-      if (dd && d < .55) { const w = walk; walk = null; if (w.after) w.after(); else enterDoor(dd); return; }
-      if (d > .02) { const want = Math.atan2(-dx, -dz); let diff = want - cam.yaw; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); cam.yaw += diff * Math.min(1, dt * 8); }
-      if (d <= stp) { cam.x = tx; cam.z = tz; walk.i++; syncPos(); if (walk.i >= walk.pts.length) finishWalk(); }
-      else { cam.x += dx / d * stp; cam.z += dz / d * stp; }
-    }
-    /* 걸을 때 시점이 살짝 흔들리고 발소리 */
-    const movingMe = !!walk || !!(f || st);
-    if (movingMe) {
-      bob += dt * 9;
-      const sgn = Math.sign(Math.sin(bob));
-      if (sgn !== lastStepSign) { lastStepSign = sgn; Sound.foot(); }
-    } else bob = Math.round(bob / Math.PI) * Math.PI;
-    /* 물음표 통통 · 불꽃 */
-    for (const m of marks) m.position.y = m.userData.baseY + Math.sin(t / 380 + m.position.x) * .04;
-    for (const fl of flames) {
-      if (fl.isLight) fl.intensity = .7 + Math.random() * .4;
-      else if (fl.userData.slide) fl.position.x = .5 - (((t / 1000) * fl.userData.slide.speed) % 1.1);   /* 달리는 열차 창밖 불빛 */
-      else fl.scale.y = .9 + Math.sin(t / 90) * .1;
-    }
-    placeCamera();
-    renderer.render(scene, camera);
-    /* 화면 가운데에 보이는 것 안내 */
+    if (me.seg) {
+      const dx = me.seg[0] - me.fx, dy = me.seg[1] - me.fy, d = Math.hypot(dx, dy), st = SPEED * dt;
+      me.frameT += dt * 9;
+      if (d <= st) { me.fx = me.seg[0]; me.fy = me.seg[1]; me.seg = null; if (Math.floor(me.frameT) % 2 === 0) Sound.foot(); }
+      else { me.fx += dx / d * st; me.fy += dy / d * st; }
+    } else if (!kd) me.frameT = 0;
+    for (const n of npcs) updateNpc(n, dt);
+    for (const h of Object.values(helpers)) if (h.room === S.room) updateHelper(h, dt);
+    draw(t);
+    placeLabels();
     if (t - hoverT > 150) {
-      hoverT = t;
-      looking = pick(0, 0, 3.2);
-      const el = document.getElementById("near3d"), btn = document.getElementById("act3d");
-      if (el) el.textContent = describe(looking);
-      if (btn) btn.disabled = !looking || looking.kind === "floor";
+      hoverT = t; hint = nearby();
+      const el = document.getElementById("near-px"), btn = document.getElementById("act-px");
+      if (el) el.textContent = describe(hint);
+      if (btn) btn.disabled = !hint || (hint.kind === "obj" && has(S.searched, hint.ref.spot)) || S.turns <= 0;
     }
+  }
+  function tileFromEvent(e) {
+    const rc = cv.getBoundingClientRect();
+    return [Math.floor((e.clientX - rc.left) / rc.width * EXW), Math.floor((e.clientY - rc.top) / rc.height * EXH)];
+  }
+  function onTap(e) {
+    Sound.init(); if (S.turns <= 0) return;
+    const [x, y] = tileFromEvent(e), L = layout(S.room);
+    const it = L.items.find(o => o.x === x && o.y === y);
+    if (it) return go({ kind: "obj", ref: it });
+    const p = L.people.find(o => o.x === x && o.y === y) || L.people.find(o => o.x === x && o.y === y + 1);
+    if (p) return go({ kind: "person", ref: p });
+    const d = doorAt(L, x, y); if (d) return go({ kind: "door", ref: d });
+    go({ kind: "floor", x, y });
   }
 
   return {
-    get failed() { return failed; },
     mount(el) {
       host = el; if (!el) return;
-      if (failed || !window.THREE) { failed = true; el.innerHTML = `<div class="v3-fail">이 기기에서는 3D 화면을 열 수 없어요. 위의 ‘지도’ 버튼을 눌러 주세요.</div>`; return; }
-      try {
-        if (!renderer) {
-          renderer = new THREE.WebGLRenderer({ antialias: true });
-          renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-          renderer.outputEncoding = THREE.sRGBEncoding;
-          camera = new THREE.PerspectiveCamera(70, 1.5, .05, 40);
-          bindInput(renderer.domElement);
-        }
-      } catch (err) { failed = true; el.innerHTML = `<div class="v3-fail">이 기기에서는 3D 화면을 열 수 없어요. 위의 ‘지도’ 버튼을 눌러 주세요.</div>`; return; }
-      el.prepend(renderer.domElement);
-      renderer.domElement.tabIndex = 0; renderer.domElement.setAttribute("aria-label", "3D 화면. WASD로 걷고 드래그로 둘러보기");
-      resize();
-      if (cam.room !== S.room || !S.pos || S.pos.room !== S.room) { ensurePos(); spawn(); }
-      const key = [S.caseId, C().title, S.room, S.searched.length, S.tampered.length, JSON.stringify(S.locks), JSON.stringify(S.silence), S.accCaught, S.vars.map(v => v.name).join()].join("|");
-      if ((key !== sceneKey || !scene) && !police) { sceneKey = key; build(); }
+      if (!cv) {
+        cv = pxCanvas(PW, PH); cv.className = "pxcanvas"; cv.tabIndex = 0;
+        cv.setAttribute("aria-label", "픽셀 화면. 방향키로 움직이고 스페이스로 조사");
+        g = cv.getContext("2d"); g.imageSmoothingEnabled = false;
+        cv.addEventListener("click", onTap);
+        labels = document.createElement("div"); labels.className = "px-labels";
+      }
+      el.prepend(labels); el.prepend(cv);
+      ensureMe();
       if (!raf) { last = performance.now(); raf = requestAnimationFrame(loop); }
     },
-    key(e, isDown) {
-      const k = e.key.toLowerCase();
-      if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(k)) { keys[k] = isDown; e.preventDefault(); if (isDown) Sound.init(); return true; }
-      if (isDown && (k === "e" || k === " " || k === "enter")) { e.preventDefault(); Sound.init(); go(looking && looking.kind !== "floor" ? looking : null); return true; }
+    key(e, down) {
+      const k = e.key.toLowerCase(), map = { arrowup: "up", w: "up", arrowdown: "down", s: "down", arrowleft: "left", a: "left", arrowright: "right", d: "right" };
+      if (map[k]) { keys[map[k]] = down; e.preventDefault(); if (down) { Sound.init(); me.path = null; } return true; }
+      if (down && (k === " " || k === "enter" || k === "e")) { e.preventDefault(); Sound.init(); act(nearby()); return true; }
       return false;
     },
-    interact() { go(looking && looking.kind !== "floor" ? looking : null); },
-    clearKeys() { for (const k in keys) keys[k] = false; },
-    debug() { return { cam: { ...cam }, looking, objs: clickables.length, walking: !!walk, npcs: npcs.map(n => ({ name: n.p.name, x: +n.wx.toFixed(2), z: +n.wz.toFixed(2), tile: [n.p.x, n.p.y], walking: !!n.seg })) }; },
-    go, pick, helperEnter, policeScene, get policeActive() { return !!police; },
-    cancelPolice() { if (police && scene) { for (const o of police.officers) scene.remove(o.rig.root); scene.remove(police.red, police.blue); } police = null; },
-    prune() {   /* 보고가 끝난 탐정: 지금 3D로 보고 있으면 걸어 나가고, 아니면 바로 사라진다 */
-      for (const h of Object.values(helpers)) if (!missionAlive(h) && !(h.rig && sceneRoom === h.room && S.room === h.room && S.mode === "3d" && S.tab === "rooms")) dropHelper(h);
+    hold(dir, down) {
+      keys[dir] = down;
+      if (down) {   /* 짧게 톡 눌러도 한 칸은 움직인다 */
+        Sound.init(); me.path = null;
+        if (!me.seg && S.turns > 0 && room === S.room) { const v = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir]; tryStep(v[0], v[1]); }
+      }
     },
-    helperInfo() { return Object.values(helpers).map(h => ({ name: h.p.name, room: h.room, state: h.state, tile: [h.p.x, h.p.y], searching: !!h.cur, hasRig: !!h.rig })); },
-    /* 시험용: 카메라 위치 지정, 인물 멈추기 */
-    setCam(x, z, yaw, pitch = -.05) { cam.x = x; cam.z = z; cam.yaw = yaw; cam.pitch = pitch; syncPos(); },
-    freeze(sec = 30) { for (const n of npcs) { n.hold = sec; n.path = null; } },
+    interact() { act(nearby()); },
+    clearKeys() { for (const k in keys) keys[k] = false; },
+    helperEnter,
+    prune() { for (const h of Object.values(helpers)) if (!missionAlive(h) && !(S.room === h.room && S.mode === "pixel" && S.tab === "rooms" && cv && document.body.contains(cv))) dropHelper(h); },
+    go, act,
+    debug() { return { me: { x: S.pos && S.pos.x, y: S.pos && S.pos.y, fx: +me.fx.toFixed(2), fy: +me.fy.toFixed(2), dir: me.dir, walking: !!(me.seg || (me.path && me.path.length)) },
+      npcs: npcs.map(n => ({ name: n.p.name, tile: [n.p.x, n.p.y], walking: !!n.seg })),
+      helpers: Object.values(helpers).map(h => ({ name: h.p.name, room: h.room, state: h.state, tile: [h.p.x, h.p.y], searching: !!(h.cur && h.timer > 0) })) }; },
   };
 })();
 
-function render3D(out, plan) {
+function renderPixel(out, plan) {
   ensurePos();
   const c = C(), rid = S.room, r = c.rooms[rid], lk = S.locks[rid];
   const floorOf = c.floors.find(f => f.rooms.includes(rid));
@@ -3114,16 +2754,18 @@ function render3D(out, plan) {
   const results = found.map(sp => `<div class="spot"><b>${esc(sp.label)}</b><p class="result">${esc(sp.text)}</p>
     ${sp.fake ? `<span class="found-chip fake">헛수고 · 사건과 관계없음</span>` : ""}${sp.clue ? `<span class="found-chip">단서 · ${esc(c.clues[sp.clue].name)}</span><p class="result">${esc(c.clues[sp.clue].text)}</p>` : ""}</div>`).join("");
   return `<div class="split explore">
-    <div class="plan">${policeBanner()}${plan}<p class="hint">방 이름을 누르면 바로 이동해요.</p></div>
+    <div class="plan">${decisionBanner()}${plan}<p class="hint">방 이름을 누르면 바로 이동해요.</p></div>
     <section class="panel" aria-live="polite">
       <div class="room-head"><div><span class="label">${floorOf ? floorOf.label : ""}</span><h3 style="font-size:24px">${r.name}</h3></div>${modeBtns()}</div>
-      <div class="view3d" id="view3d">
-        <span class="crosshair" aria-hidden="true"></span>
-        ${lk ? `<div class="map-lock">잠김 · ${lk}턴</div>` : ""}
+      <div class="pxview" id="pxview">${lk ? `<div class="map-lock">잠김 · ${lk}턴</div>` : ""}</div>
+      <div class="pad-row">
+        <div class="dpad" aria-label="방향 버튼">
+          <button class="pad up" data-pad="up" aria-label="위">▲</button><button class="pad left" data-pad="left" aria-label="왼쪽">◀</button>
+          <button class="pad right" data-pad="right" aria-label="오른쪽">▶</button><button class="pad down" data-pad="down" aria-label="아래">▼</button>
+        </div>
+        <div class="pad-act"><span id="near-px" class="hint">방향키·WASD, 화면 터치, 방향 버튼으로 움직여요.</span>
+          <button class="btn" id="act-px" data-act="interact-px">조사</button></div>
       </div>
-      <div class="explore-bar"><span id="near3d" class="hint">WASD·방향키로 걷고, 드래그로 둘러봐요.</span>
-        <button class="act press" id="act3d" data-act="interact3d">조사하기</button></div>
-      <p class="hint">컴퓨터: W·S 앞뒤, A·D 옆걸음, ←→ 돌기, E 조사. 휴대폰: 바닥을 누르면 걸어가고, 끌면 둘러봐요.</p>
       <p class="desc">${r.desc}</p>
       ${lk ? `<p class="locked-room">이 방이 잠겼다. 문으로 나가서 ${lk}턴 뒤에 다시 오자.</p>` : ""}
       ${left ? `<p class="hint">이 방에 아직 조사하지 않은 곳(?)이 ${left}곳 있다.</p>` : `<p class="hint">이 방은 모두 조사했다.</p>`}
@@ -3141,81 +2783,118 @@ function renderDispatch(r) {
   if (!left && !busy) return "";
   const btns = PARTNERS.filter(x => !rule.who || rule.who.includes(x.id)).map(x => {
     const left = dispatchLeft(x.id), away = S.missions.some(m => m.pid === x.id);
-    const tag = away ? "출동 중" : left <= 0 ? "끝" : rule.each ? `${left}번 남음` : x.title;
+    const tag = away ? "출동 중" : left <= 0 ? "끝" : `${left}번 남음`;
     return `<button class="act ally with-face" data-dispatch="${x.id}" ${canDispatch(x.id) ? "" : "disabled"}>
-      ${Face(x.name, 24)}${x.name}<span class="cost">${tag}</span></button>`;
+      ${pixelFace(x.name, 24)}${x.title} ${x.name}<span class="cost">${tag}</span></button>`;
   }).join("");
-  const howMany = rule.total ? `모두 합쳐 ${rule.total}번 (남은 횟수 ${Math.max(0, dispatchLeft())}번)` : `탐정마다 ${rule.each}번`;
   return `<div class="dispatch">
-    <b>탐정 출동</b>
-    <p class="hint">${busy ? `${I(partner(busy.pid).name)} 여기를 조사하는 중이에요. ${busy.due - S.actions}턴 뒤에 알려 줘요.`
-      : `탐정을 보내면 이 장소를 대신 조사해서 ${MISSION_DELAY}턴 뒤에 알려 줘요. 턴은 안 줄어요. 잠긴 방도 들어가요. 출동은 ${howMany}.`}</p>
+    <b>팀원 출동</b>
+    <p class="hint">${busy ? `${I(partner(busy.pid).name)} 여기를 조사하는 중이에요. ${busy.due - S.actions}턴 뒤에 보고해요.`
+      : `팀원을 보내면 문으로 들어와 이 장소를 대신 조사하고 ${MISSION_DELAY}턴 뒤에 보고해요. 턴은 안 줄어요. 잠긴 방도 들어가요.`}</p>
     <div class="q-actions">${btns}</div>
   </div>`;
 }
 
-function renderQ(q, p, outRaw) {
-  const c = C(), asked = has(S.asked, q.id), broken = has(S.broken, q.id);
-  const out = outRaw || !!S.silence[S.suspect];
-  let html = `<div class="q">
-    <div class="ask"><span class="text">“${esc(q.q)}”</span>
-      ${asked ? "" : `<button class="act" data-ask="${q.id}" ${out ? "disabled" : ""}>묻는다<span class="cost">−1턴</span></button>`}</div>
-    ${q.need ? `<span class="tag">단서 · ${esc(c.clues[q.need].name)}</span>` : ""}
-    ${has(S.hints, q.id) && !broken ? `<span class="verdict-tag">조력자 귀띔 · 이 대답은 앞뒤가 맞지 않는다</span>` : ""}`;
-  if (asked) {
-    html += `<p class="answer${broken ? " retracted" : ""}">${esc(q.a)}</p>`;
-    const note = S.rebutNotes[q.id];
-    if (note) html += `<span class="verdict-tag ally with-face">${Face(note.who.split(" ").pop(), 22)}${esc(note.who)}의 반박</span><p class="answer rebut">${esc(note.text)}</p>`;
-    if (broken) {
-      html += `<span class="verdict-tag">진술 번복</span><p class="answer broken">${esc(q.lie.reply)}</p>`;
-    } else {
-      if (S.deflectOn === q.id) html += `<p class="answer deflect">${esc(p.deflect)}</p>`;
-      if (S.challenge === q.id) {
-        const opts = S.found.map(id => `<option value="${id}" ${S.present === id ? "selected" : ""}>${esc(c.clues[id].name)}</option>`).join("");
-        html += `<div class="present">
-          <label for="present-${q.id}">이 진술과 모순되는 단서</label>
-          <select id="present-${q.id}" name="present">${opts}</select>
-          <button class="act press" data-confront="${q.id}" ${out ? "disabled" : ""}>들이민다<span class="cost">−1턴</span></button>
-          <button class="act" data-act="cancel">취소</button>
-        </div>`;
-      } else {
-        const rb = note ? "" : REBUTTERS.filter(x => rebutLeft(x.id) > 0)
-          .map(x => `<button class="act ally with-face" data-rebut="${x.id}" data-q="${q.id}" ${out ? "disabled" : ""}>${Face(x.name, 24)}${x.name}(${x.title}) 반박<span class="cost">${rebutLeft(x.id)}번 남음</span></button>`).join("");
-        const ch = S.found.length ? `<button class="act press" data-challenge="${q.id}" ${out ? "disabled" : ""}>모순 지적</button>` : "";
-        if (ch || rb) html += `<div class="q-actions">${ch}${rb}</div>`;
-      }
-    }
+/* ---------- 프로파일러의 조언: 고를 거리 중 하나를 짚어 준다 (한서진 약 80%, 모은재 반반) ---------- */
+const ADVICE_ACC = { prof: .8, psy: .5 };
+function adviseOptions(key) {
+  const c = C(), [kind, id] = key.split(":");
+  if (kind === "heart") return { opts: TONES.map(t => t.id), right: PERSONAS[S.persona[id]].right };
+  if (kind === "stmt") {
+    const p = c.suspects[id], opts = p.qs.filter(q => has(S.asked, q.id) && !has(S.broken, q.id)).map(q => q.id);
+    const lies = opts.filter(qid => findQ(qid).q.lie);
+    return { opts, right: lies.length ? RND.pick(lies) : null };
   }
-  return html + `</div>`;
+  const q = findQ(id).q, opts = S.found.slice(), good = q.lie ? q.lie.clues.filter(k => has(S.found, k)) : [];
+  return { opts, right: good.length ? good[0] : null };
 }
+function advise(rid, key) {
+  if (rebutLeft(rid) <= 0 || S.turns <= 0 || S.advice[key]) return;
+  const x = REBUTTERS.find(r => r.id === rid), { opts, right } = adviseOptions(key);
+  if (!opts.length) return;
+  let pick;
+  if (right && Math.random() < ADVICE_ACC[rid]) pick = right;
+  else { const wrong = opts.filter(o => o !== right); pick = wrong.length ? RND.pick(wrong) : right; }
+  S.rebuts.push(rid);
+  S.advice[key] = { rid, pick, who: `${x.title} ${x.name}` };
+  Sound.help();
+}
+function adviceBar(key) {
+  const a = S.advice[key];
+  if (a) {
+    const x = REBUTTERS.find(r => r.id === a.rid);
+    return `<p class="advice">${pixelFace(x.name, 22)}<span><b>${esc(a.who)}</b> — ${a.rid === "prof" ? "“제 판단으로는 이게 맞습니다.”" : "“음… 아마 이거 아닐까요?”"} (표시된 선택지)</span></p>`;
+  }
+  const btns = REBUTTERS.filter(x => rebutLeft(x.id) > 0).map(x => `<button class="act ally with-face" data-advise="${x.id}" data-key="${key}">${pixelFace(x.name, 22)}${x.name}에게 조언 구하기<span class="cost">${x.id === "prof" ? "정확함" : "반반"} · ${rebutLeft(x.id)}번</span></button>`).join("");
+  return btns ? `<div class="q-actions advice-btns">${btns}</div>` : "";
+}
+const adviceTag = (key, val) => S.advice[key] && S.advice[key].pick === val ? `<span class="adv-tag">${REBUTTERS.find(r => r.id === S.advice[key].rid).name}의 추천</span>` : "";
 
+/* ---------- 대화(심문) 화면 ---------- */
 function renderPeople(out) {
   const c = C();
+  const heartLabel = sid => S.heart[sid] === "open" ? `<span class="heart open">♥ 마음 열림</span>` : S.heart[sid] === "closed" ? `<span class="heart closed">♡ 닫힘</span>` : "";
   const list = Object.entries(c.suspects).map(([id, p]) => {
     const open = p.qs.filter(q => !q.need || has(S.found, q.need));
     const left = open.filter(q => !has(S.asked, q.id)).length;
     const nb = p.qs.filter(q => has(S.broken, q.id)).length, sl = S.silence[id];
-    return `<button class="who has-face${sl ? " is-silent" : ""}" aria-pressed="${S.suspect === id}" data-suspect="${id}">${Face(p.name, 44, "", ageOf(p.role))}
-      <span class="who-text"><b>${p.name}</b><span>${p.role}</span><span class="mono">${sl ? `침묵 ${sl}턴` : `새 질문 ${left}${nb ? ` · 번복 ${nb}` : ""}`}</span></span></button>`;
+    return `<button class="who has-face${sl ? " is-silent" : ""}" aria-pressed="${S.suspect === id}" data-suspect="${id}">${pixelFace(p.name, 44, p.role)}
+      <span class="who-text"><b>${p.name}</b><span>${p.role}</span><span class="mono">${sl ? `침묵 ${sl}턴` : `새 질문 ${left}${nb ? ` · 번복 ${nb}` : ""}`}</span>${heartLabel(id)}</span></button>`;
   }).join("");
   const side = S.vars.length ? `<span class="label side-label">변수 인물 · 한 명은 공범</span>
-    ${S.vars.map((v, i) => `<button class="who has-face" aria-pressed="${S.suspect === "v" + i}" data-suspect="v${i}">${Face(v.name, 44)}<span class="who-text"><b>${v.name}</b><span>${v.role} · 변수 인물</span>
+    ${S.vars.map((v, i) => `<button class="who has-face" aria-pressed="${S.suspect === "v" + i}" data-suspect="v${i}">${pixelFace(v.name, 44)}<span class="who-text"><b>${v.name}</b><span>${v.role} · 변수 인물</span>
       <span class="mono">${S.accCaught && v.acc ? "공범 체포" : has(S.accWrong, i) ? "공범 아님" : has(S.varTalked, i) ? "이야기 나눔" : "아직 모름"}</span></span></button>`).join("")}` : "";
   const extra = /^v\d$/.test(S.suspect) ? renderVar(+S.suspect[1], out) : "";
   if (extra) return `<div class="split"><div class="people">${list}${side}</div>${extra}</div>`;
-  const p = c.suspects[S.suspect], sl = S.silence[S.suspect];
-  let locked = 0;
-  const qs = p.qs.map(q => { if (q.need && !has(S.found, q.need)) { locked++; return ""; } return renderQ(q, p, out); }).join("");
+  const sid = S.suspect, p = c.suspects[sid], sl = S.silence[sid], per = PERSONAS[S.persona[sid]], show = DIFF[S.diff].persona === "show";
+  const easyTags = DIFF[S.diff].lieTags;
+  const lieTag = q => (easyTags && q.lie && !has(S.broken, q.id) ? `<span class="sus-tag">수상하다</span>` : "") + (has(S.hints, q.id) && !has(S.broken, q.id) ? `<span class="sus-tag">서하루 귀띔</span>` : "");
+  /* 말풍선: 마지막 대화 */
+  const L = S.lastLine && S.lastLine.sid === sid ? S.lastLine : null;
+  const speech = L
+    ? `<div class="line mine"><span class="who-tag">${L.who ? esc(L.who) : `형사 ${esc(pname())}`}</span><p>${esc(L.q)}</p></div>
+       <div class="line them ${L.kind}"><span class="who-tag">${esc(p.name)}${L.kind === "broken" ? " · 진술 번복" : L.kind === "secret" ? " · 숨은 증언" : ""}</span><p>${esc(L.a)}</p></div>`
+    : `<div class="line them"><span class="who-tag">${esc(p.name)}</span><p>“…무슨 일이시죠, 형사님?”</p></div>`;
+  /* 선택지 */
+  let choices = "";
+  const D = S.dlg;
+  const statements = p.qs.filter(q => has(S.asked, q.id) && !has(S.broken, q.id));
+  if (out) choices = `<p class="locked">결단의 시간이다. 더 물어볼 수 없다.</p>`;
+  else if (sl) choices = `<p class="locked-room">“더는 아무 말도 안 하겠어요.” ${sl}턴 동안 대화할 수 없다.</p>`;
+  else if (!D) {
+    const avail = p.qs.filter(q => (!q.need || has(S.found, q.need)) && !has(S.asked, q.id));
+    const locked = p.qs.filter(q => q.need && !has(S.found, q.need)).length;
+    choices = avail.map(q => `<button class="choice" data-ask="${q.id}"><span class="ck">질문</span><span>“${esc(q.q)}”</span><span class="cost">−1턴</span></button>`).join("")
+      + (statements.length && S.found.length ? `<button class="choice press" data-dlg="contradict"><span class="ck">추리</span><span>모순을 지적한다</span><span class="cost">틀리면 −10초</span></button>` : "")
+      + (!S.heart[sid] && p.qs.some(q => has(S.asked, q.id)) ? `<button class="choice heart" data-dlg="heart"><span class="ck">호감</span><span>마음을 열게 한다</span><span class="cost">한 번뿐 · −1턴</span></button>` : "")
+      + (locked ? `<p class="locked">단서를 더 찾으면 물어볼 것이 ${locked}개 더 생긴다.</p>` : "")
+      + (!avail.length && !statements.length ? `<p class="locked">지금은 더 물어볼 것이 없다.</p>` : "");
+  } else if (D.step === "statement") {
+    const key = "stmt:" + sid;
+    choices = `<p class="step-title">어느 대답이 거짓말일까?</p>` + statements.map(q => `<button class="choice" data-stmt="${q.id}"><span class="ck">대답</span><span>“${esc(q.a)}”</span>${lieTag(q)}${adviceTag(key, q.id)}</button>`).join("")
+      + adviceBar(key) + `<button class="choice back" data-dlg="back"><span>그만둔다</span></button>`;
+  } else if (D.step === "clue") {
+    const q = findQ(D.q).q, key = "clue:" + D.q;
+    choices = `<p class="step-title">“${esc(q.a)}” — 이 말과 맞지 않는 단서는?</p>` + S.found.map(id => `<button class="choice" data-confront="${id}"><span class="ck">단서</span><span>${esc(c.clues[id].name)}</span>${adviceTag(key, id)}</button>`).join("")
+      + adviceBar(key) + `<button class="choice back" data-dlg="back"><span>그만둔다</span></button>`;
+  } else if (D.step === "heart") {
+    const key = "heart:" + sid;
+    choices = `<p class="step-title">어떤 말투로 다가갈까? 잘못 고르면 숨은 증언은 영영 들을 수 없다.</p>` + TONES.map(t => `<button class="choice heart" data-tone="${t.id}"><span class="ck">${t.label}</span><span>“${esc(t.line)}”</span>${adviceTag(key, t.id)}</button>`).join("")
+      + adviceBar(key) + `<button class="choice back" data-dlg="back"><span>그만둔다</span></button>`;
+  }
+  /* 지난 대화 기록 */
+  const log = p.qs.filter(q => has(S.asked, q.id)).map(q => {
+    const broken = has(S.broken, q.id);
+    return `<div class="logq"><p class="q">“${esc(q.q)}”</p><p class="answer${broken ? " retracted" : ""}">${esc(q.a)}</p>${broken ? `<span class="verdict-tag">진술 번복</span><p class="answer broken">${esc(q.lie.reply)}</p>` : lieTag(q)}</div>`;
+  }).join("") + S.secrets.filter(x => x.sid === sid).map(x => `<div class="logq"><span class="verdict-tag ally">숨은 증언</span><p class="answer rebut">${esc(x.text)}</p></div>`).join("");
   return `<div class="split">
     <div class="people">${list}${side}</div>
-    <section class="panel" aria-live="polite">
-      <div class="person-head">${mug(p.name, ageOf(p.role))}<div><span class="label">${p.role}</span><h3 style="font-size:24px">${p.name}</h3></div></div>
-      <p class="desc">${p.intro}</p>
-      ${sl ? `<p class="locked-room">“변호사가 오기 전엔 아무 말도 안 하겠어요.” ${sl}턴 동안 심문할 수 없다.</p>
-        ${lawyerLeft() > 0 && !out ? `<div class="q-actions"><button class="act ally with-face" data-lawyer="${S.suspect}">${Face(LAWYER.name, 24)}${LAWYER.title} ${LAWYER.name} 부르기<span class="cost">${lawyerLeft()}번 남음</span></button></div>` : ""}` : ""}
-      <div class="qa">${qs}</div>
-      ${locked ? `<p class="locked">단서를 더 찾으면 물어볼 것이 ${locked}개 더 생긴다.</p>` : ""}
-      ${S.found.length ? "" : `<p class="locked">단서를 하나라도 찾으면 진술의 모순을 지적할 수 있다.</p>`}
+    <section class="panel talk" aria-live="polite">
+      <div class="person-head"><span class="portrait">${pixelFace(p.name, 96, p.role)}</span><div><span class="label">${p.role}</span><h3 style="font-size:24px">${p.name}</h3>
+        <span class="hint">${show ? `성격: <b>${per.label}</b> · ` : "눈치: "}${per.tell}</span> ${heartLabel(sid)}</div></div>
+      <div class="speech">${speech}</div>
+      <div class="choices">${choices}</div>
+      ${log ? `<details class="talklog"><summary>지난 대화 (${p.qs.filter(q => has(S.asked, q.id)).length})</summary>${log}</details>` : ""}
     </section>
   </div>`;
 }
@@ -3224,12 +2903,12 @@ function renderVar(i, out) {
   const v = S.vars[i]; if (!v) return "";
   const talked = has(S.varTalked, i), wrong = has(S.accWrong, i), caught = S.accCaught && v.acc;
   return `<section class="panel" aria-live="polite">
-    <div class="person-head">${mug(v.name)}<div><span class="label">${v.role} · 변수 인물</span><h3 style="font-size:24px">${v.name}</h3></div></div>
+    <div class="person-head"><span class="portrait">${pixelFace(v.name, 96)}</span><div><span class="label">${v.role} · 변수 인물</span><h3 style="font-size:24px">${v.name}</h3></div></div>
     <p class="desc">사건이 난 밤 이곳에 있던 ${v.role}. 용의자는 아니지만, 두 변수 인물 중 한 명은 범인 편 공범이다. 공범은 증거를 망치고 문을 잠그며 현장에 흔적을 남긴다.</p>
-    ${talked ? `<p class="answer">${esc(S.varNotes[i])}</p>` : `<div class="q-actions"><button class="act" data-vtalk="${i}" ${out ? "disabled" : ""}>이야기한다<span class="cost">−1턴</span></button></div>`}
+    ${talked ? `<p class="answer">${esc(S.varNotes[i])}</p>` : `<div class="choices"><button class="choice" data-vtalk="${i}" ${out ? "disabled" : ""}><span class="ck">대화</span><span>이야기를 듣는다</span><span class="cost">−1턴</span></button></div>`}
     ${caught ? `<p class="locked-room">공범으로 체포되었다.</p>` : wrong ? `<p class="locked">공범이 아니었다.</p>`
-      : !S.accCaught ? `<div class="q-actions"><button class="act press" data-vaccuse="${i}" ${out ? "disabled" : ""}>공범으로 지목<span class="cost">틀리면 −2턴</span></button></div>
-        <p class="hint">수첩의 ‘훼방과 도움’에 적힌 흔적과 이 사람의 모습을 비교해 보자.</p>` : ""}
+      : !S.accCaught ? `<div class="choices"><button class="choice press" data-vaccuse="${i}" ${out ? "disabled" : ""}><span class="ck">체포</span><span>공범으로 지목한다</span><span class="cost">틀리면 −10초</span></button></div>
+        <p class="hint">수첩의 ‘방해와 도움’에 적힌 흔적과 이 사람의 모습을 비교해 보자.</p>` : ""}
   </section>`;
 }
 
@@ -3246,7 +2925,8 @@ function renderNotes() {
     : `<p class="empty">진술을 들으면 시간표가 채워진다.</p>`;
   return `<div class="notes">
     <section class="panel"><h3>시간표</h3><div class="timeline">${tl}</div></section>
-    ${S.events.length ? `<section class="panel"><h3>훼방과 도움</h3><div class="event-log">${S.events.map(e => `<p class="${e.bad ? "" : "good"}">${esc(e.msg)}</p>`).join("")}</div></section>` : ""}
+    ${S.secrets.length ? `<section class="panel"><h3>숨은 증언</h3><div class="event-log">${S.secrets.map(x => `<p class="good"><b>${esc(x.name)}</b> ${esc(x.text)}</p>`).join("")}</div></section>` : ""}
+    ${S.events.length ? `<section class="panel"><h3>방해와 도움</h3><div class="event-log">${S.events.map(e => `<p class="${e.bad ? "" : "good"}">${esc(e.msg)}</p>`).join("")}</div></section>` : ""}
     <section class="panel"><h3>단서 <span class="mono" style="color:var(--muted);font-size:14px">${S.found.length}/${Object.keys(c.clues).length}</span></h3><div class="clue-list">${clues}</div></section>
   </div>`;
 }
@@ -3254,13 +2934,14 @@ function renderNotes() {
 function renderAccuse() {
   const c = C(), pk = S.pick;
   const radio = (name, items, cur) => items.map(o => `<label class="opt"><input type="radio" name="${name}" id="${name}-${o.id}" value="${o.id}" ${cur === o.id ? "checked" : ""}><span>${esc(o.text)}</span></label>`).join("");
-  const suspects = Object.entries(c.suspects).map(([id, p]) => ({ id, text: `${p.name} — ${p.role}` }));
+  const suspects = Object.entries(c.suspects).filter(([id]) => !has(S.cleared, id)).map(([id, p]) => ({ id, text: `${p.name} — ${p.role}` }));
   const ev = S.found.length
     ? S.found.map(id => `<label class="opt"><input type="checkbox" name="evidence" id="ev-${id}" value="${id}" ${has(pk.evidence, id) ? "checked" : ""} ${!has(pk.evidence, id) && pk.evidence.length >= 3 ? "disabled" : ""}><span>${esc(c.clues[id].name)}</span></label>`).join("")
     : `<p class="empty">찾은 단서가 없다. 증거 없이 지목할 수도 있지만 설득력이 떨어진다.</p>`;
   const ready = pk.culprit && pk.motive && pk.method;
   return `<form class="accuse" id="accuse-form">
-    ${S.turns > 0 ? `<p class="hint">지목하면 수사가 끝난다. 아직 ${S.turns}턴이 남아 있다.</p>` : `<p class="hint">경찰이 도착했다. 지금 가진 것으로 결론을 내려야 한다.</p>`}
+    ${S.turns > 0 ? `<p class="hint">지목하면 수사가 끝난다. 아직 ${S.turns}턴과 ${mmss(S.timeLeft)}가 남아 있다.</p>` : `<p class="hint decision">결단의 시간이다. 증거가 부족해도 지금 범인을 골라야 한다. 놓치면 범인은 도주한다.</p>`}
+    <p class="hint">지목 기회: <b>${S.chances}번</b>${S.chances > 1 ? " · 틀려도 한 번 더 고를 수 있다(−10초)" : " · 틀리면 게임 오버"}</p>
     <fieldset><legend>범인은 누구인가</legend>${radio("culprit", suspects, pk.culprit)}</fieldset>
     <fieldset><legend>동기</legend>${radio("motive", c.motives, pk.motive)}</fieldset>
     <fieldset><legend>수법</legend>${radio("method", c.methods, pk.method)}</fieldset>
@@ -3272,46 +2953,73 @@ function renderAccuse() {
 function judge() {
   const c = C(), pk = S.pick, A = c.answer;
   const ok = { c: pk.culprit === A.culprit, m: pk.motive === A.motive, w: pk.method === A.method };
+  if (!ok.c) {
+    S.chances -= 1; S.wrongAccuse += 1;
+    if (S.chances > 0) {   /* 어려움: 한 번 더 */
+      const wrongId = pk.culprit;
+      S.cleared.push(wrongId); S.pick.culprit = "";
+      toast(`<b>틀렸다!</b> ${esc(EUN(c.suspects[wrongId].name))} 범인이 아니다. 남은 지목 기회 ${S.chances}번.`, true); Sound.wrong();
+      if (S.turns > 0) penalty("범인을 잘못 지목했다");
+      return;
+    }
+    S.screen = "gameover"; saveRecord(c.id, "F"); Sound.verdict(false);
+    return;
+  }
   const evGood = pk.evidence.filter(e => c.key.includes(e)).length;
-  let score = 0;
-  if (ok.c) score = 40 + (ok.m ? 15 : 0) + (ok.w ? 15 : 0) + Math.min(evGood, 3) * 5 + Math.min(S.broken.length, 3) * 3 + Math.min(S.turns, 6) - S.wrong * 2
-    + DIFF[S.diff].bonus + (S.timed ? 5 : 0) + (S.accCaught ? 4 : 0);
+  let score = 40 + (ok.m ? 15 : 0) + (ok.w ? 15 : 0) + Math.min(evGood, 3) * 5 + Math.min(S.broken.length, 3) * 3 + Math.min(S.turns, 6) - S.wrong * 2
+    + DIFF[S.diff].bonus + (S.timeLeft > 0 ? 5 : 0) + (S.accCaught ? 4 : 0) + Math.min(S.secrets.length, 2) * 2 - S.wrongAccuse * 10;
   score = Math.max(0, Math.min(100, score));
-  const grade = !ok.c ? "F" : score >= 92 ? "S" : score >= 78 ? "A" : score >= 62 ? "B" : "C";
+  const grade = score >= 92 ? "S" : score >= 78 ? "A" : score >= 62 ? "B" : "C";
   S.result = { ...ok, evGood, score, grade };
   S.screen = "result";
   saveRecord(c.id, grade);
-  Sound.verdict(ok.c);
+  Sound.verdict(true);
+}
+
+function renderGameOver() {
+  const c = C(), pk = S.pick;
+  app.innerHTML = `<section class="verdict gameover">
+    <span class="label">${esc(pname())} 형사 · ${c.title}</span>
+    <div class="grade fail">GAME OVER</div>
+    <h2>범인을 놓쳤다.</h2>
+    <p class="lede">${pk.culprit ? `${esc(EUN(c.suspects[pk.culprit].name))} 범인이 아니었다. ` : ""}진짜 범인은 혼란을 틈타 사라졌고, 사건은 미제로 남았다.</p>
+    <div class="btn-row">
+      ${c.random ? `<button class="btn" data-random="1">새 무작위 사건</button>` : `<button class="btn" data-case="${c.id}">다시 출동한다</button>`}
+      <button class="btn ghost" data-act="files">사건 목록</button>
+    </div>
+    <details class="spoiler"><summary>그래도 진상이 궁금하다면 (스포일러)</summary>
+      <div class="truth">${c.truth.map(t => `<p>${esc(t)}</p>`).join("")}</div>
+    </details>
+  </section>`;
 }
 
 function renderResult() {
-  const c = C(), R = S.result, pk = S.pick, name = c.suspects[pk.culprit].name, real = c.suspects[c.answer.culprit].name;
+  const c = C(), R = S.result, pk = S.pick, real = c.suspects[c.answer.culprit].name;
   const row = (label, ok, val) => `<div class="score-row"><span>${label}</span><span class="${ok ? "ok" : "no"}">${val}</span></div>`;
-  const headline = !R.c ? `${name}은(는) 범인이 아니었다. 진범은 ${real}.`
-    : R.grade === "S" ? `완벽한 추리. ${real}은(는) 더 이상 변명하지 못했다.`
+  const headline = R.grade === "S" ? `완벽한 추리. ${EUN(real)} 더 이상 변명하지 못했다.`
     : R.grade === "A" ? "범인을 잡았다. 법정에서도 충분히 버틸 추리다."
-    : "범인은 맞혔지만, 변호사가 빈틈을 파고들 것이다.";
+    : "범인은 잡았지만, 변호사가 빈틈을 파고들 것이다.";
   const next = c.random ? null : caseById(nextCaseId());
   app.innerHTML = `<section class="verdict">
-    <span class="label">${esc(pname())} 탐정 · ${c.title} · 수사 결과</span>
-    <div class="grade${R.c ? "" : " fail"}">${R.grade}</div>
+    <span class="label">${esc(pname())} 형사 · ${c.title} · 수사 결과</span>
+    <div class="grade">${R.grade}</div>
     <h2>${headline}</h2>
     <div class="score-rows">
-      ${row("범인", R.c, name)}
+      ${row("범인", true, real)}
       ${row("동기", R.m, R.m ? "정답" : "오답")}
       ${row("수법", R.w, R.w ? "정답" : "오답")}
       ${row("결정적 증거", R.evGood > 0, `${R.evGood} / ${Math.max(pk.evidence.length, 1)} 유효`)}
       ${row("무너뜨린 거짓말", S.broken.length > 0, `${S.broken.length}개`)}
-      ${row("헛짚은 지적", S.wrong === 0, `${S.wrong}회`)}
-      ${row("받은 훼방", !S.events.some(e => e.bad), `${S.events.filter(e => e.bad).length}회`)}
+      ${row("숨은 증언", S.secrets.length > 0, `${S.secrets.length}개`)}
+      ${row("틀린 추리", S.penalties === 0, `${S.penalties}회 (−${S.penalties * PENALTY_SEC}초)`)}
+      ${S.wrongAccuse ? row("잘못된 지목", false, `${S.wrongAccuse}회`) : ""}
       ${S.vars.length ? row("공범 체포", S.accCaught, S.accCaught ? `성공 (+4) · ${accomplice().name}` : `못 잡음 · 공범은 ${accomplice().name}(${accomplice().role})`) : ""}
-      ${row("동료 탐정의 도움", true, `${S.helps + S.dispatched.length + S.rebuts.length + S.lawyerUsed}회`)}
-      ${row("남은 턴", S.turns > 0, `${S.turns}`)}
+      ${row("팀의 도움", true, `${S.helps + S.dispatched.length + S.rebuts.length}회`)}
+      ${row("남은 시간", S.timeLeft > 0, S.turns > 0 ? `${mmss(S.timeLeft)} · ${S.turns}턴` : "결단의 시간에 지목")}
       ${row("난이도", true, `${DIFF[S.diff].label}${DIFF[S.diff].bonus ? ` (+${DIFF[S.diff].bonus})` : ""}`)}
-      ${S.timed ? row("시간 제한", S.timeLeft > 0, S.timeLeft > 0 ? `${mmss(S.timeLeft)} 남김 (+5)` : "시간 초과 (+5)") : ""}
       <div class="score-row"><b>점수</b><b class="mono">${R.score}</b></div>
     </div>
-    <div class="person-head culprit">${mug(real, ageOf(c.suspects[c.answer.culprit].role))}<div><span class="label">진범</span><h3 style="font-size:24px">${real}</h3><span class="hint">${c.suspects[c.answer.culprit].role}</span></div></div>
+    <div class="person-head culprit"><span class="portrait">${pixelFace(real, 96, c.suspects[c.answer.culprit].role)}</span><div><span class="label">진범</span><h3 style="font-size:24px">${real}</h3><span class="hint">${c.suspects[c.answer.culprit].role}</span></div></div>
     <h3>사건의 진상</h3>
     <div class="truth">${c.truth.map(t => `<p>${esc(t)}</p>`).join("")}</div>
     <div class="btn-row">
@@ -3325,31 +3033,42 @@ function renderResult() {
 }
 
 /* ===================== 이벤트 ===================== */
-document.addEventListener("keyup", e => { if (S.mode === "3d") V3.key(e, false); });
-addEventListener("blur", () => V3.clearKeys());
-app.addEventListener("click", e => {
-  const map = e.target.closest("#map");
-  if (map && !e.target.closest("button")) {
-    Sound.init(); ensurePos();
-    const rc = map.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rc.left) / rc.width * EXW), y = Math.floor((e.clientY - rc.top) / rc.height * EXH);
-    const L = layout(S.room);
-    if (walkable(L, x, y) && !doorAt(L, x, y)) walkPath(findPath(L, S.pos, [[x, y]]));
-    return;
-  }
-});
+const inGameRooms = () => S.screen === "game" && S.tab === "rooms" && S.mode === "pixel";
+document.addEventListener("keyup", e => { if (inGameRooms()) PX.key(e, false); });
+addEventListener("blur", () => PX.clearKeys());
 document.addEventListener("keydown", e => {
-  if (S.screen !== "game" || S.tab !== "rooms" || S.mode === "list") return;
+  if (!inGameRooms()) return;
   const tag = (document.activeElement && document.activeElement.tagName) || "";
   if (/INPUT|SELECT|TEXTAREA/.test(tag)) return;
-  if (S.mode === "3d") { if (!/BUTTON/.test(tag) || !/^( |enter)$/i.test(e.key)) V3.key(e, true); return; }
-  const k = e.key.toLowerCase();
-  const dir = { arrowup: [0, -1], w: [0, -1], arrowdown: [0, 1], s: [0, 1], arrowleft: [-1, 0], a: [-1, 0], arrowright: [1, 0], d: [1, 0] }[k];
-  if (dir) { e.preventDefault(); Sound.init(); ensurePos(); stopWalk(); stepTo(S.pos.x + dir[0], S.pos.y + dir[1]); return; }
-  if ((k === " " || k === "enter" || k === "e") && !/BUTTON/.test(tag)) { e.preventDefault(); Sound.init(); interact(); }
+  if (/BUTTON/.test(tag) && /^( |enter)$/i.test(e.key)) return;   /* 버튼에 초점이 있으면 그 버튼을 누르게 둔다 */
+  PX.key(e, true);
 });
+/* 방향 버튼: 누르고 있으면 계속 걷는다 */
+app.addEventListener("pointerdown", e => { const b = e.target.closest("[data-pad]"); if (!b) return; e.preventDefault(); b.setPointerCapture && b.setPointerCapture(e.pointerId); PX.hold(b.dataset.pad, true); });
+for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) app.addEventListener(ev, e => { const b = e.target.closest && e.target.closest("[data-pad]"); if (b) PX.hold(b.dataset.pad, false); });
+app.addEventListener("keydown", e => { const b = e.target.closest("[data-pad]"); if (b && /^( |enter)$/i.test(e.key)) { e.preventDefault(); PX.hold(b.dataset.pad, true); setTimeout(() => PX.hold(b.dataset.pad, false), 140); } });
+
+function confront(qid, clueId) {
+  const f = findQ(qid); if (!f) return;
+  const { q, p, sid } = f;
+  if (S.turns <= 0 || has(S.broken, q.id) || S.silence[sid]) return;
+  S.dlg = null;
+  const clueName = C().clues[clueId] ? C().clues[clueId].name : "";
+  if (q.lie && q.lie.clues.includes(clueId)) {
+    S.broken.push(q.id); addTl(q.lie.tl);
+    S.lastLine = { sid, q: `‘${clueName}’을(를) 들이밀었다.`, a: q.lie.reply, kind: "broken" };
+    toast(`<b>모순!</b> ${esc(p.name)}의 진술이 무너졌다.`); Sound.lie(); flash();
+    spend();
+  } else {
+    S.wrong += 1;
+    S.lastLine = { sid, q: `‘${clueName}’을(를) 들이밀었다.`, a: p.deflect, kind: "deflect" };
+    toast(`${esc(EUN(p.name))} 꿈쩍도 하지 않는다.`, true); Sound.wrong();
+    spend();
+    penalty("틀린 추리였다");
+  }
+}
 app.addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b || b.disabled) return;
+  const b = e.target.closest("button"); if (!b || b.disabled || b.dataset.pad) return;
   const d = b.dataset;
   let top = false;
   Sound.init();
@@ -3360,42 +3079,32 @@ app.addEventListener("click", e => {
   else if (d.case) { openCase(d.case); top = true; }
   else if (d.act === "start") { beginCase(); top = true; Sound.thunder(); flash(); }
   else if (d.act === "files") { S = Object.assign(fresh(), { screen: "files" }); top = true; }
-  else if (d.act === "cancel") { S.challenge = null; }
   else if (d.act === "wait") { if (S.turns <= 0) return; Sound.step(); spend(); }
-  else if (d.tab) { S.tab = d.tab; S.challenge = null; }
-  else if (d.room) { S.room = d.room; stopWalk(); }
+  else if (d.tab) { S.tab = d.tab; S.dlg = null; }
+  else if (d.room) { S.room = d.room; }
   else if (d.dispatch) { dispatch(d.dispatch); }
   else if (d.rebut) { rebut(d.rebut, d.q); }
-  else if (d.lawyer) { callLawyer(d.lawyer); }
   else if (d.vtalk) { talkVar(+d.vtalk); }
   else if (d.vaccuse) { accuseVar(+d.vaccuse); }
-  else if (d.suspect) { S.suspect = d.suspect; S.challenge = null; S.deflectOn = null; }
+  else if (d.suspect) { S.suspect = d.suspect; S.dlg = null; }
   else if (d.search) { if (!doSearch(d.search)) return; }
-  else if (d.act === "mode") { S.mode = d.m; stopWalk(); V3.clearKeys(); }
-  else if (d.act === "interact3d") { V3.interact(); return; }
-  else if (d.obj) { const o = layout(S.room).items.find(x => x.spot === d.obj); if (o) goTo(o); return; }
-  else if (d.talk) { const o = layout(S.room).people.find(x => x.id === d.talk); if (o) goTo(o); return; }
-  else if (d.door) { ensurePos(); const L = layout(S.room), dd = doorAt(L, +d.dx, +d.dy); walkPath(findPath(L, S.pos, [[dd.x, dd.y]])); return; }
-  else if (d.act === "interact") { interact(); return; }
+  else if (d.act === "mode") { S.mode = d.m; PX.clearKeys(); }
+  else if (d.act === "interact-px") { PX.interact(); return; }
   else if (d.ask) {
     const { q, sid } = findQ(d.ask);
     if (S.turns <= 0 || has(S.asked, q.id) || S.silence[sid]) return;
-    Sound.ask(); S.asked.push(q.id); addTl(q.tl, q.lie ? q.id : null); spend();
-  } else if (d.challenge) {
-    S.challenge = d.challenge; S.present = S.found[0] || ""; S.deflectOn = null;
-  } else if (d.confront) {
-    const { q, p, sid } = findQ(d.confront);
-    if (S.turns <= 0 || has(S.broken, q.id) || !S.present || S.silence[sid]) return;
-    S.challenge = null;
-    if (q.lie && q.lie.clues.includes(S.present)) {
-      S.broken.push(q.id); addTl(q.lie.tl);
-      toast(`<b>모순!</b> ${esc(p.name)}의 진술이 무너졌다.`); Sound.lie(); flash();
-    } else {
-      S.wrong += 1; S.deflectOn = q.id;
-      toast(`${esc(EUN(p.name))} 꿈쩍도 하지 않는다.`, true); Sound.wrong();
-    }
+    Sound.ask(); S.asked.push(q.id); addTl(q.tl, q.lie ? q.id : null);
+    S.lastLine = { sid, q: q.q, a: q.a, kind: "answer", qid: q.id }; S.dlg = null;
     spend();
-  } else return;
+  }
+  else if (d.dlg === "contradict") { S.dlg = { step: "statement" }; }
+  else if (d.dlg === "heart") { S.dlg = { step: "heart" }; }
+  else if (d.dlg === "back") { S.dlg = null; }
+  else if (d.stmt) { S.dlg = { step: "clue", q: d.stmt }; }
+  else if (d.confront) { confront(S.dlg && S.dlg.q, d.confront); }
+  else if (d.tone) { openHeart(S.suspect, d.tone); }
+  else if (d.advise) { advise(d.advise, d.key); }
+  else return;
   render();
   if (top) window.scrollTo(0, 0);
 });
