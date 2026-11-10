@@ -324,6 +324,11 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .cast .person .face { margin-bottom: 4px; }
 .with-face { display: inline-flex; align-items: center; gap: 6px; }
 .team { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
+.pairs { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.pair { border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: grid; gap: 6px; background: rgba(255,255,255,.02); }
+.pair .team { grid-template-columns: 1fr 1fr; }
+.pair .hint { margin: 0; text-align: center; font-size: 12.5px; }
+.duo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
 .member { display: grid; justify-items: center; text-align: center; gap: 4px; }
 .member b { font-family: var(--f-display); font-size: 16px; }
 .member span { color: var(--muted); font-size: 12.5px; }
@@ -1393,11 +1398,11 @@ let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
 /* 수사팀(경찰): 어려워지면 돕고, 직접 현장에 보낼 수 있다 */
 const PARTNERS = [
-  { id: "kang", name: "강무열", title: "경감", rank: "경감", skill: "잠긴 문 열기·수사 시간 벌기",
+  { id: "kang", name: "강무열", title: "경감", rank: "경감", with: "gong", skill: "잠긴 문 열기·수사 시간 벌기",
     report: (room, list) => list ? `“자물쇠쯤이야. ${room}에서 이런 걸 건졌네. ${list}.”` : `“${room}엔 더 볼 게 없더군.”` },
-  { id: "yoon", name: "윤도경", title: "과학수사 경사", rank: "경사", skill: "현장 감식",
+  { id: "yoon", name: "윤도경", title: "과학수사 경사", rank: "경사", with: "byun", skill: "현장 감식",
     report: (room, list) => list ? `“${room} 감식 끝났습니다. 나온 건 ${list}입니다.”` : `“${room}에서는 새로 나온 게 없습니다.”` },
-  { id: "byun", name: "변주원", title: "과학수사 경장", rank: "경장", skill: "현장 감식",
+  { id: "byun", name: "변주원", title: "과학수사 경장", rank: "경장", skill: "현장 감식", noDispatch: true,
     report: (room, list) => list ? `“${room} 감식 마쳤습니다. 채취한 건 ${list}입니다.”` : `“${room}에선 더 나올 게 없습니다.”` },
   { id: "gong", name: "공태하", title: "순경", rank: "순경", skill: "쓸데없는 물건 치우기·압박", noDispatch: true,
     report: (room) => `“경감님 따라 ${room} 한 바퀴 돌았습니다. 사건이랑 상관없는 건 싹 치워 뒀습니다.”` },
@@ -1519,7 +1524,8 @@ const DIFF = {
 };
 /* 팀원 출동 횟수 */
 /* 계급별 호출 횟수: 순경·경장·경사는 쉬움 2 · 보통 3 · 어려움 5, 경위·경감은 쉬움 없음 · 보통 3 · 어려움 5 */
-const DISPATCH = { easy: { max: { yoon: 2, byun: 2, seo: 2 } }, normal: { max: { kang: 3, yoon: 3, byun: 3, seo: 3 } }, hard: { max: { kang: 5, yoon: 5, byun: 5, seo: 5 } } };
+/* 짝으로 다닌다: 윤도경·변주원, 강무열·공태하는 함께 출동(횟수는 짝 단위). 서하루는 주인공 곁을 따라다닌다 */
+const DISPATCH = { easy: { max: { yoon: 2, seo: 2 } }, normal: { max: { kang: 3, yoon: 3, seo: 3 } }, hard: { max: { kang: 5, yoon: 5, seo: 5 } } };
 const PLAYER_RANK = "경장";
 /* 강력계 순경 공태하: 강무열과 다니며 쓸데없는 물건을 치우고, 비협조적인 용의자를 압박한다 */
 const GONG = { easy: { clear: 2 }, normal: { clear: 3 }, hard: { clear: 5 } };   /* 순경 공태하 */
@@ -1784,8 +1790,9 @@ function dispatch(pid) {
   S.dispatched.push(pid);
   S.missions.push({ pid, room: S.room, due: S.actions + MISSION_DELAY, only: null });
   PX.helperEnter(S.missions[S.missions.length - 1]);
-  if (pid === "kang" && gongOn() && !S.missions.some(m => m.pid === "gong")) {
-    S.missions.push({ pid: "gong", room: S.room, due: S.actions + MISSION_DELAY, only: "-", clear: true });
+  const mate = partner(pid).with;
+  if (mate && !S.missions.some(m => m.pid === mate) && (mate !== "gong" || gongOn())) {
+    S.missions.push({ pid: mate, room: S.room, due: S.actions + MISSION_DELAY, only: "-", clear: mate === "gong", quiet: mate === "byun" });
     PX.helperEnter(S.missions[S.missions.length - 1]);
   }
   const x = partner(pid), rn = C().rooms[S.room].name;
@@ -1816,7 +1823,8 @@ function resolveMissions() {
       S.searched.push(sp.id);
       if (sp.clue && !has(S.found, sp.clue) && !has(S.lost || [], sp.id)) { S.found.push(sp.clue); names.push(c.clues[sp.clue].name); }
     }
-    const msg = `${pfull(x)}의 보고 — ${x.report(r.name, names.join(", "))}`;
+    if (m.quiet) continue;
+    const msg = `${pfull(x)}${x.with && partner(x.with) && x.with !== "gong" ? `·${partner(x.with).name}` : ""}의 보고 — ${x.report(r.name, names.join(", "))}`;
     S.events.push({ bad: false, msg });
     toast(`<b>현장 보고</b> — ${esc(msg)}`); names.length ? Sound.clue() : Sound.help();
   }
@@ -2047,7 +2055,7 @@ function render() {
   const alerts = [
     ...Object.entries(S.locks).map(([rid, n]) => `<span class="alert">잠김 · ${c.rooms[rid].name} ${n}턴</span>`),
     ...Object.entries(S.silence).map(([sid, n]) => `<span class="alert">침묵 · ${c.suspects[sid].name} ${n}턴</span>`),
-    ...S.missions.map(m => `<span class="alert ally">조사 중 · ${partner(m.pid).name} → ${c.rooms[m.room].name} ${m.due - S.actions}턴 뒤 보고</span>`),
+    ...S.missions.filter(m => !m.only).map(m => `<span class="alert ally">조사 중 · ${partner(m.pid).name}${partner(m.pid).with && S.missions.some(o => o.pid === partner(m.pid).with) ? "·" + partner(partner(m.pid).with).name : ""} → ${c.rooms[m.room].name} ${m.due - S.actions}턴 뒤 보고</span>`),
   ];
   const alertRow = alerts.length && !out
     ? `<div class="alerts">${alerts.join("")}<button class="act" data-act="wait">기다린다<span class="cost">−1턴</span></button></div>` : "";
@@ -2096,9 +2104,13 @@ function renderTitle() {
         ${soundBtn()}
       </div>
       <h2>강력팀</h2>
-      <div class="team">
-        ${[...PARTNERS.map(x => [x.name, x.title]), ...REBUTTERS.map(x => [x.name, x.title])]
-          .map(([n, t]) => `<div class="member">${pixelFace(n, 72)}<b>${n}</b><span>${t}</span></div>`).join("")}
+      <div class="pairs">
+        ${[
+          [[pname(), PLAYER_RANK + " (나)", true], ["서하루", "순경"], "늘 같이 다니는 짝. 서하루가 내 뒤를 따라와요."],
+          [["윤도경", "과학수사 경사"], ["변주원", "과학수사 경장"], "과학수사 짝. 같이 출동해 감식해요."],
+          [["한서진", "프로파일러 경위"], ["모은재", "견습 프로파일러 경사"], "프로파일러 짝. 같이 심문에 들어가요."],
+          [["강무열", "경감"], ["공태하", "순경"], "같이 출동해요. 공태하는 물건을 치우고 겁도 줘요."],
+        ].map(([a, b2, note]) => `<div class="pair"><div class="team">${[a, b2].map(([n, t, me]) => `<div class="member"${me ? ' id="me-member"' : ""}>${pixelFace(n, 64, "", !!me)}<b>${esc(n)}</b><span>${t}</span></div>`).join("")}</div><p class="hint">${note}</p></div>`).join("")}
       </div>
       <h2>조작 방법</h2>
       <div class="howto">
@@ -2311,8 +2323,8 @@ const ENDING = (() => {
     return {
       actors: [
         { id: "me", name: me, player: true, x: 5, y: 4.6, dir: "down" },
-        { id: "seo", name: "서하루", x: 3, y: 4.8, dir: "down" },
-        { id: "mo", name: "모은재", x: 3, y: 2.6, dir: "down" },
+        { id: "seo", name: "서하루", x: 4, y: 4.8, dir: "down" },
+        { id: "mo", name: "모은재", x: 5, y: 2.6, dir: "down" },
         { id: "han", name: "한서진", x: 6, y: 2.6, dir: "down" },
         { id: "kang", name: "강무열", x: 8, y: 4.8, dir: "down" },
         { id: "yoon", name: "윤도경", x: 9, y: 4.6, dir: "down" },
@@ -2912,6 +2924,39 @@ const PX = (() => {
     if (S.room === h.room && Math.round(me.fx) === x && Math.round(me.fy) === y) return true;
     return false;
   }
+  /* ---------- 서하루: 주인공 뒤를 따라다닌다 (출동하면 잠시 떨어진다) ---------- */
+  const buddy = { fx: 0, fy: 0, dir: "up", frameT: 0, q: [], seg: null, on: false };
+  const buddyOn = () => !S.missions.some(m => m.pid === "seo") && !helpers.seo;
+  const BACK = { up: [0, 1], down: [0, -1], left: [1, 0], right: [-1, 0] };
+  function placeBuddyBehind() {
+    const v = BACK[me.dir] || [0, 1];
+    buddy.fx = S.pos.x + v[0]; buddy.fy = S.pos.y + v[1]; buddy.q = []; buddy.seg = null; buddy.dir = me.dir; buddy.on = buddyOn();
+  }
+  function trail(x, y) { if (buddy.on) buddy.q.push([x, y]); }
+  function updateBuddy(dt) {
+    if (!buddyOn()) { buddy.on = false; return; }
+    const L = layout(S.room);
+    if (!buddy.on) {   /* 출동에서 돌아와 다시 합류 */
+      buddy.on = true; const d = L.doors[0];
+      if (d) {
+        buddy.fx = d.x; buddy.fy = d.y; buddy.seg = null;
+        buddy.q = bfs(L, { x: d.x, y: d.y }, (x, y) => Math.abs(x - S.pos.x) + Math.abs(y - S.pos.y) === 1, (x, y) => !walkable(L, x, y)) || [];
+      } else placeBuddyBehind();
+    }
+    if (!buddy.seg && buddy.q.length) {
+      const n = buddy.q[0];
+      if (!(n[0] === S.pos.x && n[1] === S.pos.y)) { buddy.q.shift(); buddy.seg = n; }
+    }
+    if (buddy.seg) {
+      const dx = buddy.seg[0] - buddy.fx, dy = buddy.seg[1] - buddy.fy, d = Math.hypot(dx, dy), st = SPEED * (buddy.q.length > 1 ? 1.35 : 1) * dt;
+      buddy.dir = dirOf(dx, dy); buddy.frameT += dt * 9;
+      if (d <= st) { buddy.fx = buddy.seg[0]; buddy.fy = buddy.seg[1]; buddy.seg = null; }
+      else { buddy.fx += dx / d * st; buddy.fy += dy / d * st; }
+    } else {
+      buddy.frameT = 0;
+      if (Math.hypot(me.fx - buddy.fx, me.fy - buddy.fy) > .2) buddy.dir = dirOf(me.fx - buddy.fx, me.fy - buddy.fy);
+    }
+  }
   function helperEnter(m) {
     const L = layout(m.room), d = L.doors[0]; if (!d) return;
     const x = partner(m.pid), inX = d.side === "b" ? d.x : 1, inY = d.side === "b" ? EXH - 2 : d.y;
@@ -2919,6 +2964,9 @@ const PX = (() => {
     L.people.push(p);
     helpers[m.pid] = { pid: m.pid, room: m.room, p, door: d, fx: d.x, fy: d.y, dir: d.side === "b" ? "up" : "right", path: [[inX, inY]], seg: null,
       state: "in", targets: L.items.filter(it => !has(S.searched, it.spot)), pending: null, cur: null, timer: 0, frameT: 0 };
+    if (m.pid === "seo" && m.room === S.room && buddy.on) {   /* 곁에 있던 서하루가 그 자리에서 조사를 시작 */
+      const h = helpers.seo; h.fx = buddy.fx; h.fy = buddy.fy; h.p.x = Math.round(buddy.fx); h.p.y = Math.round(buddy.fy); h.path = []; buddy.on = false;
+    }
   }
   function dropHelper(h) {
     const L = layout(h.room), i = L.people.indexOf(h.p); if (i >= 0) L.people.splice(i, 1);
@@ -2940,6 +2988,12 @@ const PX = (() => {
       return;
     }
     h.frameT = 0;
+    if (h.state === "out" && h.pid === "seo" && h.room === S.room) {   /* 서하루는 보고를 마치면 그 자리에서 다시 주인공 곁으로 */
+      const fx = Math.round(h.fx), fy = Math.round(h.fy); dropHelper(h);
+      buddy.fx = fx; buddy.fy = fy; buddy.seg = null; buddy.on = true;
+      buddy.q = bfs(L, { x: fx, y: fy }, (x, y) => Math.abs(x - S.pos.x) + Math.abs(y - S.pos.y) === 1, (x, y) => !walkable(L, x, y)) || [];
+      return;
+    }
     if (h.state === "out") {
       h.timer -= dt;
       if (doorAt(L, h.p.x, h.p.y)) { if (S.room === h.room) Sound.door(); dropHelper(h); return; }
@@ -2960,14 +3014,14 @@ const PX = (() => {
   /* ---------- 주인공 이동 ---------- */
   function ensureMe() {
     ensurePos();
-    if (room !== S.room) { room = S.room; me.fx = S.pos.x; me.fy = S.pos.y; me.seg = null; me.path = null; me.after = null; makeNpcs(); bgKey = ""; }
+    if (room !== S.room) { room = S.room; me.fx = S.pos.x; me.fy = S.pos.y; me.seg = null; me.path = null; me.after = null; makeNpcs(); bgKey = ""; placeBuddyBehind(); }
   }
   function tryStep(dx, dy) {
     const L = layout(S.room), x = S.pos.x + dx, y = S.pos.y + dy;
     me.dir = dirOf(dx, dy);
     const d = doorAt(L, x, y);
     if (d) { goDoor(d); return; }
-    if (walkable(L, x, y)) { me.seg = [x, y]; S.pos = { room: S.room, x, y }; }
+    if (walkable(L, x, y)) { trail(S.pos.x, S.pos.y); me.seg = [x, y]; S.pos = { room: S.room, x, y }; }
   }
   function goDoor(d) {
     if (S.locks[d.to]) { toast(`${esc(C().rooms[d.to].name)}은(는) 잠겨 있다. ${S.locks[d.to]}턴 뒤에 열린다.`, true); Sound.wrong(); me.path = null; return; }
@@ -3040,6 +3094,7 @@ const PX = (() => {
       const rummage = h.cur && h.timer > 0 ? (Math.floor(t / 180) % 2) : 0;
       ents.push({ y: h.fy, draw: () => drawSprite(charSprites(h.p.name, h.p.role), h.dir, h.frameT || rummage * 1, h.fx, h.fy, rummage) });
     }
+    if (buddy.on) ents.push({ y: buddy.fy - .01, draw: () => drawSprite(charSprites("서하루", "순경"), buddy.dir, buddy.frameT, buddy.fx, buddy.fy) });
     ents.push({ y: me.fy, draw: () => drawSprite(charSprites(pname(), "", true), me.dir, me.frameT, me.fx, me.fy) });
     ents.sort((a, b) => a.y - b.y).forEach(e => e.draw());
     /* 손전등 같은 조명 */
@@ -3063,6 +3118,7 @@ const PX = (() => {
     const L = layout(S.room), list = [];
     for (const n of npcs) list.push([n.p.id, n.fx + .5, n.fy - .2, `${n.p.name}${S.silence[n.p.id] ? " · 침묵" : ""}`, "nm" + (S.silence[n.p.id] ? " silent" : "")]);
     for (const h of Object.values(helpers)) if (h.room === S.room) list.push(["h" + h.pid, h.fx + .5, h.fy - .2, `${h.p.name} · ${h.state === "out" ? "보고 완료!" : "조사 중…"}`, "nm ally" + (h.state === "out" ? " done" : "")]);
+    if (buddy.on) list.push(["buddy", buddy.fx + .5, buddy.fy - .2, "서하루", "nm ally"]);
     for (const d of L.doors) list.push(["d" + d.x + d.y, d.side === "b" ? d.x + .5 : .9, d.side === "b" ? EXH - .35 : d.y + .55, d.stairs ? `계단 ${d.stairs}` : C().rooms[d.to].name, "door" + (S.locks[d.to] ? " locked" : "") + (d.side === "l" ? " left" : "")]);
     const seen = new Set();
     for (const [id, x, y, text, cls] of list) {
@@ -3090,7 +3146,7 @@ const PX = (() => {
         const [nx, ny] = me.path[0], L = layout(S.room), d = doorAt(L, nx, ny);
         if (d) { me.path = null; goDoor(d); return; }
         if (!walkable(L, nx, ny)) { const after = me.after, goals = [me.path[me.path.length - 1]]; me.path = null; setTimeout(() => walkTo(goals, after), 300); }
-        else { me.path.shift(); me.dir = dirOf(nx - S.pos.x, ny - S.pos.y); me.seg = [nx, ny]; S.pos = { room: S.room, x: nx, y: ny }; }
+        else { me.path.shift(); me.dir = dirOf(nx - S.pos.x, ny - S.pos.y); trail(S.pos.x, S.pos.y); me.seg = [nx, ny]; S.pos = { room: S.room, x: nx, y: ny }; }
       } else if (me.path && !me.path.length) { const after = me.after; me.path = null; me.after = null; if (after) after(); }
       else if (kd && S.turns > 0) tryStep(kd[0], kd[1]);
     }
@@ -3102,6 +3158,7 @@ const PX = (() => {
     } else if (!kd) me.frameT = 0;
     for (const n of npcs) updateNpc(n, dt);
     for (const h of Object.values(helpers)) if (h.room === S.room) updateHelper(h, dt);
+    updateBuddy(dt);
     draw(t);
     placeLabels();
     if (t - hoverT > 150) {
@@ -3158,6 +3215,7 @@ const PX = (() => {
     helperEnter,
     prune() { for (const h of Object.values(helpers)) if (!missionAlive(h) && !(S.room === h.room && S.tab === "rooms" && cv && document.body.contains(cv))) dropHelper(h); },
     go, act,
+    buddy() { return { on: buddy.on, x: +buddy.fx.toFixed(2), y: +buddy.fy.toFixed(2), q: buddy.q.length }; },
     debug() { return { me: { x: S.pos && S.pos.x, y: S.pos && S.pos.y, fx: +me.fx.toFixed(2), fy: +me.fy.toFixed(2), dir: me.dir, walking: !!(me.seg || (me.path && me.path.length)) },
       npcs: npcs.map(n => ({ name: n.p.name, tile: [n.p.x, n.p.y], walking: !!n.seg })),
       helpers: Object.values(helpers).map(h => ({ name: h.p.name, room: h.room, state: h.state, tile: [h.p.x, h.p.y], searching: !!(h.cur && h.timer > 0) })) }; },
@@ -3218,7 +3276,7 @@ function renderDispatch(r) {
     const left = dispatchLeft(x.id), away = S.missions.some(m => m.pid === x.id);
     const tag = away ? "출동 중" : left <= 0 ? "끝" : `${left}번 남음`;
     return `<button class="act ally with-face" data-dispatch="${x.id}" ${canDispatch(x.id) ? "" : "disabled"}>
-      ${pixelFace(x.name, 24)}${x.title} ${x.name}<span class="cost">${tag}</span></button>`;
+      ${pixelFace(x.name, 24)}${x.with ? pixelFace(partner(x.with).name, 24) : ""}${x.title} ${x.name}${x.with ? ` · ${partner(x.with).title} ${partner(x.with).name}` : ""}<span class="cost">${tag}</span></button>`;
   }).join("");
   return `<div class="dispatch">
     <b>팀원 출동</b>
@@ -3335,7 +3393,8 @@ function renderPeople(out) {
     <div class="people">${list}${side}</div>
     <section class="panel talk" aria-live="polite">
       <div class="person-head"><span class="portrait">${pixelFace(p.name, 96, p.role)}</span><div><span class="label">${p.role}</span><h3 style="font-size:24px">${p.name}</h3>
-        <span class="hint">${show ? `성격: <b>${per.label}</b> · ` : "눈치: "}${per.tell}</span> ${heartLabel(sid)}</div></div>
+        <span class="hint">${show ? `성격: <b>${per.label}</b> · ` : "눈치: "}${per.tell}</span> ${heartLabel(sid)}
+        <span class="duo">함께 심문: ${pixelFace("한서진", 20)}한서진 경위 · ${pixelFace("모은재", 20)}모은재 경사</span></div></div>
       <div class="speech">${speech}</div>
       <div class="choices">${choices}</div>
       ${log ? `<details class="talklog"><summary>지난 대화 (${p.qs.filter(q => has(S.asked, q.id)).length})</summary>${log}</details>` : ""}
@@ -3564,7 +3623,7 @@ app.addEventListener("click", e => {
   else if (d.act === "title") { S = fresh(); top = true; }
   else if (d.random) { openRandom(); top = true; }
   else if (d.case) { openCase(d.case); top = true; }
-  else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); return; }
+  else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm) mm.querySelector("img").outerHTML = pixelFace(pname(), 64, "", true); return; }
   else if (d.act === "retry") { retryCase(); top = true; Sound.thunder(); flash(); }
   else if (d.act === "spoil") { S.spoil = true; }
   else if (d.act === "skip-intro") { INTRO.finish(); return; }
@@ -3610,6 +3669,7 @@ app.addEventListener("input", e => {
   if (e.target.id !== "player-name") return;
   PLAYER = e.target.value.slice(0, 12);
   const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview();
+  const mm = document.getElementById("me-member"); if (mm) mm.innerHTML = `${pixelFace(pname(), 64, "", true)}<b>${esc(pname())}</b><span>${PLAYER_RANK} (나)</span>`;
 });
 app.addEventListener("change", e => {
   const t = e.target;
