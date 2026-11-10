@@ -445,6 +445,12 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .name-form label { font-family: var(--f-mono); font-size: 12px; letter-spacing: .12em; color: var(--muted); }
 .name-form input { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; color: var(--ink); font: inherit; font-size: 16px; min-width: 0; }
 .name-form input:focus { border-color: var(--lamp); outline: none; }
+.me-preview { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 4px; font-size: 14px; color: var(--muted); }
+.me-preview b { color: var(--ink); }
+.me-preview .pxface { border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+.me-preview .chips { display: flex; gap: 6px; }
+.chip { font: inherit; font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--lamp); color: var(--lamp); }
 
 .room-ally { display: inline-flex; align-items: center; gap: 4px; justify-self: start; font-family: var(--f-mono); font-size: 10.5px; color: var(--lamp); border: 1px solid var(--lamp-dim); border-radius: 999px; padding: 1px 6px 1px 1px; }
 .room-ally .face { border: 0; }
@@ -1543,6 +1549,30 @@ function openHeart(sid, tone) {
 const mmss = sec => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 let PLAYER = ""; try { PLAYER = localStorage.getItem("midnight-player") || ""; } catch {}
 const pname = () => PLAYER.trim() || "무명";
+/* 주인공 성별: 이름을 보고 정한다(자동). 틀리면 직접 고를 수 있다 */
+let PLAYER_G = "auto"; try { PLAYER_G = localStorage.getItem("midnight-player-g") || "auto"; } catch {}
+const NAME_LAST = {
+  f: "아연은희미나린이지혜숙순선영경애란리유하솔슬별봄름래화옥향랑비인정서경주채예다",
+  m: "호준석철훈혁우성재용태동기규범식환섭건찬욱웅근국상승종형일수열겸후균길도오한결",
+};
+const NAME_FIRST = { f: "은예소지다채하수서유미혜보가나아세효윤연희", m: "준민도태동성재우건승상현진형석강무철용기찬종정시규" };
+/* 같은 글자가 양쪽에 있으면 뒤 글자는 더 강한 쪽을 따로 정해 둔다. 민·진·현·원·빈은 앞 글자로 정한다 */
+const LAST_BIAS = { 정: "f", 주: "f", 경: "f", 인: "f", 서: "f" };
+function guessGender(name) {
+  name = String(name || "").trim();
+  if (GENDER[name]) return GENDER[name];
+  const ch = [...name].filter(c => /[가-힣]/.test(c));
+  if (!ch.length) return "m";
+  const given = ch.length >= 3 ? ch.slice(-2) : ch;   /* 세 글자면 성을 뺀다 */
+  const last = given[given.length - 1], first = given.length > 1 ? given[0] : "";
+  let sc = 0;
+  const lv = "민진현원빈".includes(last) ? "" : LAST_BIAS[last] || (NAME_LAST.f.includes(last) && !NAME_LAST.m.includes(last) ? "f" : NAME_LAST.m.includes(last) && !NAME_LAST.f.includes(last) ? "m" : "");
+  if (lv) sc += lv === "f" ? 2 : -2;
+  if (first) { if (NAME_FIRST.f.includes(first)) sc += 1; if (NAME_FIRST.m.includes(first)) sc -= 1; }
+  if (sc === 0) return hashStr(name) % 2 ? "f" : "m";
+  return sc > 0 ? "f" : "m";
+}
+const playerGender = () => PLAYER_G === "f" || PLAYER_G === "m" ? PLAYER_G : guessGender(pname());
 function openRandom() {
   INTRO.reset();
   toastQ.length = 0;
@@ -1941,6 +1971,12 @@ function render() {
   if (S.tab === "rooms") PX.mount(document.getElementById("pxview")); else PX.clearKeys();
 }
 
+function mePreview() {
+  const g = playerGender(), auto = PLAYER_G === "auto";
+  const btn = (v, t) => `<button type="button" class="chip" data-pg="${v}" aria-pressed="${PLAYER_G === v}">${t}</button>`;
+  return `${pixelFace(pname(), 48, "", true)}<span><b>${g === "f" ? "여자" : "남자"} 형사</b>${auto ? " · 이름을 보고 정했어요" : ""}</span>
+    <span class="chips">${btn("auto", "자동")}${btn("f", "여자")}${btn("m", "남자")}</span>`;
+}
 function renderTitle() {
   app.innerHTML = `
     <section class="title">
@@ -1950,6 +1986,7 @@ function renderTitle() {
       <form class="name-form" id="name-form">
         <label for="player-name">형사 이름</label>
         <input id="player-name" name="player" maxlength="12" autocomplete="off" placeholder="이름을 지어 주세요" value="${esc(PLAYER)}">
+        <div class="me-preview" id="me-preview">${mePreview()}</div>
       </form>
       <div class="btn-row">
         <button class="btn" data-act="enter">사건 파일 열기</button>
@@ -2363,7 +2400,9 @@ const LOOK_OVERRIDE = {
   모은재: { cloth: "#9a7f6a", top: "cardigan" },
 };
 function lookFor(name, role, isPlayer) {
-  if (isPlayer) return { skin: "#e4bd9b", hair: "#241c18", cloth: "#8a6a48", pants: "#2a2d33", F: false, style: "short", glasses: null, facial: null, top: "coat", skirt: false };
+  if (isPlayer) return playerGender() === "f"
+    ? { skin: "#edcbad", hair: "#2a1f1b", cloth: "#8a6a48", pants: "#2a2d33", F: true, style: "long", glasses: null, facial: null, top: "coat", skirt: false }
+    : { skin: "#e4bd9b", hair: "#241c18", cloth: "#8a6a48", pants: "#2a2d33", F: false, style: "short", glasses: null, facial: null, top: "coat", skirt: false };
   const T = Face.traits(name, ageOf(role));
   return { ...T, skirt: T.F && hashStr(name) % 2 === 0, ...(LOOK_OVERRIDE[name] || {}) };
 }
@@ -2455,7 +2494,7 @@ function drawChar(g, L, dir, frame) {
 }
 const spriteCache = new Map();
 function charSprites(name, role, isPlayer) {
-  const key = (isPlayer ? "@" : "") + name + "|" + role;
+  const key = (isPlayer ? "@" + playerGender() : "") + name + "|" + role;
   if (spriteCache.has(key)) return spriteCache.get(key);
   const L = lookFor(name, role, isPlayer), out = {};
   for (const dir of ["down", "up", "right"]) out[dir] = [0, 1, 2].map(f => { const cv = pxCanvas(16, 20); drawChar(cv.getContext("2d"), L, dir, f); return outlinePass(cv); });
@@ -2465,7 +2504,7 @@ function charSprites(name, role, isPlayer) {
 /* 작은 픽셀 얼굴(목록·대화창용) */
 const faceCache = new Map();
 function pixelFace(name, size = 40, role = "", isPlayer = false) {
-  const key = (isPlayer ? "@" : "") + name + "|" + role;
+  const key = (isPlayer ? "@" + playerGender() : "") + name + "|" + role;
   if (!faceCache.has(key)) {
     const sp = charSprites(name, role, isPlayer).down[0], cv = pxCanvas(16, 16), g = cv.getContext("2d");
     g.drawImage(sp, 0, 0, 16, 16, 0, 0, 16, 16);
@@ -3206,6 +3245,7 @@ app.addEventListener("click", e => {
   else if (d.act === "title") { S = fresh(); top = true; }
   else if (d.random) { openRandom(); top = true; }
   else if (d.case) { openCase(d.case); top = true; }
+  else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); return; }
   else if (d.act === "skip-intro") { INTRO.finish(); return; }
   else if (d.act === "replay-intro") { S.introDone = false; INTRO.reset(); top = true; }
   else if (d.act === "start") { beginCase(); top = true; Sound.thunder(); flash(); }
@@ -3242,7 +3282,11 @@ function savePlayer() {
   if (el) PLAYER = el.value.trim().slice(0, 12);
   try { localStorage.setItem("midnight-player", PLAYER); } catch {}
 }
-app.addEventListener("input", e => { if (e.target.id === "player-name") PLAYER = e.target.value.slice(0, 12); });
+app.addEventListener("input", e => {
+  if (e.target.id !== "player-name") return;
+  PLAYER = e.target.value.slice(0, 12);
+  const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview();
+});
 app.addEventListener("change", e => {
   const t = e.target;
   if (t.name === "present") { S.present = t.value; return; }
