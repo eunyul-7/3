@@ -431,6 +431,19 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .intro-cap p { margin: 0; font-size: 16px; }
 .intro-cap.narr p { color: var(--muted); font-style: italic; }
 .intro-scene .btn-row { justify-content: center; }
+.team-slot { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 12px; margin: 10px 0; }
+.team-slot legend { padding: 0 6px; font-weight: 700; }
+.pick-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.pick { position: relative; cursor: pointer; }
+.pick input { position: absolute; opacity: 0; pointer-events: none; }
+.pick > span { display: grid; justify-items: center; text-align: center; gap: 3px; padding: 8px 6px; border: 1px solid var(--line); border-radius: 8px; height: 100%; }
+.pick small { font-size: 12px; color: var(--muted); }
+.pick input:checked + span { border-color: var(--lamp); background: rgba(232,178,92,.10); box-shadow: inset 0 0 0 1px var(--lamp); }
+.pick input:focus-visible + span { outline: 2px solid var(--lamp); }
+.pick input:disabled + span { opacity: .45; cursor: not-allowed; }
+.dept { opacity: .8; } .dept.on { opacity: 1; border-color: var(--lamp); }
+.dept-toggle { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; font-size: 16px; }
+.dept-toggle input { width: 18px; height: 18px; accent-color: #e8b25c; }
 .spoil-box { display: grid; gap: 14px; margin-top: 8px; padding: 18px; border: 1px solid var(--blood); border-radius: 8px; background: rgba(120,30,25,.12); }
 .spoil-box .truth p { margin: 0 0 10px; }
 .intro-sign { position: absolute; z-index: 2; left: 29.55%; top: 3.125%; width: 18.2%; height: 6.25%; display: grid; place-items: center; color: #22303c; font-weight: 800; font-size: clamp(8px, 1.6vw, 14px); letter-spacing: .1em; pointer-events: none; }
@@ -1003,7 +1016,10 @@ const GENDER = {
   /* 달빛극장 */ 문태준: "m", 오세나: "f", 강민혁: "m", 장경수: "m",
   /* 야간열차 */ 이현우: "m", 김도겸: "m", 류미선: "f", 정유나: "f",
   /* 박물관 */ 민서영: "f", 표지훈: "m", 노승철: "m", 홍예진: "f",
-  /* 수사팀 */ 강무열: "m", 윤도경: "m", 변주원: "m", 공태하: "m", 서하루: "f", 도현수: "m", 나예림: "f", 권하준: "m", 오지민: "f", 한서진: "f", 모은재: "f", 차도율: "m",
+  /* 수사팀 */ 강무열: "m", 윤도경: "m", 변주원: "m", 공태하: "m", 서하루: "f",
+  김태린: "f", 박우진: "m", 정한결: "m", 백인경: "f", 조석훈: "m", 우강산: "m", 안소라: "f", 염세라: "f", 차민규: "m", 소하은: "f", 피준호: "m",
+  서문혁: "m", 하경미: "f", 남윤성: "m", 류다올: "f", 신재호: "m", 함소연: "f", 육지훈: "m", 방수아: "f",
+  이로운: "m", 은하솔: "f", 봉준혁: "m", 구현석: "m", 도아라: "f", 엄태식: "m", 강혜원: "f", 윤슬기: "f", 나도현: "m", 주강우: "m", 성미래: "f", 설지호: "m", 금나래: "f", 양태건: "m", 채아름: "f", 허준: "m", 민들레: "f", 도현수: "m", 나예림: "f", 권하준: "m", 오지민: "f", 한서진: "f", 모은재: "f", 차도율: "m",
   /* 무작위 사건 이름 */ 서도윤: "m", 한예린: "f", 박준서: "m", 김하율: "f", 이서진: "f", 정민재: "m", 최유나: "f", 오태경: "m",
   윤소이: "f", 강지후: "m", 문채원: "f", 배성훈: "m", 임가온: "f", 장우빈: "m", 송다인: "f", 홍재민: "m", 류시아: "f", 권태오: "m",
   신보람: "f", 차은호: "m", 백지안: "f", 노현우: "m", 유해원: "f", 표나래: "f",
@@ -1571,7 +1587,7 @@ const turnsFor = c => {
 };
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
-  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], patrol: [], patrolNotes: {}, reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
+  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], patrol: [], patrolNotes: {}, team: null, patrolPick: null, teamPick: null, depts: null, deptJobs: {}, reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
   chances: 1, penalties: 0, decided: false, advice: {}, cleared: [], persona: {}, heart: {}, secrets: [], lastLine: null, dlg: null, wrongAccuse: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
   mode: "pixel", pos: null, dir: null, autopsyDone: false, autopsy: null, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
@@ -1579,24 +1595,71 @@ const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, fou
 let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
 /* 수사팀(경찰): 어려워지면 돕고, 직접 현장에 보낼 수 있다 */
+/* ===================== 팀 구성: 자리(역할)마다 사람을 바꿀 수 있다 ===================== */
+const TEAM_DEFAULT = { seo: "서하루", kang: "강무열", gong: "공태하", yoon: "윤도경", byun: "변주원", han: "한서진", mo: "모은재", dig: "이로운", fin: "설지호", sch: "채아름", digL: "구현석", finL: "엄태식", schL: "윤슬기", patL: "주강우" };
+/* 무작위 사건에서 고를 수 있는 사람들 (자리마다 계급·역할은 같고 사람만 다르다) */
+const ROSTER = [
+  { slot: "seo", label: "동행 파트너", rank: "순경", job: "늘 내 뒤를 따라다니며 방의 가짜 물건을 치워요", people: [
+    ["서하루", "f", "신고 전화를 제일 먼저 받는 열혈 순경"], ["김태린", "f", "눈썰미가 좋은 막내 순경"], ["박우진", "m", "말수는 적지만 성실한 순경"], ["정한결", "m", "체력 하나는 자신 있는 순경"]] },
+  { slot: "kang", label: "강력계 상관", rank: "경감", job: "부하들이 놓친 걸 바로잡고 잠긴 문을 열어요 (보통·어려움)", people: [
+    ["강무열", "m", "현장 20년 차 베테랑"], ["백인경", "f", "강력계 최초의 여성 반장"], ["조석훈", "m", "원칙대로만 하는 깐깐한 반장"]] },
+  { slot: "gong", label: "강력계 부하", rank: "순경", job: "가짜 물건을 치우고 용의자에게 겁을 줘요 (보통·어려움)", people: [
+    ["공태하", "m", "덩치 큰 강력계 순경"], ["우강산", "m", "목소리가 우렁찬 순경"], ["안소라", "f", "눈빛 하나로 기선을 잡는 순경"]] },
+  { slot: "yoon", label: "과학수사 상관", rank: "경사", job: "시신 감식·사건 정리·심문 때 증거 내밀기", people: [
+    ["윤도경", "m", "꼼꼼한 감식 반장"], ["염세라", "f", "현미경을 놓지 않는 감식관"], ["차민규", "m", "증거 앞에서만 말이 많아지는 감식관"]] },
+  { slot: "byun", label: "과학수사 부하", rank: "경장", job: "과학수사 상관과 함께 감식해요", people: [
+    ["변주원", "m", "카메라를 늘 목에 건 감식 요원"], ["소하은", "f", "기록 정리의 달인"], ["피준호", "m", "냄새로 약품을 맞히는 요원"]] },
+  { slot: "han", label: "수사팀 상관", rank: "경위", job: "놓친 거짓말을 바로잡고 침묵을 깨요 (보통·어려움)", people: [
+    ["한서진", "f", "거짓말을 꿰뚫어 보는 베테랑"], ["서문혁", "m", "조용히 몰아붙이는 신문 전문가"], ["하경미", "f", "범죄 심리 박사 출신"]] },
+  { slot: "mo", label: "수사팀 부하", rank: "경사", job: "헷갈리는 대답을 거짓말 후보에서 치워요", people: [
+    ["모은재", "f", "메모광 수사관"], ["남윤성", "m", "기억력이 좋은 수사관"], ["류다올", "f", "눈치 빠른 수사관"]] },
+  { slot: "digL", label: "디지털 수사팀장", rank: "경위", job: "팀장이 함께 오면 기록을 두 건까지 복구해요", people: [
+    ["구현석", "m", "사이버 범죄만 20년 쫓은 팀장"], ["도아라", "f", "데이터로 사람을 읽는 팀장"]] },
+  { slot: "dig", label: "디지털 수사팀", rank: "경장", job: "CCTV·카드키·통신 기록을 복구해 단서 하나를 찾아 줘요 (2턴 뒤)", people: [
+    ["이로운", "m", "해커 출신 디지털 포렌식 요원"], ["은하솔", "f", "지운 파일도 살려내는 분석관"], ["봉준혁", "m", "CCTV 수천 시간을 본 분석관"]] },
+  { slot: "finL", label: "지능범죄수사팀장", rank: "경감", job: "반장이 함께 오면 수상한 서류 한 건은 직접 찾아와요", people: [
+    ["엄태식", "m", "돈 앞에선 누구도 안 믿는 반장"], ["강혜원", "f", "대기업 비리를 파헤친 반장"]] },
+  { slot: "fin", label: "지능범죄수사팀", rank: "경사", job: "돈과 서류 흐름을 쫓아 수상한 서류가 있는 곳을 짚어 줘요 (2턴 뒤)", people: [
+    ["설지호", "m", "돈 냄새를 기막히게 맡는 수사관"], ["금나래", "f", "회계사 출신 수사관"], ["양태건", "m", "장부 한 장으로 사람을 읽는 수사관"]] },
+  { slot: "schL", label: "학교전담팀장", rank: "경위", job: "팀장이 함께 오면 숨은 증언을 두 개 가져와요", people: [
+    ["윤슬기", "f", "학교폭력 전담 베테랑 팀장"], ["나도현", "m", "아이들이 먼저 찾아오는 팀장"]] },
+  { slot: "patL", label: "순찰팀장", rank: "경위", job: "순찰 메모가 더 정확해져요 (4번 중 3번 → 10번 중 9번)", people: [
+    ["주강우", "m", "골목골목을 꿰는 순찰팀장"], ["성미래", "f", "한 번 본 얼굴은 안 잊는 팀장"]] },
+  { slot: "sch", label: "학교전담팀", rank: "순경", job: "용의자 주변 사람들을 탐문해 숨은 증언을 가져와요 (2턴 뒤)", people: [
+    ["채아름", "f", "누구와도 금방 친해지는 경찰"], ["허준", "m", "동네 사정을 꿰고 있는 경찰"], ["민들레", "f", "아이들 눈높이로 말하는 경찰"]] },
+];
+/* 경찰서 부서: 무작위 사건마다 데려갈 부서를 고른다. 동행 파트너(형사)는 늘 함께 */
+const DEPTS = [
+  { id: "crime", name: "강력계", slots: ["kang", "gong"], desc: "상관은 놓친 걸 바로잡고 잠긴 문을 열고, 부하는 가짜 물건을 치우고 용의자에게 겁을 줘요." },
+  { id: "sci", name: "과학수사팀", slots: ["yoon", "byun"], desc: "시신을 감식해 사인을 밝히고, 증거를 정리해 심문 때 대신 내밀어요." },
+  { id: "prof", name: "수사팀 (프로파일링)", slots: ["han", "mo"], desc: "심문 때 헷갈리는 대답을 치우고, 거짓말을 못 박고, 침묵을 깨요." },
+  { id: "patrol", name: "순찰조", patrol: true, slots: ["patL"], desc: "팀장(경위)과 대원들이 혼자 돌아다니며 용의자를 지키고 순찰 메모를 남겨요." },
+  { id: "digital", name: "디지털 수사팀", slots: ["digL", "dig"], desc: "팀장(경위)과 요원이 CCTV·카드키·통신 기록을 복구해 단서를 두 건까지 찾아 줘요." },
+  { id: "fin", name: "지능범죄수사팀", slots: ["finL", "fin"], desc: "반장(경감)과 수사관이 돈과 서류 흐름을 쫓아, 수상한 서류 한 건은 직접 찾고 두 곳을 더 짚어 줘요." },
+  { id: "school", name: "학교전담팀", slots: ["schL", "sch"], desc: "팀장(경위)과 경찰이 용의자 주변 사람들을 탐문해 숨은 증언을 두 개 가져와요." },
+];
+const DEPT_DEFAULT = ["crime", "sci", "prof", "patrol"];
+const DEPT_N = { easy: 3, normal: 4, hard: 5 };
+const deptOn = id => (S.depts || DEPT_DEFAULT).includes(id);
+const N = new Proxy({}, { get: (_, k) => { let t = null; try { t = S && S.team; } catch {} return (t && t[k]) || TEAM_DEFAULT[k] || ""; } });
 const PARTNERS = [
-  { id: "kang", name: "강무열", title: "경감", rank: "경감", with: "gong", skill: "잠긴 문 열기·수사 시간 벌기",
+  { id: "kang", get name() { return N.kang; }, title: "경감", rank: "경감", with: "gong", skill: "잠긴 문 열기·수사 시간 벌기",
     report: (room, list) => list ? `“자물쇠쯤이야. ${room}에서 이런 걸 건졌네. ${list}.”` : `“${room}엔 더 볼 게 없더군.”` },
-  { id: "yoon", name: "윤도경", title: "과학수사 경사", rank: "경사", with: "byun", skill: "현장 감식",
+  { id: "yoon", get name() { return N.yoon; }, title: "과학수사 경사", rank: "경사", with: "byun", skill: "현장 감식",
     report: (room, list) => list ? `“${room} 감식 끝났습니다. 나온 건 ${list}입니다.”` : `“${room}에서는 새로 나온 게 없습니다.”` },
-  { id: "byun", name: "변주원", title: "과학수사 경장", rank: "경장", skill: "현장 감식", noDispatch: true,
+  { id: "byun", get name() { return N.byun; }, title: "과학수사 경장", rank: "경장", skill: "현장 감식", noDispatch: true,
     report: (room, list) => list ? `“${room} 감식 마쳤습니다. 채취한 건 ${list}입니다.”` : `“${room}에선 더 나올 게 없습니다.”` },
-  { id: "gong", name: "공태하", title: "순경", rank: "순경", skill: "쓸데없는 물건 치우기·압박", noDispatch: true,
+  { id: "gong", get name() { return N.gong; }, title: "순경", rank: "순경", skill: "쓸데없는 물건 치우기·압박", noDispatch: true,
     report: (room) => `“경감님 따라 ${room} 한 바퀴 돌았습니다. 사건이랑 상관없는 건 싹 치워 뒀습니다.”` },
-  { id: "seo", name: "서하루", title: "순경", rank: "순경", skill: "현장 수색",
+  { id: "seo", get name() { return N.seo; }, title: "순경", rank: "순경", skill: "현장 수색",
     report: (room, list) => list ? `“선배님! ${room} 싹 다 뒤져 봤어요. ${list}!”` : `“${room}은 이미 다 조사돼 있던데요?”` },
 ];
 const partner = id => PARTNERS.find(x => x.id === id);
 
 /* 심문 담당 수사팀: 모은재(부하)는 헷갈리는 대답을 치우고, 한서진(상관)은 놓친 걸 바로잡는다 */
 const REBUTTERS = [
-  { id: "prof", name: "한서진", title: "수사팀 경위" },
-  { id: "psy", name: "모은재", title: "수사팀 경사" },
+  { id: "prof", get name() { return N.han; }, title: "수사팀 경위" },
+  { id: "psy", get name() { return N.mo; }, title: "수사팀 경사" },
 ];
 
 /* 범인 편: 변수 인물 2명 중 한 명은 공범. 보통·어려움에서만 */
@@ -1669,7 +1732,7 @@ function counterLie(sid) {
 function counterattack(sid) {
   const c = C(), p = c.suspects[sid]; S.counter = S.counter || {};
   if (!p || !S.silence[sid] || S.turns <= 0 || S.decided || S.counter[sid]) return;
-  const who = "수사팀 경위 한서진", lie = counterLie(sid);
+  const who = "수사팀 경위 " + N.han, lie = counterLie(sid);
   S.dlg = null;
   if (Math.random() < (lie ? 0.8 : 0.35)) {
     delete S.silence[sid];
@@ -1677,10 +1740,10 @@ function counterattack(sid) {
       const clue = c.clues[lie.lie.clues.find(k => has(S.found, k))].name;
       S.broken.push(lie.id); addTl(lie.lie.tl);
       S.lastLine = { sid, who, q: `“입 다문다고 끝나는 게 아니에요. ‘${clue}’ — 이건 어떻게 설명하실 거죠?”`, a: lie.lie.reply, kind: "broken" };
-      toast(`<b>한서진의 반격 성공!</b> ${esc(EUN(p.name))} 입을 열고 거짓말을 털어놨다.`); Sound.lie(); flash();
+      toast(`<b>${N.han}의 반격 성공!</b> ${esc(EUN(p.name))} 입을 열고 거짓말을 털어놨다.`); Sound.lie(); flash();
     } else {
       S.lastLine = { sid, who, q: "“계속 침묵하시면 그게 더 의심스러워요. 지금 말하는 게 본인에게 유리합니다.”", a: "“…알겠어요. 물어보세요.”", kind: "answer" };
-      toast(`<b>한서진의 반격 성공!</b> ${esc(EUN(p.name))} 다시 입을 열었다.`); Sound.help();
+      toast(`<b>${N.han}의 반격 성공!</b> ${esc(EUN(p.name))} 다시 입을 열었다.`); Sound.help();
     }
     S.events.push({ bad: false, msg: `${I(who)} 입을 닫은 ${p.name}에게 반격해 다시 말하게 했다.` });
   } else {
@@ -1698,7 +1761,7 @@ function counterattack(sid) {
 /* ---------- 난이도: 쉬움은 쉽지만 짧고 도움이 적다 / 어려움은 어렵지만 길고 도움이 많다 ---------- */
 const DIFF = {
   easy:   { label: "쉬움", turns: 25, time: 240, bonus: 0, chances: 1, fakes: 0, sab: null, villains: false, persona: "show", lieTags: true, helpMax: 0,
-            desc: "아주 쉬워요. 가짜 물건·방해·공범이 없고, 내 판단도 조금 더 정확해요. 대신 시간이 4분뿐이고, 한서진·강무열·공태하는 오지 않아요." },
+            desc: "아주 쉬워요. 가짜 물건·방해·공범이 없고, 내 판단도 조금 더 정확해요. 대신 시간이 4분뿐이고, 경위·경감(수사팀·강력계 상관)과 강력계 부하는 오지 않아요." },
   normal: { label: "보통", turns: 30, time: 420, bonus: 3, chances: 1, fakes: 1, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 }, villains: true, persona: "show", lieTags: false, helpMax: 3,
             desc: "가짜 물건과 방해, 공범이 있어요. 시간은 7분. 팀원 모두 횟수 제한 없이 부를 수 있어요." },
   hard:   { label: "어려움", turns: 35, time: 720, bonus: 6, chances: 2, fakes: 2, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 }, villains: true, persona: "hint", lieTags: false, helpMax: 6,
@@ -1718,7 +1781,7 @@ const PLAYER_RANK = "경장";
 /* 강력계 순경 공태하: 강무열과 다니며 쓸데없는 물건을 치우고, 비협조적인 용의자를 압박한다 */
 const GONG = { easy: { clear: 2 }, normal: { clear: 3 }, hard: { clear: 5 } };   /* 순경 공태하 */
 const PRESS_RISK = [0, 0.15, 0.5, 0.85];   /* 같은 사람을 몇 번째로 압박하나 → 역효과 확률 */
-const gongOn = () => S.diff !== "easy";
+const gongOn = () => S.depts ? deptOn("crime") : S.diff !== "easy";
 const clearLeft = () => gongOn() ? GONG[S.diff].clear - (S.cleared2 || 0) : 0;
 const pressOpen = q => has(S.pressOpen || [], q.id);
 const qOpen = q => !q.need || has(S.found, q.need) || pressOpen(q);
@@ -1730,15 +1793,15 @@ function clearFakes() {
   const said = fakes.length
     ? `“${rn}에 사건이랑 상관없는 게 ${fakes.length}개 있길래 치워 뒀습니다.”`
     : `“${rn}엔 치울 만한 게 없네요. 전부 사건이랑 관계있어 보입니다.”`;
-  S.events.push({ bad: false, msg: `순경 공태하 — ${said}` });
-  toast(`<b>공태하 순경</b> — ${esc(said)}`); Sound.door(); PX.prune();
+  S.events.push({ bad: false, msg: `순경 ${N.gong} — ${said}` });
+  toast(`<b>${N.gong} 순경</b> — ${esc(said)}`); Sound.door(); PX.prune();
 }
 function pressure(sid) {
   const c = C(), p = c.suspects[sid];
   if (!gongOn() || !p || S.turns <= 0 || S.decided) return;
   S.press = S.press || {}; S.pressOpen = S.pressOpen || [];
   const n = (S.press[sid] || 0) + 1; S.press[sid] = n;
-  const who = "순경 공태하";
+  const who = "순경 " + N.gong;
   S.dlg = null;
   if (Math.random() < PRESS_RISK[Math.min(n, 3)]) {
     /* 너무 몰아붙였다: 입을 닫고, 그사이 단서 하나를 놓친다 */
@@ -1755,13 +1818,13 @@ function pressure(sid) {
   } else if (S.silence[sid]) {
     delete S.silence[sid];
     S.lastLine = { sid, who, q: "“입 다물고 있으면 서로 피곤해집니다. 지금 말씀하시죠.”", a: "“…아, 알았어요. 물어보세요.”", kind: "answer" };
-    toast(`<b>공태하 순경</b> — ${esc(EUN(p.name))} 다시 입을 열었다.`); Sound.help();
+    toast(`<b>${N.gong} 순경</b> — ${esc(EUN(p.name))} 다시 입을 열었다.`); Sound.help();
   } else {
     const q = p.qs.find(q => !qOpen(q) && !has(S.asked, q.id));
     if (q) {
       S.pressOpen.push(q.id);
       S.lastLine = { sid, who, q: "“숨기는 게 있으면 지금 털어놓는 게 좋을 겁니다.”", a: "“아, 알았어요… 사실 하나 더 할 말이 있긴 해요.”", kind: "answer" };
-      toast(`<b>공태하 순경</b> — ${esc(p.name)}에게 물어볼 것이 하나 늘었다.`); Sound.help();
+      toast(`<b>${N.gong} 순경</b> — ${esc(p.name)}에게 물어볼 것이 하나 늘었다.`); Sound.help();
     } else {
       S.lastLine = { sid, who, q: "“더 아는 거 없습니까?”", a: "“정말 아는 건 다 말했어요!”", kind: "answer" };
       toast(`${esc(p.name)}에게서 더 짜낼 것은 없다.`);
@@ -1772,7 +1835,9 @@ function pressure(sid) {
 /* 반박 횟수 */
 /* 심문 짝: 모은재(부하)는 헷갈리는 대답을 치우고, 한서진(상관)은 모은재가 놓친 걸 바로잡는다. 횟수 제한 없음, 한 번에 1턴 */
 const PROF_ON = { easy: ["psy"], normal: ["psy", "prof"], hard: ["psy", "prof"] };
-const rebutLeft = id => (PROF_ON[S.diff] || []).includes(id) ? 99 : 0;
+const rebutLeft = id => (S.depts ? deptOn("prof") : (PROF_ON[S.diff] || []).includes(id)) ? 99 : 0;
+/* 현장 팀원: 고른 부서에 따라 (고정 사건은 난이도 규칙) */
+const fieldOn = () => S.depts ? ["seo", ...(deptOn("crime") ? ["gong", "kang"] : [])] : (FIELD_ON[S.diff] || []);
 const pfull = x => `${x.title} ${x.name}`;
 const MISSION_DELAY = 2;
 
@@ -1871,7 +1936,54 @@ function openRandom() {
   toastQ.length = 0;
   const c = generateCase(), n = loadRecords().randomSolved || 0;
   const diff = n === 0 ? "easy" : n < 3 ? "normal" : "hard";
-  S = Object.assign(fresh(), { screen: "brief", caseId: "random", randomCase: c, room: "crime", suspect: "p0", diff });
+  S = Object.assign(fresh(), { screen: "team", caseId: "random", randomCase: c, room: "crime", suspect: "p0", diff, teamPick: lastTeam() });
+}
+/* ---------- 팀 꾸리기 (무작위 사건) ---------- */
+function lastTeam() {
+  let t = null; try { t = JSON.parse(localStorage.getItem("midnight-last-team") || "null"); } catch {}
+  const team = { ...TEAM_DEFAULT, ...((t && t.team) || {}) };
+  return { team, patrol: (t && t.patrol && t.patrol.length) ? t.patrol : PATROL.map(x => x.id), depts: (t && t.depts) || null };
+}
+function randomTeam() {
+  const team = {}; for (const r of ROSTER) team[r.slot] = RND.pick(r.people)[0];
+  return { team, patrol: RND.shuffle(PATROL_ALL).slice(0, 4).map(x => x.id), depts: RND.shuffle(DEPTS.map(d => d.id)).slice(0, DEPT_N[S.diff] || 4) };
+}
+function confirmTeam() {
+  const tp = S.teamPick, need = DEPT_N[S.diff] || 4;
+  if (!tp || tp.depts.length !== need || (tp.depts.includes("patrol") && !tp.patrol.length)) return;
+  S.team = { ...tp.team }; S.patrolPick = tp.patrol.slice(); S.depts = tp.depts.slice();
+  try { localStorage.setItem("midnight-last-team", JSON.stringify({ team: tp.team, patrol: tp.patrol, depts: tp.depts })); } catch {}
+  S.screen = "brief"; S.introDone = false; INTRO.reset();
+}
+function renderTeam() {
+  const c = C(), tp = S.teamPick, need = DEPT_N[S.diff] || 4, pd = PATROL_N[S.diff] || 2;
+  if (!tp.depts || !tp.fit) {   /* 처음 열 때 난이도에 맞는 개수로 맞춘다 */
+    const order = DEPT_DEFAULT.concat(DEPTS.map(d => d.id).filter(id => !DEPT_DEFAULT.includes(id)));
+    tp.depts = (tp.depts || []).filter(id => DEPTS.some(d => d.id === id)).slice(0, need);
+    for (const id of order) if (tp.depts.length < need && !tp.depts.includes(id)) tp.depts.push(id);
+    tp.fit = true;
+  }
+  const people = slot => { const r = ROSTER.find(x => x.slot === slot); return `<div class="pick-row">${r.people.map(([n, g, note]) => `<label class="pick"><input type="radio" name="team-${slot}" value="${n}" ${tp.team[slot] === n ? "checked" : ""}>
+      <span>${pixelFace(n, 44)}<b>${n}</b><small>${r.label} · ${r.rank}</small><small class="hint">${note}</small></span></label>`).join("")}</div>`; };
+  const patrolPick = `<p class="hint">순찰조 대원 (4명까지, 고른 순서대로 ${DIFF[S.diff].label}에선 ${pd}명이 나가요)</p><div class="pick-row">${PATROL_ALL.map(x => { const i = tp.patrol.indexOf(x.id); return `<label class="pick"><input type="checkbox" name="team-patrol" value="${x.id}" ${i >= 0 ? "checked" : ""} ${i < 0 && tp.patrol.length >= 4 ? "disabled" : ""}>
+      <span>${pixelFace(x.name, 44)}<b>${x.name}</b><small>${x.title}${i >= 0 ? ` · ${i + 1}번째` : ""}</small></span></label>`; }).join("")}</div>`;
+  const depts = DEPTS.map(d => { const on = tp.depts.includes(d.id), full = !on && tp.depts.length >= need;
+    return `<fieldset class="team-slot dept${on ? " on" : ""}"><legend><label class="dept-toggle"><input type="checkbox" name="team-dept" value="${d.id}" ${on ? "checked" : ""} ${full ? "disabled" : ""}> ${d.name}</label></legend>
+      <p class="hint">${d.desc}</p>${on ? (d.slots || []).map(people).join("") + (d.patrol ? patrolPick : "") : ""}</fieldset>`; }).join("");
+  app.innerHTML = `<section class="intro team-pick">
+    <span class="label">${c.tag}</span>
+    <h1>팀 꾸리기</h1>
+    <p class="lede">${esc(pname())} ${PLAYER_RANK}, 이번 사건은 <b>${esc(c.title)}</b>이다. 경찰서의 여러 부서 중 <b>${need}개</b>를 골라 데려가고, 부서마다 함께할 사람을 뽑자. (${DIFF[S.diff].label} 난이도 · 쉬움 3 · 보통 4 · 어려움 5개)</p>
+    <fieldset class="team-slot on"><legend>동행 파트너 (형사) <span class="hint">· 늘 함께해요</span></legend><p class="hint">내 뒤를 따라다니며 방의 가짜 물건을 치워요.</p>${people("seo")}</fieldset>
+    <p class="hint"><b>부서 ${tp.depts.length} / ${need}</b> 골랐어요.</p>
+    ${depts}
+    <div class="btn-row">
+      <button class="btn" data-act="team-go" ${tp.depts.length === need && (!tp.depts.includes("patrol") || tp.patrol.length) ? "" : "disabled"}>이 팀으로 출동</button>
+      <button class="btn ghost" data-act="team-random">무작위로 뽑기</button>
+      <button class="btn ghost" data-act="team-default">원래 팀으로</button>
+      <button class="btn ghost" data-act="files">사건 목록</button>
+    </div>
+  </section>`;
 }
 function openCase(id) {
   INTRO.reset(); ENDING.reset();
@@ -1888,12 +2000,18 @@ const PATROL = [
   { id: "kw", name: "권하준", title: "순경" }, { id: "oh", name: "오지민", title: "경장" },
 ];
 const PATROL_N = { easy: 2, normal: 3, hard: 4 };
-const patrolOf = id => PATROL.find(x => x.id === id);
+const PATROL_ALL = PATROL.concat([
+  { id: "sj", name: "신재호", title: "순경" }, { id: "hs", name: "함소연", title: "경장" },
+  { id: "yj", name: "육지훈", title: "순경" }, { id: "bs", name: "방수아", title: "순경" },
+]);
+const patrolOf = id => PATROL_ALL.find(x => x.id === id);
 function suspectRoom(sid) { return Object.keys(C().rooms).find(r => roomPeople(r).some(p => p.id === sid)); }
 const guarded = sid => { const r = suspectRoom(sid); return !!r && (S.patrol || []).some(o => o.room === r); };
 function initPatrol() {
   const rooms = RND.shuffle(Object.keys(C().rooms).filter(r => !C().rooms[r].crime));
-  S.patrol = PATROL.slice(0, PATROL_N[S.diff] || 2).map((x, i) => ({ id: x.id, room: rooms[i % rooms.length] }));
+  if (!deptOn("patrol")) { S.patrol = []; S.patrolNotes = {}; return; }
+  const pool = (S.patrolPick || []).length ? S.patrolPick.map(patrolOf).filter(Boolean) : PATROL;
+  S.patrol = pool.slice(0, PATROL_N[S.diff] || 2).map((x, i) => ({ id: x.id, room: rooms[i % rooms.length] }));
   S.patrolNotes = {};
   patrolWatch(true);
 }
@@ -1902,7 +2020,7 @@ function patrolWatch(quiet) {
   for (const o of S.patrol || []) for (const pp of roomPeople(o.room)) {
     if (pp.kind !== "s" || S.patrolNotes[pp.id]) continue;
     const p = c.suspects[pp.id], lies = p.qs.filter(q => q.lie), truths = p.qs.filter(q => !q.lie);
-    const q = lies.length && (Math.random() < .75 || !truths.length) ? RND.pick(lies) : RND.pick(truths.length ? truths : p.qs);
+    const q = lies.length && (Math.random() < (S.depts ? .9 : .75) || !truths.length) ? RND.pick(lies) : RND.pick(truths.length ? truths : p.qs);   /* 순찰팀장이 함께면 더 정확 */
     const who = patrolOf(o.id);
     S.patrolNotes[pp.id] = { by: `${who.title} ${who.name}`, qid: q.id, text: `‘${q.q}’ 얘기만 나오면 눈을 피하고 말이 빨라지던데요.` };
     if (!quiet) toast(`<b>순찰 메모</b> — ${esc(who.name)}: “${esc(p.name)} 씨, ${esc(S.patrolNotes[pp.id].text)}”`);
@@ -1957,6 +2075,7 @@ function spend(n = 1) {
   resolveMissions();
   autoAutopsy();
   patrolMove();
+  resolveDeptJobs();
   maybeSabotage();
   maybeHelp();
 }
@@ -1973,7 +2092,7 @@ function help() {
   if (!DIFF[S.diff].helpMax) return;
   const c = C(), opts = [];
   const blocked = Object.keys(S.locks).length || Object.keys(S.silence).length;
-  const vet = S.diff !== "easy";   /* 강력계 경감 강무열(문 열기·시간 벌기)은 보통·어려움에서 */
+  const vet = S.depts ? deptOn("crime") : S.diff !== "easy";   /* 강력계 경감 강무열(문 열기·시간 벌기)은 보통·어려움에서 */
   if (blocked && vet) opts.push("unlock", "unlock");
   const spots = Object.entries(c.rooms).flatMap(([rid, r]) => r.spots.map(s => ({ ...s, rid })))
     .filter(s => s.clue && !has(S.searched, s.id));
@@ -2005,7 +2124,7 @@ function help() {
 const crimeRoomId = () => Object.keys(C().rooms).find(k => C().rooms[k].crime);
 const bodySpot = () => C().rooms[crimeRoomId()].spots[0];
 const sentCount = pid => S.dispatched.filter(x => !pid || x === pid).length;
-function dispatchLeft(pid) { return (FIELD_ON[S.diff] || []).includes(pid) ? 99 : 0; }
+function dispatchLeft(pid) { return fieldOn().includes(pid) ? 99 : 0; }
 function canDispatch(pid) {
   if (S.turns <= 0 || S.decided || !dispatchLeft(pid)) return false;
   return !S.missions.some(m => m.pid === pid);
@@ -2075,7 +2194,7 @@ function forensicPresent(sid) {
   if (!hit) { toast(`과학수사대 — “지금 모은 증거로는 ${esc(p.name)} 씨에게 내밀 게 없습니다. ${evidenceAgainst(sid).length ? "먼저 관련된 걸 물어보세요." : "증거를 더 찾아 주세요."}”`, true); return; }
   S.dlg = null;
   S.broken.push(hit.q.id); addTl(hit.q.lie.tl);
-  S.lastLine = { sid, who: "과학수사 경사 윤도경", q: `(서류철을 펼친다) “감식 결과와 정리한 증거입니다. ‘${hit.name}’ — ‘${hit.q.a}’라고 하셨죠? 이건 어떻게 설명하시겠습니까?”`, a: hit.q.lie.reply, kind: "broken" };
+  S.lastLine = { sid, who: "과학수사 경사 " + N.yoon, q: `(서류철을 펼친다) “감식 결과와 정리한 증거입니다. ‘${hit.name}’ — ‘${hit.q.a}’라고 하셨죠? 이건 어떻게 설명하시겠습니까?”`, a: hit.q.lie.reply, kind: "broken" };
   S.events.push({ bad: false, msg: `과학수사대가 ${p.name}에게 ‘${hit.name}’을(를) 내밀어 진술을 무너뜨렸다.` });
   toast(`<b>과학수사대의 증거 제시</b> — ${esc(EUN(p.name))} 진술을 바꿨다!`); Sound.lie(); flash();
   spend();
@@ -2086,7 +2205,7 @@ function forensicReport() {
   if (sp.clue && !has(S.found, sp.clue)) S.found.push(sp.clue);
   if (!has(S.searched, sp.id)) S.searched.push(sp.id);
   S.autopsy = { cause: autopsyCause(), body: sp.clue ? c.clues[sp.clue].text : "" };
-  const msg = `과학수사대 윤도경·변주원의 감식 소견 — “사인은 ‘${S.autopsy.cause}’ 쪽으로 보입니다. 지금까지 나온 증거도 사람별로 정리해 수사 수첩에 넣었습니다. 심문할 때 부르시면 저희가 직접 증거를 내밀죠.”`;
+  const msg = `과학수사대 ${N.yoon}·${N.byun}의 감식 소견 — “사인은 ‘${S.autopsy.cause}’ 쪽으로 보입니다. 지금까지 나온 증거도 사람별로 정리해 수사 수첩에 넣었습니다. 심문할 때 부르시면 저희가 직접 증거를 내밀죠.”`;
   S.events.push({ bad: false, msg });
   toast(`<b>감식 결과</b> — ${esc(msg.split(" — ")[1])}`); Sound.clue();
 }
@@ -2334,6 +2453,7 @@ function render() {
   if (S.screen === "title") return renderTitle();
   if (S.screen === "files") return renderFiles();
   if (S.screen === "brief") return renderBrief();
+  if (S.screen === "team") return renderTeam();
   if (S.screen === "result") return renderResult();
   if (S.screen === "gameover") return renderGameOver();
   const c = C(), out = S.turns <= 0;
@@ -2455,14 +2575,14 @@ const INTRO = (() => {
   let cv = null, g = null, raf = 0, t0 = 0, capKey = "", rang = [], bgc = null;
   const FURN = [["desk", 2, 3], ["desk", 4, 3], ["desk", 7, 3], ["terminal", 9, 3], ["board", 6, 1], ["plant", 0, 2], ["plant", 10, 2], ["box", 10, 6], ["box", 0, 6], ["window", 2, 1], ["window", 8, 1]];
   const cast = () => [
-    { id: "seo", name: "서하루", x: 4, y: 4, dir: "up" },
-    { id: "kang", name: "강무열", x: 7, y: 4, dir: "up" },
+    { id: "seo", name: N.seo, x: 4, y: 4, dir: "up" },
+    { id: "kang", name: N.kang, x: 7, y: 4, dir: "up" },
     { id: "me", name: pname(), player: true, x: 2, y: 4, dir: "up" },
-    { id: "han", name: "한서진", x: 6, y: 2, dir: "up" },
-    { id: "mo", name: "모은재", x: 5, y: 2, dir: "right" },
-    { id: "yoon", name: "윤도경", x: 9, y: 4, dir: "up" },
-    { id: "gong", name: "공태하", x: 8, y: 5, dir: "up" },
-    { id: "byun", name: "변주원", x: 10, y: 4, dir: "left" },
+    { id: "han", name: N.han, x: 6, y: 2, dir: "up" },
+    { id: "mo", name: N.mo, x: 5, y: 2, dir: "right" },
+    { id: "yoon", name: N.yoon, x: 9, y: 4, dir: "up" },
+    { id: "gong", name: N.gong, x: 8, y: 5, dir: "up" },
+    { id: "byun", name: N.byun, x: 10, y: 4, dir: "left" },
   ];
   /* 신고 접수 시각은 사건 정보(“22:41 접수”)를 그대로 읽는다 */
   const callTime = () => {
@@ -2476,10 +2596,10 @@ const INTRO = (() => {
   const beats = () => [
     { t: 0, who: "", text: `${callTime()}. 강력팀 사무실.` },
     { t: 2.4, who: "", text: "따르릉— 따르릉—" },
-    { t: 4.6, who: "서하루", text: "네, 강력팀 서하루 순경입니다. …네? 사람이 죽었다고요? 위치가 어디죠?" },
-    { t: 8, who: "서하루", text: `선배님들! ${where()} ‘${place()}’에서 살인 사건 신고입니다!` },
-    { t: 11, who: "강무열", text: `가자. ${pname()} 형사, 이번 사건은 자네가 맡게.` },
-    { t: 13.6, who: "한서진", text: "용의자 심문은 저희 수사팀 둘이 같이 들어가죠." },
+    { t: 4.6, who: N.seo, text: `네, 강력팀 ${N.seo} 순경입니다. …네? 사람이 죽었다고요? 위치가 어디죠?` },
+    { t: 8, who: N.seo, text: `선배님들! ${where()} ‘${place()}’에서 살인 사건 신고입니다!` },
+    { t: 11, who: N.kang, text: `가자. ${pname()} 형사, 이번 사건은 자네가 맡게.` },
+    { t: 13.6, who: N.han, text: "용의자 심문은 저희 수사팀 둘이 같이 들어가죠." },
     { t: 16, who: "", text: "강력팀, 출동!" },
   ];
   function bg() {
@@ -2541,7 +2661,7 @@ const INTRO = (() => {
     capKey = b.t + "|" + el.isConnected;
     const isMe = b.who === pname();
     el.className = "intro-cap" + (b.who ? "" : " narr");
-    el.innerHTML = b.who ? `${pixelFace(b.who, 40, "", isMe)}<div><b>${esc(b.who)}${isMe ? " " + PLAYER_RANK : b.who === "서하루" ? " 순경" : b.who === "강무열" ? " 경감" : b.who === "한서진" ? " 경위" : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
+    el.innerHTML = b.who ? `${pixelFace(b.who, 40, "", isMe)}<div><b>${esc(b.who)}${isMe ? " " + PLAYER_RANK : b.who === N.seo ? " 순경" : b.who === N.kang ? " 경감" : b.who === N.han ? " 경위" : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
   }
   function sounds(t) {
     for (const [at, fn] of [[2.4, "ring"], [3.5, "ring"], [8, "thunder"], [16, "siren"]]) {
@@ -2577,7 +2697,7 @@ const INTRO = (() => {
 const ENDING = (() => {
   const TS = 16, W = 176, H = 128;
   let cv = null, g = null, raf = 0, t0 = 0, kind = "", capKey = "", rang = [];
-  const TITLE = { 서하루: "순경", 강무열: "경감", 한서진: "경위", 모은재: "경사", 윤도경: "경사", 변주원: "경장", 공태하: "순경" };
+  const TITLE = () => ({ [N.seo]: "순경", [N.kang]: "경감", [N.han]: "경위", [N.mo]: "경사", [N.yoon]: "경사", [N.byun]: "경장", [N.gong]: "순경" });
   function spec() {
     const c = C(), me = pname();
     if (kind === "win") {
@@ -2585,24 +2705,24 @@ const ENDING = (() => {
       return {
         actors: [
           { id: "cul", name: cul.name, role: cul.role, x: 5, y: 3.5, dir: "down" },
-          { id: "gong", name: "공태하", x: 6, y: 3.5, dir: "left" },
+          { id: "gong", name: N.gong, x: 6, y: 3.5, dir: "left" },
           { id: "me", name: me, player: true, x: 4, y: 5.5, dir: "up" },
-          { id: "kang", name: "강무열", x: 2, y: 5, dir: "right" },
-          { id: "seo", name: "서하루", x: 3, y: 5.6, dir: "up" },
-          { id: "han", name: "한서진", x: 8, y: 5, dir: "left" },
-          { id: "mo", name: "모은재", x: 9, y: 5.6, dir: "left" },
-          { id: "yoon", name: "윤도경", x: 1, y: 5.6, dir: "right" },
-          { id: "byun", name: "변주원", x: 10, y: 5, dir: "left" },
+          { id: "kang", name: N.kang, x: 2, y: 5, dir: "right" },
+          { id: "seo", name: N.seo, x: 3, y: 5.6, dir: "up" },
+          { id: "han", name: N.han, x: 8, y: 5, dir: "left" },
+          { id: "mo", name: N.mo, x: 9, y: 5.6, dir: "left" },
+          { id: "yoon", name: N.yoon, x: 1, y: 5.6, dir: "right" },
+          { id: "byun", name: N.byun, x: 10, y: 5, dir: "left" },
         ],
         beats: [
           { t: 0, who: "", text: "경찰서로 돌아온 강력팀." },
           { t: 1.8, who: me, text: `${cul.name} 씨, 당신을 살인 혐의로 체포합니다.` },
           { t: 4.2, who: cul.name, text: "……다 끝났군요." },
-          { t: 5.8, who: "공태하", text: "연행하겠습니다. 이쪽으로." },
-          { t: 8.4, who: "서하루", text: "해냈어요, 선배님! 진짜 범인을 잡았어요!" },
-          { t: 11, who: "모은재", text: "와… 저도 언젠가 저렇게 추리하고 싶어요!" },
-          { t: 13.6, who: "한서진", text: grade === "S" ? "흠잡을 데 없는 추리였어요. 완벽합니다." : "깔끔했어요. 다음엔 증거를 조금 더 챙겨 보죠." },
-          { t: 16.2, who: "강무열", text: `수고했네, ${me} 형사. 오늘 저녁은 내가 사지!` },
+          { t: 5.8, who: N.gong, text: "연행하겠습니다. 이쪽으로." },
+          { t: 8.4, who: N.seo, text: "해냈어요, 선배님! 진짜 범인을 잡았어요!" },
+          { t: 11, who: N.mo, text: "와… 저도 언젠가 저렇게 추리하고 싶어요!" },
+          { t: 13.6, who: N.han, text: grade === "S" ? "흠잡을 데 없는 추리였어요. 완벽합니다." : "깔끔했어요. 다음엔 증거를 조금 더 챙겨 보죠." },
+          { t: 16.2, who: N.kang, text: `수고했네, ${me} 형사. 오늘 저녁은 내가 사지!` },
         ],
         walks: { cul: [5.8, [[5, 3.5], [5, 9.5]]], gong: [6.1, [[6, 3.5], [6, 6.5], [5, 6.5], [5, 9.5]]] },
         party: 7.8,
@@ -2611,21 +2731,21 @@ const ENDING = (() => {
     return {
       actors: [
         { id: "me", name: me, player: true, x: 5, y: 4.6, dir: "down" },
-        { id: "seo", name: "서하루", x: 4, y: 4.8, dir: "down" },
-        { id: "mo", name: "모은재", x: 5, y: 2.6, dir: "down" },
-        { id: "han", name: "한서진", x: 6, y: 2.6, dir: "down" },
-        { id: "kang", name: "강무열", x: 8, y: 4.8, dir: "down" },
-        { id: "yoon", name: "윤도경", x: 9, y: 4.6, dir: "down" },
-        { id: "byun", name: "변주원", x: 10, y: 4.8, dir: "down" },
-        { id: "gong", name: "공태하", x: 7, y: 6, dir: "down" },
+        { id: "seo", name: N.seo, x: 4, y: 4.8, dir: "down" },
+        { id: "mo", name: N.mo, x: 5, y: 2.6, dir: "down" },
+        { id: "han", name: N.han, x: 6, y: 2.6, dir: "down" },
+        { id: "kang", name: N.kang, x: 8, y: 4.8, dir: "down" },
+        { id: "yoon", name: N.yoon, x: 9, y: 4.6, dir: "down" },
+        { id: "byun", name: N.byun, x: 10, y: 4.8, dir: "down" },
+        { id: "gong", name: N.gong, x: 7, y: 6, dir: "down" },
       ],
       beats: [
         { t: 0, who: "", text: "범인은 혼란을 틈타 사라졌다. 비가 그치지 않는 밤." },
         { t: 2.4, who: me, text: "…놓쳤어. 거의 다 잡았는데." },
-        { t: 5, who: "서하루", text: "선배님… 제가 더 꼼꼼히 봤어야 했는데요." },
-        { t: 7.6, who: "모은재", text: "증거를 조금만 더 모았어도…" },
-        { t: 10.2, who: "강무열", text: `고개 들게, ${me} 형사. 한 번 더 해 보지! 아직 끝난 거 아니야.` },
-        { t: 13.4, who: "한서진", text: "이번에 놓친 걸 기억하세요. 다음엔 안 놓칩니다." },
+        { t: 5, who: N.seo, text: "선배님… 제가 더 꼼꼼히 봤어야 했는데요." },
+        { t: 7.6, who: N.mo, text: "증거를 조금만 더 모았어도…" },
+        { t: 10.2, who: N.kang, text: `고개 들게, ${me} 형사. 한 번 더 해 보지! 아직 끝난 거 아니야.` },
+        { t: 13.4, who: N.han, text: "이번에 놓친 걸 기억하세요. 다음엔 안 놓칩니다." },
       ],
       walks: { kang: [9.6, [[8, 4.8], [6, 4.8]]] },
       gloom: true,
@@ -2687,7 +2807,7 @@ const ENDING = (() => {
     capKey = k; el.dataset.k = k;
     const isMe = b.who === pname(), role = Object.values(C().suspects).find(p => p.name === b.who);
     el.className = "intro-cap" + (b.who ? "" : " narr");
-    el.innerHTML = b.who ? `${pixelFace(b.who, 40, role ? role.role : "", isMe)}<div><b>${esc(b.who)}${isMe ? " " + PLAYER_RANK : TITLE[b.who] ? " " + TITLE[b.who] : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
+    el.innerHTML = b.who ? `${pixelFace(b.who, 40, role ? role.role : "", isMe)}<div><b>${esc(b.who)}${isMe ? " " + PLAYER_RANK : TITLE()[b.who] ? " " + TITLE()[b.who] : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
   }
   function sounds(t) {
     const list = kind === "win" ? [[1.8, "lie"], [7.8, "verdict"], [8.4, "help"]] : [[0.3, "thunder"], [10.2, "help"]];
@@ -2974,6 +3094,14 @@ const LOOK_OVERRIDE = {
   한서진: { cloth: "#2b3540", top: "suit" },
   모은재: { cloth: "#9a7f6a", top: "cardigan" },
 };
+/* 고를 수 있는 사람들은 자리에 맞는 옷을 입는다 */
+(() => {
+  const dress = { seo: "서하루", kang: "강무열", gong: "공태하", yoon: "윤도경", byun: "변주원", han: "한서진", mo: "모은재" };
+  const own = { dig: { cloth: "#2f3b3f", pants: "#22282b", top: "cardigan" }, fin: { cloth: "#3a3530", top: "suit" }, sch: { cloth: "#4f6a7c", pants: "#2a3340", top: "knit" },
+    digL: { cloth: "#24303a", top: "jacket" }, finL: { cloth: "#2b2622", top: "suit" }, schL: { cloth: "#3e5566", top: "jacket" }, patL: { cloth: "#1c2a44", pants: "#141c2c", top: "suit", cap: true } };
+  for (const r of ROSTER) for (const [n] of r.people) if (!LOOK_OVERRIDE[n]) { const { style, ...rest } = own[r.slot] || LOOK_OVERRIDE[dress[r.slot]] || {}; LOOK_OVERRIDE[n] = rest; }
+  for (const x of PATROL_ALL) if (!LOOK_OVERRIDE[x.name]) LOOK_OVERRIDE[x.name] = { cloth: "#26344d", pants: "#1a2233", top: "suit", cap: true };
+})();
 function lookFor(name, role, isPlayer) {
   if (isPlayer) return playerGender() === "f"
     ? { skin: "#edcbad", hair: "#2a1f1b", cloth: "#8a6a48", pants: "#2a2d33", F: true, style: "long", glasses: null, facial: null, top: "coat", skirt: false }
@@ -3446,7 +3574,7 @@ const PX = (() => {
       ents.push({ y: h.fy, draw: () => drawSprite(charSprites(h.p.name, h.p.role), h.dir, h.frameT || rummage * 1, h.fx, h.fy, rummage) });
     }
     for (const c of cops) { const x = patrolOf(c.id); ents.push({ y: c.fy, draw: () => drawSprite(charSprites(x.name, x.title), c.dir, c.frameT, c.fx, c.fy) }); }
-    if (buddy.on) ents.push({ y: buddy.fy - .01, draw: () => drawSprite(charSprites("서하루", "순경"), buddy.dir, buddy.frameT, buddy.fx, buddy.fy) });
+    if (buddy.on) ents.push({ y: buddy.fy - .01, draw: () => drawSprite(charSprites(N.seo, "순경"), buddy.dir, buddy.frameT, buddy.fx, buddy.fy) });
     ents.push({ y: me.fy, draw: () => drawSprite(charSprites(pname(), "", true), me.dir, me.frameT, me.fx, me.fy) });
     ents.sort((a, b) => a.y - b.y).forEach(e => e.draw());
     /* 손전등 같은 조명 */
@@ -3472,7 +3600,7 @@ const PX = (() => {
     for (const h of Object.values(helpers)) if (h.room === S.room) list.push(["h" + h.pid, h.fx + .5, h.fy - .2, `${h.p.name} · ${h.state === "out" ? "보고 완료!" : roleOf(h.pid) === "clear" ? "치우는 중…" : "바로잡는 중…"}`, "nm ally" + (h.state === "out" ? " done" : "")]);
     for (const it of L.items) if (has(S.marked || [], it.spot) && !has(S.searched, it.spot)) list.push(["mk" + it.spot, it.x + .5, it.y - .75, "놓친 곳!", "nm silent"]);
     for (const c of cops) list.push(["cop" + c.id, c.fx + .5, c.fy - .2, `${patrolOf(c.id).name} · ${c.leaving ? "이동 중" : "순찰"}`, "nm ally"]);
-    if (buddy.on) list.push(["buddy", buddy.fx + .5, buddy.fy - .2, "서하루", "nm ally"]);
+    if (buddy.on) list.push(["buddy", buddy.fx + .5, buddy.fy - .2, "" + N.seo, "nm ally"]);
     for (const d of L.doors) list.push(["d" + d.x + d.y, d.side === "b" ? d.x + .5 : .9, d.side === "b" ? EXH - .35 : d.y + .55, d.stairs ? `계단 ${d.stairs}` : C().rooms[d.to].name, "door" + (S.locks[d.to] ? " locked" : "") + (d.side === "l" ? " left" : "")]);
     const seen = new Set();
     for (const [id, x, y, text, cls] of list) {
@@ -3611,36 +3739,91 @@ function renderGong() {
   if (!gongOn() || !DIFF[S.diff].fakes || !allSpots(S.room).some(sp => !has(S.searched, sp.id))) return "";   /* 쉬움엔 가짜 물건이 없으니 압박만 */
   const can = clearLeft() > 0 && S.turns > 0 && !S.locks[S.room];
   return `<div class="dispatch">
-    <b>순경 공태하</b>
-    <p class="hint">강무열 경감과 다니며 사건과 상관없어 보이는 물건을 치워요. 가짜 물건이 사라지고, 턴은 안 줄어요.</p>
-    <div class="q-actions"><button class="act ally with-face" data-clearfakes="1" ${can ? "" : "disabled"}>${pixelFace("공태하", 24)}이 방 쓸데없는 물건 치우기<span class="cost">${clearLeft() > 0 ? `${clearLeft()}번 남음` : "끝"}</span></button></div>
+    <b>순경 ${N.gong}</b>
+    <p class="hint">${N.kang} 경감과 다니며 사건과 상관없어 보이는 물건을 치워요. 가짜 물건이 사라지고, 턴은 안 줄어요.</p>
+    <div class="q-actions"><button class="act ally with-face" data-clearfakes="1" ${can ? "" : "disabled"}>${pixelFace(N.gong, 24)}이 방 쓸데없는 물건 치우기<span class="cost">${clearLeft() > 0 ? `${clearLeft()}번 남음` : "끝"}</span></button></div>
   </div>`;
 }
 function pressBtn(sid) {
   if (!gongOn()) return "";
   const n = (S.press || {})[sid] || 0, risk = PRESS_RISK[Math.min(n + 1, 3)];
   const lv = risk < .3 ? "조금 위험" : risk < .7 ? "위험 — 역효과 날 수 있음" : "매우 위험 — 거의 역효과";
-  return `<button class="choice press with-face" data-press="${sid}"><span class="ck">압박</span><span>${pixelFace("공태하", 22)} 공태하 순경이 겁을 준다${n ? ` <small class="hint">(${n}번 압박함)</small>` : ""}</span><span class="cost">−1턴 · ${lv}</span></button>`;
+  return `<button class="choice press with-face" data-press="${sid}"><span class="ck">압박</span><span>${pixelFace(N.gong, 22)} ${N.gong} 순경이 겁을 준다${n ? ` <small class="hint">(${n}번 압박함)</small>` : ""}</span><span class="cost">−1턴 · ${lv}</span></button>`;
+}
+/* ---------- 새 부서 지원: 디지털 수사팀 · 지능범죄수사팀 · 학교전담팀 (사건마다 한 번, 2턴 뒤 보고, 턴 소모 없음) ---------- */
+const DEPT_JOB = { digital: "dig", fin: "fin", school: "sch" };
+const DEPT_LEAD = { digital: "digL", fin: "finL", school: "schL" };
+const deptWho = id => `${N[DEPT_LEAD[id]]}·${N[DEPT_JOB[id]]}`;
+function callDept(id) {
+  S.deptJobs = S.deptJobs || {};
+  if (!deptOn(id) || S.deptJobs[id] || S.turns <= 0 || S.decided) return;
+  S.deptJobs[id] = { due: S.actions + 2, done: false };
+  const r = ROSTER.find(x => x.slot === DEPT_JOB[id]);
+  toast(`<b>${esc(DEPTS.find(d => d.id === id).name)}</b> — ${esc(deptWho(id))}: “맡겨 주세요. 2턴 뒤에 보고하겠습니다.”`); Sound.door();
+}
+function resolveDeptJobs() {
+  const c = C(), jobs = S.deptJobs || {};
+  const spots = Object.entries(c.rooms).flatMap(([rid, r]) => r.spots.map(sp => ({ ...sp, rid }))).filter(sp => sp.clue && !has(S.found, sp.clue) && !has(S.lost || [], sp.id));
+  for (const [id, j] of Object.entries(jobs)) {
+    if (j.done || S.actions < j.due) continue;
+    j.done = true;
+    const who = `${DEPTS.find(d => d.id === id).name} ${deptWho(id)}`;
+    let msg = "";
+    if (id === "digital") {
+      let dig = spots.filter(sp => furnType(sp.label) === "terminal");
+      if (!dig.length) dig = spots.filter(sp => ["board", "vanity"].includes(furnType(sp.label)));   /* 기록이 없으면 휴대폰·일지 같은 것 */
+      const got = RND.shuffle(dig).slice(0, 2);
+      got.forEach(sp => { if (!has(S.found, sp.clue)) S.found.push(sp.clue); if (!has(S.searched, sp.id)) S.searched.push(sp.id); S.tampered = S.tampered.filter(x => x !== sp.id); });
+      if (got.length) { msg = `“${got.map(sp => `${c.rooms[sp.rid].name}의 ‘${c.clues[sp.clue].name}’`).join(", ")} — 기록을 복구해 수첩에 넣어 뒀습니다.” (${N.digL} 팀장과 ${N.dig})`; Sound.clue(); }
+      else msg = "“복구할 디지털 기록이 더는 없습니다. 이미 다 찾으셨네요.”";
+    } else if (id === "fin") {
+      const docs = spots.filter(sp => ["board", "desk", "safe", "bag", "drawer"].includes(furnType(sp.label)) && !has(S.searched, sp.id));
+      docs.sort((a, b) => c.key.includes(b.clue) - c.key.includes(a.clue));
+      const first = docs[0], pick = docs.slice(1, 3);
+      if (first) { S.found.push(first.clue); S.searched.push(first.id); }
+      pick.forEach(sp => { S.marked = (S.marked || []).concat(sp.id); });
+      msg = first ? `“${N.finL} 반장님이 ‘${c.clues[first.clue].name}’을(를) 직접 찾아오셨습니다.${pick.length ? ` 그리고 ${pick.map(sp => `${c.rooms[sp.rid].name}의 ‘${sp.label.replace(/(을|를) .*$/, "")}’`).join(", ")} 쪽도 수상합니다. ‘놓친 곳!’으로 표시해 뒀어요.` : ""}”` : "“수상한 서류는 이미 다 확보하셨습니다.”";
+      Sound.help();
+    } else if (id === "school") {
+      const cand = RND.shuffle(Object.entries(c.suspects).filter(([sid]) => !S.secrets.some(x => x.sid === sid))).slice(0, 2);
+      if (cand.length) {
+        const parts = cand.map(([sid, p]) => { const hint = secretHint(sid); S.secrets.push({ sid, name: p.name, text: hint }); return `${p.name} 씨 쪽: ${hint}`; });
+        msg = `“${N.schL} 팀장님과 주변 사람들을 만나고 왔어요. ${parts.join(" / ")}”`;
+      } else msg = "“주변 사람들 얘기는 이미 다 들으셨어요.”";
+      Sound.help();
+    }
+    S.events.push({ bad: false, msg: `${who} — ${msg}` });
+    toast(`<b>${esc(who)}</b> — ${esc(msg)}`);
+  }
+}
+function renderDeptHelp() {
+  const ids = ["digital", "fin", "school"].filter(deptOn);
+  if (!ids.length) return "";
+  const jobs = S.deptJobs || {};
+  return `<div class="dispatch"><b>부서 지원 <span class="hint">· 사건마다 한 번씩 · 턴 소모 없음</span></b>
+    <div class="q-actions">${ids.map(id => { const d = DEPTS.find(x => x.id === id), j = jobs[id], slot = DEPT_JOB[id];
+      return `<button class="act ally with-face" data-dept="${id}" ${j || S.turns <= 0 || S.decided ? "disabled" : ""}>${pixelFace(N[DEPT_LEAD[id]], 24)}${pixelFace(N[slot], 24)}${d.name} ${deptWho(id)}<span class="cost">${j ? (j.done ? "보고 완료" : `${Math.max(0, j.due - S.actions)}턴 뒤 보고`) : d.desc}</span></button>`; }).join("")}</div></div>`;
 }
 function renderPatrol() {
   if (!(S.patrol || []).length) return "";
   const c = C();
-  return `<div class="dispatch"><b>강력팀 순찰조 <span class="hint">· 알아서 돌아다녀요</span></b>
+  return `<div class="dispatch"><b>강력팀 순찰조 <span class="hint">· 알아서 돌아다녀요${S.depts ? ` · 순찰팀장 ${N.patL} 경위` : ""}</span></b>
     <p class="hint">스스로 방을 돌며 용의자를 지켜봐요. 순찰 경찰이 있는 방의 용의자는 방해로 입을 막을 수 없고, 처음 본 용의자는 ‘순찰 메모’(어떤 질문에 긴장하는지)를 남겨요. 메모는 대부분 맞지만 가끔 헛짚어요.</p>
     <div class="q-actions">${S.patrol.map(o => { const x = patrolOf(o.id); return `<span class="act ally with-face" style="cursor:default">${pixelFace(x.name, 22)}${x.title} ${x.name}<span class="cost">${esc(c.rooms[o.room].name)}${o.room === S.room ? " (여기)" : ""}</span></span>`; }).join("")}</div>
     <p class="hint">메모: ${Object.keys(S.patrolNotes || {}).length} / ${Object.keys(c.suspects).length}명</p></div>`;
 }
 function renderForensic() {
+  if (!deptOn("sci")) return "";
   const busy = S.missions.some(m => m.role === "autopsy");
-  const body = `${pixelFace("윤도경", 24)}${pixelFace("변주원", 24)}과학수사대 윤도경·변주원`;
+  const body = `${pixelFace(N.yoon, 24)}${pixelFace(N.byun, 24)}과학수사대 ${N.yoon}·${N.byun}`;
   if (S.autopsy) return `<div class="dispatch"><b>과학수사대 감식 소견</b><p class="hint">사인: <b>${esc(S.autopsy.cause)}</b> — 증거도 사람별로 정리했어요(수사 수첩). 심문 때 ‘과학수사대가 정리한 증거를 내민다’를 고르면 대신 들이밀어 줘요.</p></div>`;
   return `<div class="dispatch"><b>과학수사대</b>
     <p class="hint">시신을 감식해 사인(죽은 원인)을 밝히고, 찾은 증거를 사람별로 정리해 줘요. 그 뒤 심문할 때 과학수사대가 증거를 직접 내밀어요. 턴은 안 줄어요.</p>
     <div class="q-actions"><button class="act ally with-face" data-forensic="1" ${busy || S.turns <= 0 || S.decided ? "disabled" : ""}>${body}<span class="cost">${busy ? "감식 중…" : "시신 감식 · 사인 알아내기"}</span></button></div></div>`;
 }
 function renderDispatch(r) {
-  const on = FIELD_ON[S.diff] || [];
-  if (!on.length) return renderForensic() + renderPatrol();
+  const on = fieldOn();
+  if (!on.length) return renderForensic() + renderPatrol() + renderDeptHelp();
   const btn = pid => {
     const x = partner(pid), away = S.missions.find(m => m.pid === pid), clear = roleOf(pid) === "clear";
     return `<button class="act ally with-face" data-dispatch="${pid}" ${canDispatch(pid) ? "" : "disabled"}>
@@ -3650,13 +3833,13 @@ function renderDispatch(r) {
     .map(row => `<div class="q-actions">${row.map(btn).join("")}</div>`).join("");
   return `<div class="dispatch">
     <b>팀원 부르기 <span class="hint">· 횟수 제한 없음</span></b>
-    <p class="hint">직급이 낮은 팀원(서하루${on.includes("gong") ? "·공태하" : ""})은 이 방의 <b>헷갈리게 하는 가짜 물건을 치워요</b>(1턴 뒤). ${on.includes("kang") ? "직급이 높은 강무열은 대신 조사하지 않고 <b>부하들이 놓친 걸 바로잡아요</b>: 망가진 증거 복구, 사라진 단서 되찾기, 놓친 곳 짚기, 잠긴 문 열기(2턴 뒤)." : ""}</p>
+    <p class="hint">직급이 낮은 팀원(${N.seo}${on.includes("gong") ? "·" + N.gong : ""})은 이 방의 <b>헷갈리게 하는 가짜 물건을 치워요</b>(1턴 뒤). ${on.includes("kang") ? "직급이 높은 " + EUN(N.kang) + " 대신 조사하지 않고 <b>부하들이 놓친 걸 바로잡아요</b>: 망가진 증거 복구, 사라진 단서 되찾기, 놓친 곳 짚기, 잠긴 문 열기(2턴 뒤)." : ""}</p>
     ${rows}
-  </div>` + renderForensic() + renderPatrol();
+  </div>` + renderForensic() + renderPatrol() + renderDeptHelp();
 }
 
 /* ---------- 대답 판단: 주인공·모은재는 모은 증거만큼 정확, 한서진은 바로 간파 ---------- */
-const READ_WHO = { me: "내 판단", psy: "모은재", prof: "한서진" };
+const READ_WHO = { me: "내 판단", psy: "" + N.mo, prof: "" + N.han };
 const SURE = ["판단 불가", "근거 약함", "근거 보통", "확실"];
 function evidenceCover() { return Math.min(1, S.found.length / Math.max(1, Object.keys(C().clues).length) + (S.autopsy ? .2 : 0)); }   /* 감식 소견도 증거로 친다 */
 function readOf(q, who) {
@@ -3697,8 +3880,8 @@ function moClear(sid) {
   const left = p.qs.filter(q => has(S.asked, q.id) && !has(S.broken, q.id) && !profCleared(q.id)).length;
   const said = got.length ? `“${got.length}개는 증거랑 맞아서 사실로 보여요. 헷갈리지 않게 후보에서 치워 둘게요. 남은 대답은 ${left}개예요.”`
     : cand.length ? "“아직 증거가 부족해서 확실히 치울 수 있는 게 없어요… 증거를 더 모아 주세요.”" : "“치울 만한 대답이 없어요. 남은 건 전부 수상해요.”";
-  S.lastLine = { sid, who: "수사팀 경사 모은재", q: said, a: "“……뭘 그렇게 적으세요?”", kind: "rebut-miss" };
-  toast(`<b>모은재</b> — ${esc(said)}`); Sound.help();
+  S.lastLine = { sid, who: "수사팀 경사 " + N.mo, q: said, a: "“……뭘 그렇게 적으세요?”", kind: "rebut-miss" };
+  toast(`<b>${N.mo}</b> — ${esc(said)}`); Sound.help();
   spend();
 }
 /* 한서진(상관): 모은재가 놓친 걸 바로잡는다. 남은 사실은 다 치우고, 거짓말은 거짓말로 못 박는다 */
@@ -3714,10 +3897,10 @@ function hanFix(sid) {
   }
   S.rebuts.push("prof");
   const said = asked.length
-    ? `“모은재가 놓친 걸 정리했어요.${cleared ? ` 사실인 대답 ${cleared}개 더 치웠고,` : ""} ${lies ? `거짓말은 ${lies}개 — 표시해 둔 대답이에요. 맞는 증거만 들이밀면 됩니다.` : "지금까지 들은 말엔 거짓말이 없어요."}”`
+    ? `“${I(N.mo)} 놓친 걸 정리했어요.${cleared ? ` 사실인 대답 ${cleared}개 더 치웠고,` : ""} ${lies ? `거짓말은 ${lies}개 — 표시해 둔 대답이에요. 맞는 증거만 들이밀면 됩니다.` : "지금까지 들은 말엔 거짓말이 없어요."}”`
     : "“먼저 질문부터 해 보세요. 들은 말이 있어야 바로잡죠.”";
-  S.lastLine = { sid, who: "수사팀 경위 한서진", q: said, a: lies ? "“그, 그건… 오해예요.”" : "“그러니까 처음부터 사실대로 말했잖아요.”", kind: "rebut-miss" };
-  toast(`<b>한서진</b> — ${esc(said)}`); Sound.lie();
+  S.lastLine = { sid, who: "수사팀 경위 " + N.han, q: said, a: lies ? "“그, 그건… 오해예요.”" : "“그러니까 처음부터 사실대로 말했잖아요.”", kind: "rebut-miss" };
+  toast(`<b>${N.han}</b> — ${esc(said)}`); Sound.lie();
   spend();
 }
 function readBtns() { return ""; }
@@ -3770,18 +3953,18 @@ function renderPeople(out) {
   if (out) choices = `<p class="locked">결단의 시간이다. 더 물어볼 수 없다.</p>`;
   else if (sl) choices = `<p class="locked-room">“더는 아무 말도 안 하겠어요.” ${sl}턴 동안 대화할 수 없다.</p>`
     + ((S.counter || {})[sid]
-      ? `<p class="locked">한서진의 반격도 통하지 않았다. 입이 풀릴 때까지 기다려야 한다.</p>`
-      : pressBtn(sid) + `<button class="choice press with-face" data-counter="${sid}"><span class="ck">반격</span><span>${pixelFace("한서진", 22)} 한서진 경위가 대신 나서서 반격한다<br><small class="hint">${counterLie(sid) ? "찌를 증거가 있다. 잘 통할 것 같다." : "찌를 증거가 없다. 통할지 모르겠다."}</small></span><span class="cost">실패하면 −${COUNTER_SEC}초 · −${COUNTER_TURNS}턴</span></button>`);
+      ? `<p class="locked">${N.han}의 반격도 통하지 않았다. 입이 풀릴 때까지 기다려야 한다.</p>`
+      : pressBtn(sid) + (!rebutLeft("prof") ? "" : `<button class="choice press with-face" data-counter="${sid}"><span class="ck">반격</span><span>${pixelFace(N.han, 22)} ${N.han} 경위가 대신 나서서 반격한다<br><small class="hint">${counterLie(sid) ? "찌를 증거가 있다. 잘 통할 것 같다." : "찌를 증거가 없다. 통할지 모르겠다."}</small></span><span class="cost">실패하면 −${COUNTER_SEC}초 · −${COUNTER_TURNS}턴</span></button>`));
   else if (!D) {
     const avail = p.qs.filter(q => qOpen(q) && !has(S.asked, q.id));
     const locked = p.qs.filter(q => !qOpen(q)).length;
     choices = avail.map(q => `<button class="choice" data-ask="${q.id}"><span class="ck">질문</span><span>“${esc(q.q)}”</span><span class="cost">−1턴</span></button>`).join("")
       + (statements.length && S.found.length ? `<button class="choice press" data-dlg="contradict"><span class="ck">추리</span><span>모순을 지적한다</span><span class="cost">틀리면 −10초</span></button>` : "")
-      + (statements.length ? (S.autopsy
-          ? `<button class="choice press with-face" data-present="${sid}"><span class="ck">증거</span><span>${pixelFace("윤도경", 22)}${pixelFace("변주원", 22)} 과학수사대가 정리한 증거를 내민다 <small class="hint">(${evidenceAgainst(sid).filter(x => x.asked).length ? "어긋나는 증거가 있다" : "지금은 내밀 게 없어 보인다"})</small></span><span class="cost">−1턴</span></button>`
+      + (statements.length && deptOn("sci") ? (S.autopsy
+          ? `<button class="choice press with-face" data-present="${sid}"><span class="ck">증거</span><span>${pixelFace(N.yoon, 22)}${pixelFace(N.byun, 22)} 과학수사대가 정리한 증거를 내민다 <small class="hint">(${evidenceAgainst(sid).filter(x => x.asked).length ? "어긋나는 증거가 있다" : "지금은 내밀 게 없어 보인다"})</small></span><span class="cost">−1턴</span></button>`
           : `<p class="locked">과학수사대에 시신 감식을 맡기면, 증거를 정리해 심문 때 대신 내밀어 줘요.</p>`) : "")
-      + (statements.length && rebutLeft("psy") ? `<button class="choice with-face" data-moclear="${sid}"><span class="ck">정리</span><span>${pixelFace("모은재", 22)} 모은재: 헷갈리는 대답 치우기 <small class="hint">(사실로 보이는 대답을 후보에서 뺀다 · 증거가 많을수록 많이)</small></span><span class="cost">−1턴</span></button>` : "")
-      + (statements.length && rebutLeft("prof") ? `<button class="choice with-face" data-hanfix="${sid}"><span class="ck">바로잡기</span><span>${pixelFace("한서진", 22)} 한서진: 모은재가 놓친 것 바로잡기 <small class="hint">(남은 사실은 다 치우고 거짓말을 못 박는다)</small></span><span class="cost">−1턴</span></button>` : "")
+      + (statements.length && rebutLeft("psy") ? `<button class="choice with-face" data-moclear="${sid}"><span class="ck">정리</span><span>${pixelFace(N.mo, 22)} ${N.mo}: 헷갈리는 대답 치우기 <small class="hint">(사실로 보이는 대답을 후보에서 뺀다 · 증거가 많을수록 많이)</small></span><span class="cost">−1턴</span></button>` : "")
+      + (statements.length && rebutLeft("prof") ? `<button class="choice with-face" data-hanfix="${sid}"><span class="ck">바로잡기</span><span>${pixelFace(N.han, 22)} ${N.han}: ${I(N.mo)} 놓친 것 바로잡기 <small class="hint">(남은 사실은 다 치우고 거짓말을 못 박는다)</small></span><span class="cost">−1턴</span></button>` : "")
       + (p.qs.some(q => has(S.asked, q.id)) ? pressBtn(sid) : "")
       + (!S.heart[sid] && p.qs.some(q => has(S.asked, q.id)) ? `<button class="choice heart" data-dlg="heart"><span class="ck">호감</span><span>마음을 열게 한다</span><span class="cost">한 번뿐 · −1턴</span></button>` : "")
       + (locked ? `<p class="locked">단서를 더 찾으면 물어볼 것이 ${locked}개 더 생긴다.</p>` : "")
@@ -3807,10 +3990,10 @@ function renderPeople(out) {
     <section class="panel talk" aria-live="polite">
       <div class="person-head"><span class="portrait">${pixelFace(p.name, 96, p.role)}</span><div><span class="label">${p.role}</span><h3 style="font-size:24px">${p.name}</h3>
         <span class="hint">${show ? `성격: <b>${per.label}</b> · ` : "눈치: "}${per.tell}</span> ${heartLabel(sid)}
-        ${S.autopsy ? `<span class="duo">${pixelFace("윤도경", 20)}감식 소견(증거): 사인 ‘${esc(S.autopsy.cause)}’</span>` : ""}
+        ${S.autopsy ? `<span class="duo">${pixelFace(N.yoon, 20)}감식 소견(증거): 사인 ‘${esc(S.autopsy.cause)}’</span>` : ""}
         ${(S.patrolNotes || {})[sid] ? `<span class="duo">${pixelFace(S.patrolNotes[sid].by.split(" ")[1], 20)}순찰 메모 · ${esc(S.patrolNotes[sid].by)}: “${esc(S.patrolNotes[sid].text)}”</span>` : ""}
         ${guarded(sid) ? `<span class="duo">🛡 순찰 경찰이 지키는 중 — 방해로 입을 막을 수 없어요</span>` : ""}
-        <span class="duo">함께 심문: ${pixelFace("한서진", 20)}한서진 경위 · ${pixelFace("모은재", 20)}모은재 경사</span></div></div>
+        <span class="duo">함께 심문: ${pixelFace(N.han, 20)}${N.han} 경위 · ${pixelFace(N.mo, 20)}${N.mo} 경사</span></div></div>
       <div class="speech">${speech}</div>
       <div class="choices">${choices}</div>
       ${log ? `<details class="talklog"><summary>지난 대화 (${p.qs.filter(q => has(S.asked, q.id)).length})</summary>${log}</details>` : ""}
@@ -3945,7 +4128,7 @@ function renderGameOver() {
 
 /* 같은 사건(무작위 사건도 같은 범인)을 같은 난이도로 처음부터 다시 */
 function retryCase() {
-  const keep = { caseId: S.caseId, randomCase: S.randomCase, diff: S.diff };
+  const keep = { caseId: S.caseId, randomCase: S.randomCase, diff: S.diff, team: S.team, patrolPick: S.patrolPick, depts: S.depts };
   const c = C();
   toastQ.length = 0; ENDING.reset();
   S = Object.assign(fresh(), keep, { screen: "brief", room: Object.keys(c.rooms)[0], suspect: Object.keys(c.suspects)[0], introDone: true });
@@ -4042,6 +4225,10 @@ app.addEventListener("click", e => {
   else if (d.random) { openRandom(); top = true; }
   else if (d.case) { openCase(d.case); top = true; }
   else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm) mm.querySelector("img").outerHTML = pixelFace(pname(), 64, "", true); return; }
+  else if (d.dept) { callDept(d.dept); }
+  else if (d.act === "team-go") { confirmTeam(); top = true; }
+  else if (d.act === "team-random") { S.teamPick = randomTeam(); S.teamPick.fit = true; Sound.help(); }
+  else if (d.act === "team-default") { S.teamPick = { team: { ...TEAM_DEFAULT }, patrol: PATROL.map(x => x.id), depts: DEPT_DEFAULT.slice(0, DEPT_N[S.diff] || 4) }; }
   else if (d.act === "retry") { retryCase(); top = true; Sound.thunder(); flash(); }
   else if (d.act === "spoil") { S.spoil = true; }
   else if (d.act === "skip-intro") { INTRO.finish(); return; }
@@ -4097,6 +4284,12 @@ app.addEventListener("change", e => {
   const t = e.target;
   if (t.name === "present") { S.present = t.value; return; }
   if (t.name === "diff") { S.diff = t.value; render(); return; }
+  if (t.name && t.name.startsWith("team-") && S.teamPick) {
+    if (t.name === "team-dept") { const D = S.teamPick.depts; if (t.checked) { if (!D.includes(t.value) && D.length < (DEPT_N[S.diff] || 4)) D.push(t.value); } else S.teamPick.depts = D.filter(x => x !== t.value); }
+    else if (t.name === "team-patrol") { const P = S.teamPick.patrol; if (t.checked) { if (!P.includes(t.value) && P.length < 4) P.push(t.value); } else S.teamPick.patrol = P.filter(x => x !== t.value); }
+    else S.teamPick.team[t.name.slice(5)] = t.value;
+    render(); return;
+  }
   if (t.name === "timed") { S.timed = t.checked; render(); return; }
   if (t.name === "evidence") S.pick.evidence = [...app.querySelectorAll('input[name="evidence"]:checked')].map(i => i.value);
   else if (["culprit", "motive", "method"].includes(t.name)) S.pick[t.name] = t.value;
