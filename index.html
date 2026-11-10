@@ -232,6 +232,15 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .urgent .timer b { color: var(--blood); }
 .diff-chip { font-family: var(--f-mono); font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 1px 7px; }
 /* 걸어 다니는 지도 */
+.view3d { position: relative; border-radius: 6px; overflow: hidden; background: #0b0e12; border: 2px solid #12161a; box-shadow: 0 10px 30px rgba(0,0,0,.45); min-height: 180px; }
+.view3d canvas { display: block; width: 100%; touch-action: none; cursor: grab; outline: none; }
+.view3d canvas:active { cursor: grabbing; }
+.view3d canvas:focus-visible { box-shadow: inset 0 0 0 2px var(--lamp); }
+.crosshair { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; border: 2px solid rgba(255,240,210,.8); pointer-events: none; z-index: 2; }
+.view3d .map-lock { position: absolute; }
+.v3-fail { padding: 30px 16px; color: var(--muted); text-align: center; }
+.mode-btns { display: flex; gap: 4px; }
+.mode-btns .act.on { border-color: var(--lamp); color: var(--lamp); }
 .room-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
 .map { position: relative; width: 100%; aspect-ratio: 11 / 8; border-radius: 6px; overflow: hidden; outline: none; touch-action: manipulation; cursor: pointer;
   border: 2px solid #12161a; box-shadow: 0 10px 30px rgba(0,0,0,.45); background-color: #3d3027; }
@@ -331,6 +340,7 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 <div class="toast" id="toast" role="status" hidden></div>
 <div id="flash" aria-hidden="true"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 /* =====================================================================
    사건 데이터
@@ -1214,7 +1224,7 @@ const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, fou
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
   locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], rebutNotes: {}, lawyerUsed: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
-  listMode: false, pos: null, dir: null, autopsyDone: false, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
+  mode: "3d", pos: null, dir: null, autopsyDone: false, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
@@ -1707,6 +1717,7 @@ function render() {
       ${alertRow}
     </header>
     <main>${body}</main>`;
+  if (S.tab === "rooms" && S.mode === "3d") V3.mount(document.getElementById("view3d")); else V3.clearKeys();
 }
 
 function renderTitle() {
@@ -1730,7 +1741,7 @@ function renderTitle() {
       </div>
       <h2>조작 방법</h2>
       <div class="howto">
-        <div><b><span class="k">01</span>현장 조사</b><p>탐정을 직접 움직여요. 컴퓨터는 방향키·WASD, 휴대폰은 바닥을 터치. 물음표(?)가 붙은 물건을 누르면 걸어가서 조사해요(1턴). 사람을 누르면 말을 걸고, 문으로 나가면 옆 방이에요. 이동은 공짜.</p></div>
+        <div><b><span class="k">01</span>현장 조사</b><p>주인공 눈높이 3D 화면에서 직접 걸어 다녀요. 컴퓨터는 WASD로 걷고 마우스를 끌어 둘러보고, 휴대폰은 바닥을 누르면 걸어가고 끌면 둘러봐요. ‘지도’·‘목록’ 보기로 바꿀 수도 있어요. 물음표(?)가 붙은 물건을 누르면 걸어가서 조사해요(1턴). 사람을 누르면 말을 걸고, 문으로 나가면 옆 방이에요. 이동은 공짜.</p></div>
         <div><b><span class="k">02</span>심문</b><p>용의자를 고르고 ‘묻는다’를 누른다. 단서를 찾을수록 물어볼 것이 늘어난다.</p></div>
         <div><b><span class="k">03</span>모순 지적</b><p>들은 진술 아래 ‘모순 지적’을 누르고, 그 말과 맞지 않는 단서를 골라 들이민다. 맞으면 진술이 무너지고, 틀리면 1턴을 잃는다.</p></div>
         <div><b><span class="k">04</span>수사 수첩</b><p>찾은 단서와 진술로 만든 시간표가 모인다. 거짓으로 밝혀진 진술에는 줄이 그어진다.</p></div>
@@ -1811,11 +1822,11 @@ function roomBtn(id, wide) {
     <span class="rname">${r.name}</span><span class="rstat">${lk ? `잠김 ${lk}턴` : `조사 ${done}/${r.spots.length}`}</span></button>`;
 }
 function renderRooms(out) {
-  if (!S.listMode) {
+  if (S.mode !== "list") {
     const c = C();
     const plan = c.floors.map(f => `<div class="floor"><span class="label">${f.label}</span>
       <div class="floor-grid">${f.rooms.map(id => roomBtn(id, (f.wide || []).includes(id))).join("")}</div></div>`).join("");
-    return renderExplore(out, plan);
+    return S.mode === "map" ? renderExplore(out, plan) : render3D(out, plan);
   }
   const c = C(), r = c.rooms[S.room], lk = S.locks[S.room];
   const floorOf = c.floors.find(f => f.rooms.includes(S.room));
@@ -1835,7 +1846,7 @@ function renderRooms(out) {
     <div class="plan">${plan}</div>
     <section class="panel" aria-live="polite">
       <div class="room-head"><div><span class="label">${floorOf ? floorOf.label : ""}</span><h3 style="font-size:24px">${r.name}</h3></div>
-        <button class="act" data-act="listmode">걸어 다니며 조사하기</button></div>
+        ${modeBtns()}</div>
       <p class="desc">${r.desc}</p>
       ${lk ? `<p class="locked-room">문이 안쪽에서 잠겨 있다. ${lk}턴 뒤에 열쇠를 찾을 수 있다.</p>` : ""}
       <div class="spots">${spots}</div>
@@ -2090,13 +2101,452 @@ function renderExplore(out, plan) {
     <div class="plan">${plan}<p class="hint">방 이름을 누르면 바로 이동해요.</p></div>
     <section class="panel" aria-live="polite">
       <div class="room-head"><div><span class="label">${floorOf ? floorOf.label : ""}</span><h3 style="font-size:24px">${r.name}</h3></div>
-        <button class="act" data-act="listmode">목록으로 보기</button></div>
+        ${modeBtns()}</div>
       <div class="map floor-${floorKind}" id="map" tabindex="0" role="application" aria-label="${esc(r.name)} 지도. 방향키로 움직이고 스페이스로 조사">
         ${rug}${walls}${deco}${items}${people}${doors}${light}${me}
         ${lk ? `<div class="map-lock">잠김 · ${lk}턴</div>` : ""}
       </div>
       <div class="explore-bar"><span id="near" class="hint">${esc(nearText())}</span>
         <button class="act press" id="act-btn" data-act="interact">조사하기</button></div>
+      <p class="desc">${r.desc}</p>
+      ${lk ? `<p class="locked-room">이 방이 잠겼다. 문으로 나가서 ${lk}턴 뒤에 다시 오자.</p>` : ""}
+      ${left ? `<p class="hint">이 방에 아직 조사하지 않은 곳(?)이 ${left}곳 있다.</p>` : `<p class="hint">이 방은 모두 조사했다.</p>`}
+      <div class="spots">${results}</div>
+      ${!out ? renderDispatch(r) : ""}
+    </section>
+  </div>`;
+}
+
+/* =====================================================================
+   3D 1인칭: 주인공 눈높이로 방 안을 걸어 다닌다 (Three.js)
+   - 지도와 같은 칸(11×8) 배치를 그대로 3D로 세운다: 칸 1개 = 1m
+   - WASD·방향키로 걷고, 드래그로 둘러보고, 가구·사람·문을 누르면 걸어가서 조사
+   ===================================================================== */
+const modeBtns = () => `<div class="mode-btns" role="group" aria-label="보기 방식">
+  ${[["3d", "3D"], ["map", "지도"], ["list", "목록"]].map(([m, t]) => `<button class="act${S.mode === m ? " on" : ""}" data-act="mode" data-m="${m}" aria-pressed="${S.mode === m}">${t}</button>`).join("")}</div>`;
+const floorKindOf = name => /부엌|주방|식당|욕실|기관|장비|보안|경비|공방|창고|수장고|승무원/.test(name) ? "tile" : /의 방|객실|선실|손님|게스트|칸|대기실|숙소/.test(name) ? "carpet" : "wood";
+const wallSideOf = it => it.y === 1 ? "n" : it.x === 1 ? "w" : it.x === EXW - 2 ? "e" : it.y === EXH - 2 ? "s" : null;
+
+const V3 = (() => {
+  let renderer = null, scene = null, camera = null, raf = 0, sceneKey = "", host = null, failed = false;
+  let clickables = [], marks = [], flames = [], last = 0, hoverT = 0, looking = null;
+  const cam = { room: null, x: 5.5, z: 6.5, yaw: 0, pitch: -0.08 };
+  const keys = {};
+  let walk = null;           /* { pts: [[x,z]...], i, done } */
+  const EYE = 1.55, SPEED = 2.4;
+  const texCache = new Map();
+
+  /* ---------- 텍스처 ---------- */
+  function svgTexture(svg, w = 256, h = 256) {
+    const key = svg + w + h;
+    if (texCache.has(key)) return texCache.get(key);
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+    const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding;
+    const img = new Image();
+    img.onload = () => { cv.getContext("2d").drawImage(img, 0, 0, w, h); tex.needsUpdate = true; };
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" '));
+    texCache.set(key, tex); return tex;
+  }
+  function canvasTexture(key, w, h, draw, repeat) {
+    if (texCache.has(key)) return texCache.get(key);
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+    draw(cv.getContext("2d"), w, h);
+    const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding;
+    if (repeat) { tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(repeat[0], repeat[1]); }
+    tex.anisotropy = 4;
+    texCache.set(key, tex); return tex;
+  }
+  const rnd = seed => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  function floorTex(kind, seed) {
+    return canvasTexture("floor" + kind + seed, 512, 512, (g, w, h) => {
+      const r = rnd(seed + 11);
+      if (kind === "wood") {
+        g.fillStyle = "#5b4330"; g.fillRect(0, 0, w, h);
+        for (let row = 0; row < 8; row++) {
+          let x = -r() * 200;
+          while (x < w) {
+            const len = 140 + r() * 160, tone = 70 + r() * 40;
+            g.fillStyle = `rgb(${tone + 25},${tone - 5},${tone - 30})`; g.fillRect(x, row * 64 + 1, len - 2, 62);
+            g.strokeStyle = "rgba(0,0,0,.12)"; for (let k = 0; k < 4; k++) { g.beginPath(); g.moveTo(x, row * 64 + 10 + k * 13 + r() * 6); g.lineTo(x + len, row * 64 + 10 + k * 13 + r() * 6); g.stroke(); }
+            x += len;
+          }
+        }
+      } else if (kind === "tile") {
+        for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { g.fillStyle = (i + j) % 2 ? "#6c7178" : "#8c9198"; g.fillRect(i * 64, j * 64, 64, 64); }
+        g.strokeStyle = "rgba(0,0,0,.25)"; g.lineWidth = 2; for (let i = 0; i <= 8; i++) { g.beginPath(); g.moveTo(i * 64, 0); g.lineTo(i * 64, h); g.stroke(); g.beginPath(); g.moveTo(0, i * 64); g.lineTo(w, i * 64); g.stroke(); }
+      } else {
+        g.fillStyle = "#463a52"; g.fillRect(0, 0, w, h);
+        for (let k = 0; k < 9000; k++) { g.fillStyle = r() < .5 ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.12)"; g.fillRect(r() * w, r() * h, 2, 2); }
+      }
+    }, kind === "carpet" ? [3, 2] : [3, 2]);
+  }
+  function wallTex(seed) {
+    const base = ["#6a5d50", "#55626c", "#6b5552", "#58665a"][seed % 4];
+    return canvasTexture("wall" + seed, 256, 256, (g, w, h) => {
+      g.fillStyle = base; g.fillRect(0, 0, w, h);
+      for (let x = 0; x < w; x += 32) { g.fillStyle = "rgba(255,255,255,.035)"; g.fillRect(x, 0, 14, h); }
+      g.fillStyle = "rgba(0,0,0,.18)"; g.fillRect(0, h * .62, w, 6);
+    }, [4, 1]);
+  }
+  function textSprite(text, color = "#f4ecdc", bg = "rgba(10,14,18,.82)", scale = .22) {
+    const tex = canvasTexture("txt" + text + color + bg, 512, 96, (g, w, h) => {
+      g.font = "600 44px 'IBM Plex Sans KR', 'Apple SD Gothic Neo', sans-serif";
+      const tw = Math.min(w - 20, g.measureText(text).width + 36);
+      g.fillStyle = bg; const x = (w - tw) / 2; g.beginPath(); g.roundRect ? g.roundRect(x, 14, tw, 68, 14) : g.rect(x, 14, tw, 68); g.fill();
+      g.fillStyle = color; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(text, w / 2, 50);
+    });
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+    sp.scale.set(scale * 5.33, scale, 1); sp.renderOrder = 10; return sp;
+  }
+  function markSprite(kind) {
+    const col = kind === "done" ? "#7fb59a" : kind === "tam" ? "#d06a5c" : "#e2b25c";
+    const ch = kind === "done" ? "✓" : kind === "tam" ? "!" : "?";
+    const tex = canvasTexture("mark" + kind, 128, 128, (g) => {
+      g.fillStyle = col; g.beginPath(); g.arc(64, 56, 44, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.moveTo(48, 92); g.lineTo(80, 92); g.lineTo(64, 118); g.fill();
+      g.fillStyle = kind === "q" ? "#1a1408" : "#fff"; g.font = "700 60px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(ch, 64, 60);
+    });
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+    sp.scale.set(kind === "done" ? .16 : .24, kind === "done" ? .16 : .24, 1); sp.renderOrder = 11; return sp;
+  }
+
+  /* ---------- 모형 도우미 ---------- */
+  const lin = c => new THREE.Color(c).convertSRGBToLinear();   /* 색을 제대로(덜 바래게) */
+  const mat = (c, o = {}) => new THREE.MeshStandardMaterial({ color: lin(c), roughness: o.r ?? .8, metalness: o.m ?? .05, emissive: lin(o.e ?? 0), emissiveIntensity: o.ei ?? 1, transparent: !!o.t, opacity: o.op ?? 1, map: o.map || null, side: o.side || THREE.FrontSide });
+  const box = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); return o; };
+  const cyl = (rt, rb, h, m, x, y, z, seg = 18) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), m); o.position.set(x, y, z); return o; };
+  const sph = (r, m, x, y, z) => { const o = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 12), m); o.position.set(x, y, z); return o; };
+  const plane = (w, h, m, x, y, z) => { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); o.position.set(x, y, z); return o; };
+  const WOOD = () => mat(0x6e4c34, { r: .7 }), DARKW = () => mat(0x4a3324, { r: .7 }), PAPER = () => mat(0xe8e1d1, { r: .9 }), METAL = () => mat(0x8a959e, { r: .4, m: .6 }), GOLD = () => mat(0xd8b46a, { r: .35, m: .8 });
+  function table(g, w, d, h, m) { g.add(box(w, .05, d, m, 0, h, 0)); for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) g.add(box(.05, h, .05, m, sx * (w / 2 - .05), h / 2, sz * (d / 2 - .05))); }
+
+  function model(type, wall) {
+    const g = new THREE.Group();
+    const W = WOOD();
+    switch (type) {
+      case "desk": table(g, .95, .55, .74, W); g.add(box(.3, .01, .22, PAPER(), -.15, .77, .02)); g.add(box(.18, .01, .24, PAPER(), .05, .772, -.05));
+        g.add(cyl(.05, .07, .02, METAL(), .32, .76, -.15)); g.add(cyl(.01, .01, .3, METAL(), .32, .9, -.15)); g.add(sph(.06, mat(0xffe2a0, { e: 0xffc76a, ei: .9 }), .32, 1.06, -.15));
+        g.add(box(.85, .14, .5, DARKW(), 0, .62, 0)); break;
+      case "drawer": g.add(box(.7, 1.0, .45, W, 0, .5, -.02));
+        for (let i = 0; i < 3; i++) { g.add(box(.62, .26, .03, DARKW(), 0, .2 + i * .3, .215)); g.add(sph(.025, GOLD(), 0, .2 + i * .3, .24)); } break;
+      case "body": {
+        const p = plane(1.25, 1.25, mat(0xffffff, { map: svgTexture(furnSVG("body"), 256, 256), t: true }), 0, .012, 0); p.rotation.x = -Math.PI / 2; g.add(p);
+        const st = new THREE.Mesh(new THREE.CircleGeometry(.16, 20), mat(0x6a1c18, { r: .3 })); st.rotation.x = -Math.PI / 2; st.position.set(.22, .014, .25); g.add(st); break; }
+      case "window": { const y = 1.45; g.add(box(1.0, .9, .05, mat(0x2b3a48, { e: 0x1c3550, ei: .8 }), 0, y, -.47));
+        for (const [w, h, x, yy] of [[1.08, .06, 0, y + .45], [1.08, .06, 0, y - .45], [.06, .96, -.51, y], [.06, .96, .51, y], [.04, .9, 0, y], [1.0, .04, 0, y]]) g.add(box(w, h, .08, mat(0xcfc6b5), x, yy, -.44));
+        g.add(box(1.1, .05, .16, mat(0xcfc6b5), 0, y - .5, -.4)); break; }
+      case "fireplace": g.add(box(1.1, 1.05, .4, mat(0x6b5d55, { r: .95 }), 0, .52, -.3)); g.add(box(.62, .55, .1, mat(0x120e0c), 0, .3, -.06));
+        g.add(box(1.25, .08, .5, mat(0x4f4540), 0, 1.07, -.28));
+        { const f = new THREE.Mesh(new THREE.ConeGeometry(.12, .3, 10), mat(0xff8a30, { e: 0xff6a10, ei: 2, t: true, op: .9 })); f.position.set(0, .22, -.08); g.add(f); flames.push(f);
+          const f2 = new THREE.Mesh(new THREE.ConeGeometry(.07, .2, 8), mat(0xffd060, { e: 0xffc040, ei: 2 })); f2.position.set(.08, .18, -.05); g.add(f2); } break;
+      case "teatable": g.add(cyl(.42, .42, .04, W, 0, .62, 0, 28)); g.add(cyl(.05, .07, .6, DARKW(), 0, .31, 0));
+        g.add(cyl(.05, .04, .07, PAPER(), -.15, .67, .05)); g.add(sph(.09, PAPER(), .12, .7, -.05)); g.add(cyl(.01, .01, .1, PAPER(), .23, .72, -.05)); break;
+      case "chess": table(g, .6, .6, .62, DARKW());
+        g.add(plane(.5, .5, mat(0xffffff, { map: svgTexture(furnSVG("chess"), 128, 128) }), 0, .65, 0).rotateX(-Math.PI / 2));
+        for (const [x, z, c] of [[-.1, -.1, 0x1b1716], [.12, .06, 0xf4efe4], [-.05, .14, 0xf4efe4]]) g.add(cyl(.02, .025, .07, mat(c), x, .69, z)); break;
+      case "sofa": { const F = mat(0x5b4a6b, { r: .95 }); g.add(box(1.0, .42, .7, F, 0, .21, 0)); g.add(box(1.0, .45, .16, F, 0, .62, -.27)); g.add(box(.14, .3, .7, F, -.43, .55, 0)); g.add(box(.14, .3, .7, F, .43, .55, 0)); break; }
+      case "bed": g.add(box(.9, .3, 1.0, DARKW(), 0, .15, 0)); g.add(box(.86, .14, .96, mat(0xece6da), 0, .37, 0)); g.add(box(.6, .1, .26, mat(0xffffff), 0, .48, -.32)); g.add(box(.9, .06, .6, mat(0x5b6f84), 0, .46, .18)); g.add(box(.9, .7, .06, DARKW(), 0, .35, -.48)); break;
+      case "trash": g.add(new THREE.Mesh(new THREE.CylinderGeometry(.18, .15, .42, 20, 1, true), mat(0x7f8b94, { m: .5, r: .5, side: THREE.DoubleSide }))); g.children[0].position.y = .21;
+        g.add(sph(.08, PAPER(), .02, .4, 0)); break;
+      case "terminal": table(g, .9, .5, .74, DARKW()); g.add(box(.55, .36, .04, mat(0x1d2126), 0, 1.0, -.1)); g.add(plane(.5, .31, mat(0x2f6b62, { e: 0x2f8b72, ei: .9 }), 0, 1.0, -.077)); g.add(box(.06, .2, .06, mat(0x1d2126), 0, .84, -.12)); break;
+      case "board": { const y = wall ? 1.35 : 1.1; if (!wall) { g.add(box(.04, 1.1, .04, W, -.2, .55, 0)); g.add(box(.04, 1.1, .04, W, .2, .55, 0)); }
+        g.add(box(.42, .58, .03, W, 0, y, wall ? -.47 : .03)); g.add(plane(.34, .46, mat(0xffffff, { map: svgTexture(furnSVG("board"), 128, 128) }), 0, y, wall ? -.45 : .05)); break; }
+      case "safe": g.add(box(.6, .7, .55, mat(0x4c555d, { m: .5, r: .45 }), 0, .35, -.2)); g.add(cyl(.09, .09, .03, mat(0x2c3238, { m: .6 }), 0, .4, .09).rotateX(Math.PI / 2)); break;
+      case "vanity": table(g, .9, .45, .72, W); g.add(cyl(.32, .32, .02, mat(0x9fb6c6, { r: .1, m: .7 }), 0, 1.15, -.2).rotateX(Math.PI / 2));
+        for (let i = 0; i < 5; i++) g.add(sph(.03, mat(0xfff0b0, { e: 0xffd060, ei: 1.2 }), -.28 + i * .14, 1.52, -.2)); break;
+      case "rail": for (let i = 0; i < 4; i++) { g.add(cyl(.012, .012, 2.2, mat(0xb9a98a), -.3 + i * .2, 1.1, -.3)); g.add(box(.12, .22, .12, mat(0x7b6a4e), -.3 + i * .2, .4 + (i % 3) * .2, -.3)); } break;
+      case "box": g.add(box(.55, .4, .45, mat(0x9a7a52), 0, .2, 0)); g.add(box(.56, .05, .46, mat(0xc9b48a), 0, .3, 0)); break;
+      case "tv": g.add(box(.9, .45, .4, DARKW(), 0, .22, -.1)); g.add(box(.8, .48, .05, mat(0x15181c), 0, .75, -.2)); g.add(plane(.74, .42, mat(0x3b4c5c, { e: 0x2a4a6a, ei: .7 }), 0, .75, -.172)); break;
+      case "photo": { const y = 1.45, z = wall ? -.47 : 0; if (!wall) { g.add(box(.04, 1.4, .04, W, 0, .7, -.05)); }
+        g.add(box(.55, .45, .04, GOLD(), 0, y, z)); g.add(plane(.45, .35, mat(0xffffff, { map: svgTexture(furnSVG("photo"), 128, 128) }), 0, y, z + .025)); break; }
+      case "cart": g.add(box(.6, .5, .4, mat(0x5f7f8f), 0, .4, 0)); for (const x of [-.22, .22]) for (const z of [-.15, .15]) g.add(sph(.05, mat(0x222222), x, .06, z)); g.add(box(.2, .15, .15, mat(0xe3e8ea), -.1, .73, 0)); break;
+      case "plant": g.add(cyl(.16, .12, .3, mat(0x7a5236), 0, .15, 0)); g.add(sph(.25, mat(0x3f6b45), 0, .52, 0)); g.add(sph(.18, mat(0x5b8f60), .12, .68, .05)); g.add(sph(.16, mat(0x4c7d52), -.12, .7, -.04)); break;
+      case "npc": g.add(cyl(.2, .22, 1.05, mat(0x56616b), 0, .53, 0)); g.add(sph(.15, mat(0xe4bd9b), 0, 1.25, 0)); break;
+      case "wallear": g.add(plane(.5, .5, mat(0xffffff, { map: svgTexture(furnSVG("wallear"), 128, 128) }), 0, 1.3, -.47)); break;
+      case "display": g.add(box(.5, .8, .5, mat(0xe9e4da), 0, .4, 0)); g.add(box(.46, .5, .46, mat(0xbcd4e0, { t: true, op: .22, r: .05 }), 0, 1.05, 0));
+        g.add(new THREE.Mesh(new THREE.SphereGeometry(.12, 18, 14), mat(0x8fb5a8, { r: .25 }))); g.children[2].scale.set(1, 1.6, 1); g.children[2].position.set(0, 1.0, 0); break;
+      case "bag": g.add(box(.6, .4, .22, mat(0x7a4e32, { r: .6 }), 0, .2, 0)); g.add(box(.2, .05, .04, mat(0x4a2f1f), 0, .44, 0)); g.add(box(.6, .03, .23, mat(0x5c3a24), 0, .28, 0)); break;
+      default: g.add(box(.55, .55, .55, mat(0x5a6168), 0, .28, 0));
+    }
+    return g;
+  }
+  function person(p) {
+    const g = new THREE.Group();
+    const svg = (Face(p.name, 0, "", ageOf(p.role)).match(/<svg[\s\S]*<\/svg>/) || [""])[0];
+    const r = hashStr(p.name), cloth = [0x2c3a47, 0x4a2c2c, 0x33443a, 0x56462f, 0x30303f, 0x5b3434][r % 6];
+    g.add(cyl(.17, .24, .95, mat(cloth, { r: .9 }), 0, .48, 0));
+    g.add(cyl(.2, .17, .25, mat(cloth, { r: .9 }), 0, 1.06, 0));
+    const head = new THREE.Sprite(new THREE.SpriteMaterial({ map: svgTexture(svg, 256, 256), transparent: true }));
+    head.scale.set(.62, .62, 1); head.position.y = 1.42; g.add(head);
+    const nm = textSprite(p.name); nm.position.y = 1.86; g.add(nm);
+    return g;
+  }
+
+  /* ---------- 장면 ---------- */
+  function dispose(obj) { obj.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && !o.material.map) o.material.dispose(); }); }
+  function build() {
+    if (scene) dispose(scene);
+    const c = C(), rid = S.room, r = c.rooms[rid], L = layout(rid), hh = hashStr(rid + c.title);
+    scene = new THREE.Scene(); clickables = []; marks = []; flames = [];
+    scene.background = lin(0x0b0e12); scene.fog = new THREE.Fog(lin(0x0b0e12), 5, 15);
+    const X0 = 1, X1 = EXW - 1, Z0 = 1, Z1 = EXH - 1, CW = X1 - X0, CD = Z1 - Z0, CX = (X0 + X1) / 2, CZ = (Z0 + Z1) / 2, HGT = 2.8;
+    const floor = plane(CW, CD, mat(0xffffff, { map: floorTex(floorKindOf(r.name), hh % 97), r: .85 }), CX, 0, CZ); floor.rotation.x = -Math.PI / 2; floor.userData.floor = true; scene.add(floor); clickables.push(floor);
+    const ceil = plane(CW, CD, mat(0x1c1f23, { r: 1 }), CX, HGT, CZ); ceil.rotation.x = Math.PI / 2; scene.add(ceil);
+    const wm = mat(0xffffff, { map: wallTex(hh), r: .95 });
+    const walls = [[CW, CX, Z0, 0], [CW, CX, Z1, Math.PI], [CD, X0, CZ, Math.PI / 2], [CD, X1, CZ, -Math.PI / 2]];
+    for (const [w, x, z, ry] of walls) {
+      const p = plane(w, HGT, wm, x, HGT / 2, z); p.rotation.y = ry; scene.add(p);
+      const base = box(w, .12, .03, DARKW(), x, .06, z); base.rotation.y = ry; base.translateZ(.015); scene.add(base);
+    }
+    /* 깔개 · 액자 · 천장 등 */
+    const rugC = [0x6b2f2f, 0x2f4a5c, 0x4a3b59, 0x5a4a2a][hh % 4];
+    const rug = plane(4.6, 2.8, mat(rugC, { r: 1 }), CX, .006, CZ); rug.rotation.x = -Math.PI / 2; scene.add(rug);
+    const fr = box(.9, .65, .04, GOLD(), X0 + 3.5 + hh % 2, 1.7, Z0 + .03); scene.add(fr); scene.add(plane(.78, .53, mat(0x6f7f72), fr.position.x, 1.7, Z0 + .055));
+    const lampY = HGT - .35;
+    scene.add(cyl(.005, .005, .35, mat(0x111111), CX, HGT - .17, CZ));
+    scene.add(sph(.13, mat(0xfff0c8, { e: 0xffd890, ei: 1.4 }), CX, lampY, CZ));
+    scene.add(new THREE.AmbientLight(lin(0x8d99ac), .55));
+    scene.add(new THREE.HemisphereLight(lin(0xffe2b0), lin(0x141a22), .45));
+    const lamp = new THREE.PointLight(lin(0xffd59a), 1.6, 13, 1.5); lamp.position.set(CX, lampY - .05, CZ); scene.add(lamp);
+    /* 가구 */
+    for (const it of L.items) {
+      const side = WALL_T.has(it.type) || ["window", "board", "photo", "wallear"].includes(it.type) ? wallSideOf(it) : null;
+      const g = model(it.type, !!side);
+      g.position.set(it.x + .5, 0, it.y + .5);
+      const face = wallSideOf(it);
+      g.rotation.y = face === "w" ? Math.PI / 2 : face === "e" ? -Math.PI / 2 : face === "s" && side ? Math.PI : 0;
+      g.userData = { kind: "obj", ref: it };
+      g.traverse(o => { if (o.isMesh) clickables.push(o); o.userData.root = g; });
+      scene.add(g);
+      const done = has(S.searched, it.spot), tam = has(S.tampered, it.spot);
+      const mk = markSprite(done ? "done" : tam ? "tam" : "q");
+      const topY = ({ window: 2.05, board: 1.8, photo: 1.85, wallear: 1.75, rail: 2.3, vanity: 1.75, fireplace: 1.35, terminal: 1.35, display: 1.45, drawer: 1.2, body: .55 })[it.type] || 1.05;
+      mk.position.set(it.x + .5, topY, it.y + .5); mk.userData.baseY = topY; mk.userData.root = g; scene.add(mk); marks.push(mk);
+      if (it.type === "fireplace") { const fl = new THREE.PointLight(0xff8a3c, .9, 4, 2); fl.position.set(it.x + .5, .5, it.y + .9); scene.add(fl); flames.push(fl); }
+    }
+    for (const d of L.deco) { const g = model(d.type); g.position.set(d.x + .5, 0, d.y + .5); scene.add(g); }
+    /* 사람 */
+    for (const p of L.people) {
+      const g = person(p); g.position.set(p.x + .5, 0, p.y + .5);
+      g.userData = { kind: "person", ref: p };
+      g.traverse(o => { if (o.isMesh || o.isSprite) clickables.push(o); o.userData.root = g; });
+      scene.add(g);
+    }
+    /* 문 */
+    for (const d of L.doors) {
+      const g = new THREE.Group(), locked = !!S.locks[d.to];
+      g.add(box(.92, 2.05, .06, mat(locked ? 0x7a2e28 : 0x6b4a30, { r: .6 }), 0, 1.03, 0));
+      g.add(box(1.04, 2.14, .04, mat(0x2e2219), 0, 1.07, -.02));
+      g.add(sph(.035, GOLD(), .33, 1.0, .05));
+      const label = textSprite(d.stairs ? `계단 · ${d.stairs}` : C().rooms[d.to].name, locked ? "#ffd2cc" : "#f4ecdc"); label.position.set(0, 2.32, .1); g.add(label);
+      if (d.side === "b") { g.position.set(d.x + .5, 0, Z1 - .04); g.rotation.y = Math.PI; }
+      else { g.position.set(X0 + .04, 0, d.y + .5); g.rotation.y = Math.PI / 2; }
+      g.userData = { kind: "door", ref: d };
+      g.traverse(o => { if (o.isMesh || o.isSprite) clickables.push(o); o.userData.root = g; });
+      scene.add(g);
+    }
+    /* 손전등: 카메라에 달린 스포트라이트 */
+    while (camera.children.length) camera.remove(camera.children[0]);
+    scene.add(camera);
+    const torch = new THREE.SpotLight(lin(0xfff1d6), 1.1, 10, .55, .6, 1.3); torch.position.set(0, -.1, 0); camera.add(torch);
+    const tgt = new THREE.Object3D(); tgt.position.set(0, -.15, -1); camera.add(tgt); torch.target = tgt;
+  }
+
+  /* ---------- 카메라 · 이동 ---------- */
+  function placeCamera() {
+    camera.position.set(cam.x, EYE, cam.z);
+    camera.rotation.set(cam.pitch, cam.yaw, 0, "YXZ");
+  }
+  function spawn() {
+    ensurePos();
+    cam.room = S.room; cam.x = S.pos.x + .5; cam.z = S.pos.y + .5;
+    cam.yaw = Math.atan2(-(5.5 - cam.x), -(4 - cam.z)); cam.pitch = -.08; walk = null;
+  }
+  function syncPos() { S.pos = { room: S.room, x: Math.floor(cam.x), y: Math.floor(cam.z) }; }
+  function tryMove(nx, nz) {
+    const L = layout(S.room), R = .22;
+    const tile = (x, z) => [Math.floor(x), Math.floor(z)];
+    const [tx, tz] = tile(nx, nz), d = doorAt(L, tx, tz);
+    if (d) { enterDoor(d); return "door"; }
+    const ok = (x, z) => [[x - R, z - R], [x + R, z - R], [x - R, z + R], [x + R, z + R]].every(([a, b]) => { const [ax, az] = tile(a, b); return !doorAt(L, ax, az) && walkable(L, ax, az); });
+    if (ok(nx, nz)) { cam.x = nx; cam.z = nz; }
+    else if (ok(nx, cam.z)) cam.x = nx;
+    else if (ok(cam.x, nz)) cam.z = nz;
+    syncPos();
+  }
+  function walkTo(target, after) {
+    syncPos();
+    const L = layout(S.room);
+    let goals;
+    if (target.kind === "floor") goals = [[target.x, target.y]];
+    else if (target.kind === "door") goals = [[target.ref.x, target.ref.y]];
+    else goals = NB.map(([dx, dy]) => [target.ref.x + dx, target.ref.y + dy]).filter(([x, y]) => walkable(L, x, y) && !doorAt(L, x, y));
+    const path = findPath(L, S.pos, goals);
+    if (!path) { toast("거기로는 갈 수 없다.", true); return; }
+    walk = { pts: path.map(([x, y]) => [x + .5, y + .5]), i: 0, after, target };
+    if (!path.length) finishWalk();
+  }
+  function finishWalk() {
+    const w = walk; walk = null; if (!w) return;
+    const t = w.target;
+    if (t && t.ref && t.kind !== "door") cam.yaw = Math.atan2(-(t.ref.x + .5 - cam.x), -(t.ref.y + .5 - cam.z));
+    if (w.after) w.after();
+  }
+  function act(t) {
+    if (!t) return;
+    if (t.kind === "obj") { if (doSearch(t.ref.spot)) render(); }
+    else if (t.kind === "person") { S.tab = "people"; S.suspect = t.ref.id; S.challenge = null; S.deflectOn = null; render(); window.scrollTo(0, 0); }
+  }
+  function go(t) {
+    if (!t) return;
+    if (t.kind === "door") { walkTo(t, () => enterDoor(t.ref)); return; }
+    if (t.kind === "floor") { walkTo(t); return; }
+    const dx = t.ref.x + .5 - cam.x, dz = t.ref.y + .5 - cam.z;
+    if (Math.abs(Math.floor(cam.x) - t.ref.x) + Math.abs(Math.floor(cam.z) - t.ref.y) <= 1 && Math.hypot(dx, dz) < 1.6) { cam.yaw = Math.atan2(-dx, -dz); act(t); }
+    else walkTo(t, () => act(t));
+  }
+
+  /* ---------- 고르기(레이캐스트) ---------- */
+  let ray = null, v2 = null;   /* THREE가 없을 때도 게임이 멈추지 않게 필요할 때 만든다 */
+  function pick(nx, ny, maxDist = 30) {
+    if (!scene || !camera) return null;
+    if (!ray) { ray = new THREE.Raycaster(); v2 = new THREE.Vector2(); }
+    v2.set(nx, ny); ray.setFromCamera(v2, camera);
+    for (const h of ray.intersectObjects(clickables, false)) {
+      if (h.distance > maxDist) break;
+      const root = h.object.userData.root;
+      if (root) return { kind: root.userData.kind, ref: root.userData.ref, dist: h.distance };
+      if (h.object.userData.floor) return { kind: "floor", x: Math.floor(h.point.x), y: Math.floor(h.point.z), dist: h.distance };
+    }
+    return null;
+  }
+  function describe(t) {
+    if (!t || t.kind === "floor") return "WASD·방향키로 걷고, 드래그로 둘러봐요. 물음표(?) 가구나 사람을 누르면 걸어가요.";
+    if (t.kind === "door") return `${t.ref.stairs ? "계단 · " + t.ref.stairs : C().rooms[t.ref.to].name} — 누르면 이동`;
+    if (t.kind === "person") return `${t.ref.name} — 누르거나 E 키: 말 걸기`;
+    if (has(S.searched, t.ref.spot)) return `${t.ref.label} — 이미 조사했다.`;
+    return `${t.ref.label} — 누르거나 E 키 (−${has(S.tampered, t.ref.spot) ? 2 : 1}턴)`;
+  }
+
+  /* ---------- 입력 ---------- */
+  function bindInput(el) {
+    let down = null, moved = 0;
+    el.addEventListener("pointerdown", e => { down = { x: e.clientX, y: e.clientY }; moved = 0; el.setPointerCapture(e.pointerId); Sound.init(); });
+    el.addEventListener("pointermove", e => {
+      if (!down) return;
+      const dx = e.clientX - down.x, dy = e.clientY - down.y; moved += Math.abs(dx) + Math.abs(dy);
+      cam.yaw -= dx * .006; cam.pitch = Math.max(-1.1, Math.min(.9, cam.pitch - dy * .004));
+      down = { x: e.clientX, y: e.clientY };
+    });
+    el.addEventListener("pointerup", e => {
+      const wasClick = down && moved < 8; down = null;
+      if (!wasClick) return;
+      const rc = el.getBoundingClientRect();
+      go(pick((e.clientX - rc.left) / rc.width * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1));
+    });
+    el.addEventListener("pointercancel", () => { down = null; });
+    addEventListener("resize", () => host && resize());
+  }
+  function resize() {
+    if (!host || !renderer) return;
+    const w = host.clientWidth, h = Math.round(Math.min(w * .66, innerHeight * .62));
+    renderer.setSize(w, h, false); renderer.domElement.style.width = "100%"; renderer.domElement.style.height = h + "px";
+    camera.aspect = w / h; camera.fov = w < 520 ? 80 : 70; camera.updateProjectionMatrix();
+  }
+
+  /* ---------- 반복 ---------- */
+  function loop(t) {
+    raf = requestAnimationFrame(loop);
+    if (!host || !document.body.contains(renderer.domElement)) { cancelAnimationFrame(raf); raf = 0; return; }
+    const dt = Math.min(.05, (t - last) / 1000 || 0); last = t;
+    /* 키보드 이동 */
+    const f = (keys.w || keys.arrowup ? 1 : 0) - (keys.s || keys.arrowdown ? 1 : 0);
+    const st = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
+    if (keys.arrowleft) cam.yaw += dt * 2.2;
+    if (keys.arrowright) cam.yaw -= dt * 2.2;
+    if ((f || st) && S.room === cam.room) {
+      walk = null;
+      const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw), rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
+      const len = Math.hypot(f, st) || 1;
+      if (tryMove(cam.x + (fx * f + rx * st) / len * SPEED * dt, cam.z + (fz * f + rz * st) / len * SPEED * dt) === "door") return;
+    }
+    /* 자동 걷기 */
+    if (walk && walk.i < walk.pts.length) {
+      const [tx, tz] = walk.pts[walk.i], dx = tx - cam.x, dz = tz - cam.z, d = Math.hypot(dx, dz), stp = SPEED * 1.2 * dt;
+      const L = layout(S.room), dd = doorAt(L, Math.floor(tx), Math.floor(tz));
+      if (dd && d < .55) { const w = walk; walk = null; if (w.after) w.after(); else enterDoor(dd); return; }
+      if (d > .02) { const want = Math.atan2(-dx, -dz); let diff = want - cam.yaw; diff = Math.atan2(Math.sin(diff), Math.cos(diff)); cam.yaw += diff * Math.min(1, dt * 8); }
+      if (d <= stp) { cam.x = tx; cam.z = tz; walk.i++; syncPos(); if (walk.i >= walk.pts.length) finishWalk(); }
+      else { cam.x += dx / d * stp; cam.z += dz / d * stp; }
+    }
+    /* 물음표 통통 · 불꽃 */
+    for (const m of marks) m.position.y = m.userData.baseY + Math.sin(t / 380 + m.position.x) * .04;
+    for (const fl of flames) { if (fl.isLight) fl.intensity = .7 + Math.random() * .4; else fl.scale.y = .9 + Math.sin(t / 90) * .1; }
+    placeCamera();
+    renderer.render(scene, camera);
+    /* 화면 가운데에 보이는 것 안내 */
+    if (t - hoverT > 150) {
+      hoverT = t;
+      looking = pick(0, 0, 3.2);
+      const el = document.getElementById("near3d"), btn = document.getElementById("act3d");
+      if (el) el.textContent = describe(looking);
+      if (btn) btn.disabled = !looking || looking.kind === "floor";
+    }
+  }
+
+  return {
+    get failed() { return failed; },
+    mount(el) {
+      host = el; if (!el) return;
+      if (failed || !window.THREE) { failed = true; el.innerHTML = `<div class="v3-fail">이 기기에서는 3D 화면을 열 수 없어요. 위의 ‘지도’ 버튼을 눌러 주세요.</div>`; return; }
+      try {
+        if (!renderer) {
+          renderer = new THREE.WebGLRenderer({ antialias: true });
+          renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+          renderer.outputEncoding = THREE.sRGBEncoding;
+          camera = new THREE.PerspectiveCamera(70, 1.5, .05, 40);
+          bindInput(renderer.domElement);
+        }
+      } catch (err) { failed = true; el.innerHTML = `<div class="v3-fail">이 기기에서는 3D 화면을 열 수 없어요. 위의 ‘지도’ 버튼을 눌러 주세요.</div>`; return; }
+      el.prepend(renderer.domElement);
+      renderer.domElement.tabIndex = 0; renderer.domElement.setAttribute("aria-label", "3D 화면. WASD로 걷고 드래그로 둘러보기");
+      resize();
+      if (cam.room !== S.room || !S.pos || S.pos.room !== S.room) { ensurePos(); spawn(); }
+      const key = [S.caseId, C().title, S.room, S.searched.length, S.tampered.length, JSON.stringify(S.locks), JSON.stringify(S.silence), S.accCaught, S.vars.map(v => v.name).join()].join("|");
+      if (key !== sceneKey || !scene) { sceneKey = key; build(); }
+      if (!raf) { last = performance.now(); raf = requestAnimationFrame(loop); }
+    },
+    key(e, isDown) {
+      const k = e.key.toLowerCase();
+      if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(k)) { keys[k] = isDown; e.preventDefault(); if (isDown) Sound.init(); return true; }
+      if (isDown && (k === "e" || k === " " || k === "enter")) { e.preventDefault(); Sound.init(); go(looking && looking.kind !== "floor" ? looking : null); return true; }
+      return false;
+    },
+    interact() { go(looking && looking.kind !== "floor" ? looking : null); },
+    clearKeys() { for (const k in keys) keys[k] = false; },
+    debug() { return { cam: { ...cam }, looking, objs: clickables.length, walking: !!walk }; },
+    go, pick,
+  };
+})();
+
+function render3D(out, plan) {
+  ensurePos();
+  const c = C(), rid = S.room, r = c.rooms[rid], lk = S.locks[rid];
+  const floorOf = c.floors.find(f => f.rooms.includes(rid));
+  const found = r.spots.filter(sp => has(S.searched, sp.id)), left = r.spots.length - found.length;
+  const results = found.map(sp => `<div class="spot"><b>${esc(sp.label)}</b><p class="result">${esc(sp.text)}</p>
+    ${sp.clue ? `<span class="found-chip">단서 · ${esc(c.clues[sp.clue].name)}</span><p class="result">${esc(c.clues[sp.clue].text)}</p>` : ""}</div>`).join("");
+  return `<div class="split explore">
+    <div class="plan">${plan}<p class="hint">방 이름을 누르면 바로 이동해요.</p></div>
+    <section class="panel" aria-live="polite">
+      <div class="room-head"><div><span class="label">${floorOf ? floorOf.label : ""}</span><h3 style="font-size:24px">${r.name}</h3></div>${modeBtns()}</div>
+      <div class="view3d" id="view3d">
+        <span class="crosshair" aria-hidden="true"></span>
+        ${lk ? `<div class="map-lock">잠김 · ${lk}턴</div>` : ""}
+      </div>
+      <div class="explore-bar"><span id="near3d" class="hint">WASD·방향키로 걷고, 드래그로 둘러봐요.</span>
+        <button class="act press" id="act3d" data-act="interact3d">조사하기</button></div>
+      <p class="hint">컴퓨터: W·S 앞뒤, A·D 옆걸음, ←→ 돌기, E 조사. 휴대폰: 바닥을 누르면 걸어가고, 끌면 둘러봐요.</p>
       <p class="desc">${r.desc}</p>
       ${lk ? `<p class="locked-room">이 방이 잠겼다. 문으로 나가서 ${lk}턴 뒤에 다시 오자.</p>` : ""}
       ${left ? `<p class="hint">이 방에 아직 조사하지 않은 곳(?)이 ${left}곳 있다.</p>` : `<p class="hint">이 방은 모두 조사했다.</p>`}
@@ -2298,6 +2748,8 @@ function renderResult() {
 }
 
 /* ===================== 이벤트 ===================== */
+document.addEventListener("keyup", e => { if (S.mode === "3d") V3.key(e, false); });
+addEventListener("blur", () => V3.clearKeys());
 app.addEventListener("click", e => {
   const map = e.target.closest("#map");
   if (map && !e.target.closest("button")) {
@@ -2310,9 +2762,10 @@ app.addEventListener("click", e => {
   }
 });
 document.addEventListener("keydown", e => {
-  if (S.screen !== "game" || S.tab !== "rooms" || S.listMode) return;
+  if (S.screen !== "game" || S.tab !== "rooms" || S.mode === "list") return;
   const tag = (document.activeElement && document.activeElement.tagName) || "";
   if (/INPUT|SELECT|TEXTAREA/.test(tag)) return;
+  if (S.mode === "3d") { if (!/BUTTON/.test(tag) || !/^( |enter)$/i.test(e.key)) V3.key(e, true); return; }
   const k = e.key.toLowerCase();
   const dir = { arrowup: [0, -1], w: [0, -1], arrowdown: [0, 1], s: [0, 1], arrowleft: [-1, 0], a: [-1, 0], arrowright: [1, 0], d: [1, 0] }[k];
   if (dir) { e.preventDefault(); Sound.init(); ensurePos(); stopWalk(); stepTo(S.pos.x + dir[0], S.pos.y + dir[1]); return; }
@@ -2341,7 +2794,8 @@ app.addEventListener("click", e => {
   else if (d.vaccuse) { accuseVar(+d.vaccuse); }
   else if (d.suspect) { S.suspect = d.suspect; S.challenge = null; S.deflectOn = null; }
   else if (d.search) { if (!doSearch(d.search)) return; }
-  else if (d.act === "listmode") { S.listMode = !S.listMode; stopWalk(); }
+  else if (d.act === "mode") { S.mode = d.m; stopWalk(); V3.clearKeys(); }
+  else if (d.act === "interact3d") { V3.interact(); return; }
   else if (d.obj) { const o = layout(S.room).items.find(x => x.spot === d.obj); if (o) goTo(o); return; }
   else if (d.talk) { const o = layout(S.room).people.find(x => x.id === d.talk); if (o) goTo(o); return; }
   else if (d.door) { ensurePos(); const L = layout(S.room), dd = doorAt(L, +d.dx, +d.dy); walkPath(findPath(L, S.pos, [[dd.x, dd.y]])); return; }
