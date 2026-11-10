@@ -205,6 +205,7 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .urgent .clock .mono b { color: var(--blood); }
 @media (prefers-reduced-motion: no-preference) {
   .urgent .clock .mono b { animation: pulse 1s ease-in-out infinite; }
+  .urgent .timer b { animation: pulse .5s ease-in-out infinite; }
   @keyframes pulse { 50% { opacity: .35; } }
   #flash { position: fixed; inset: 0; pointer-events: none; z-index: 30; background: var(--ink); opacity: 0; }
   #flash.on { animation: flash .9s ease-out; }
@@ -217,6 +218,12 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .event-log { display: grid; gap: 6px; }
 .event-log p { color: var(--muted); font-size: 14px; border-left: 2px solid var(--blood); padding-left: 10px; }
 .event-log p.good { border-left-color: var(--ok); }
+.setup { max-width: 640px; }
+.setup .opt b { color: var(--ink); }
+.timer { color: var(--muted); }
+.timer b { color: var(--lamp); font-weight: 500; }
+.urgent .timer b { color: var(--blood); }
+.diff-chip { font-family: var(--f-mono); font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 1px 7px; }
 .name-form { display: grid; gap: 6px; max-width: 360px; }
 .name-form label { font-family: var(--f-mono); font-size: 12px; letter-spacing: .12em; color: var(--muted); }
 .name-form input { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; color: var(--ink); font: inherit; font-size: 16px; min-width: 0; }
@@ -993,22 +1000,41 @@ const turnsFor = c => {
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
   locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null,
+  diff: "easy", timed: false, timeLeft: 0, timeMax: 0,
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
+/* 난이도: 첫 사건은 쉽게, 뒤로 갈수록 어렵게 */
+const DIFF = {
+  easy:   { label: "쉬움",   turns: 6, time: 720, bonus: 0, sab: null,
+            desc: "턴이 넉넉하고 훼방이 없다. 처음 해 보는 사람에게." },
+  normal: { label: "보통",   turns: 2, time: 540, bonus: 3, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 },
+            desc: "중반부터 가끔 훼방이 들어온다." },
+  hard:   { label: "어려움", turns: 0, time: 360, bonus: 6, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 },
+            desc: "일찍부터 훼방이 잦고 갈수록 거세진다." },
+};
+const mmss = sec => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 let PLAYER = ""; try { PLAYER = localStorage.getItem("midnight-player") || ""; } catch {}
 const pname = () => PLAYER.trim() || "무명";
 function openRandom() {
   toastQ.length = 0;
-  const c = generateCase(), t = turnsFor(c);
-  S = Object.assign(fresh(), { screen: "brief", caseId: "random", randomCase: c, turns: t, maxTurns: t, room: "crime", suspect: "p0" });
+  const c = generateCase(), n = loadRecords().randomSolved || 0;
+  const diff = n === 0 ? "easy" : n < 3 ? "normal" : "hard";
+  S = Object.assign(fresh(), { screen: "brief", caseId: "random", randomCase: c, room: "crime", suspect: "p0", diff, timed: diff !== "easy" });
 }
 
 function openCase(id) {
   toastQ.length = 0;
-  const c = caseById(id), t = turnsFor(c);
-  S = Object.assign(fresh(), { screen: "brief", caseId: id, turns: t, maxTurns: t,
+  const c = caseById(id), idx = CASES.indexOf(c);
+  const diff = idx === 0 ? "easy" : idx === 1 ? "normal" : "hard";
+  S = Object.assign(fresh(), { screen: "brief", caseId: id, diff, timed: diff !== "easy",
     room: Object.keys(c.rooms)[0], suspect: Object.keys(c.suspects)[0] });
+}
+function beginCase() {
+  const d = DIFF[S.diff], t = turnsFor(C()) + d.turns;
+  S.turns = S.maxTurns = t;
+  S.timeLeft = S.timeMax = S.timed ? d.time : 0;
+  S.screen = "game";
 }
 function nextCaseId() {
   const rec = loadRecords(), i = CASES.findIndex(c => c.id === S.caseId);
@@ -1030,10 +1056,7 @@ const josa = (w, a, b) => { const ch = w.charCodeAt(w.length - 1); return w + ((
 function spend(n = 1) {
   S.turns -= n;
   for (const m of [S.locks, S.silence]) for (const k in m) { m[k] -= n; if (m[k] <= 0) delete m[k]; }
-  if (S.turns <= 0) {
-    S.turns = 0; S.tab = "accuse"; S.challenge = null; S.locks = {}; S.silence = {};
-    toast("<b>경찰 도착</b> — 이제 범인을 지목해야 한다.", true); Sound.siren(); return;
-  }
+  if (S.turns <= 0) { policeArrive("턴이 모두 지났다"); return; }
   S.sinceEvent += 1; S.sinceHelp += 1;
   maybeSabotage();
   maybeHelp();
@@ -1079,14 +1102,30 @@ function help() {
   toast(`<b>조력자</b> — ${esc(msg)}`); Sound.help();
 }
 
-/* ---------- 훼방: 시간이 지날수록 자주, 세게 ---------- */
+function policeArrive(why) {
+  S.turns = 0; S.tab = "accuse"; S.challenge = null; S.locks = {}; S.silence = {};
+  toast(`<b>경찰 도착</b> — ${why}. 이제 범인을 지목해야 한다.`, true); Sound.siren();
+}
+
+/* ---------- 시간 제한: 실제 초가 흐른다 ---------- */
+setInterval(() => {
+  if (S.screen !== "game" || !S.timed || S.turns <= 0 || document.hidden) return;
+  S.timeLeft = Math.max(0, S.timeLeft - 1);
+  if (S.timeLeft === 0) { policeArrive("시간이 다 됐다"); render(); return; }
+  if (S.timeLeft <= 30) Sound.tick();
+  const el = document.getElementById("timer");
+  if (el) el.innerHTML = `남은 시간 <b>${mmss(S.timeLeft)}</b>`;
+  if (S.timeLeft === 60) { toast("<b>1분 남았다</b> — 서둘러야 한다.", true); render(); }
+}, 1000);
+
+/* ---------- 훼방: 난이도에 따라, 시간이 지날수록 자주, 세게 ---------- */
 const progress = () => S.maxTurns ? (S.maxTurns - S.turns) / S.maxTurns : 0;
 function maybeSabotage() {
-  const p = progress();
-  if (p < 0.2 || p > 1) return;
-  const late = p > 0.6;
-  if (S.sinceEvent < (late ? 2 : 3)) return;
-  if (Math.random() > 0.12 + 0.4 * p) return;
+  const cfg = DIFF[S.diff].sab, p = progress();
+  if (!cfg || p < cfg.start || p > 1) return;
+  const late = p > cfg.late;
+  if (S.sinceEvent < (late ? cfg.cd - 1 : cfg.cd)) return;
+  if (Math.random() > cfg.base + cfg.k * p) return;
   sabotage(late);
 }
 function sabotage(late) {
@@ -1182,9 +1221,10 @@ const Sound = (() => {
   function heartbeatLoop() {
     clearTimeout(beatTimer);
     let wait = 1200;
-    if (S.screen === "game" && S.turns > 0 && S.turns <= 6) {
+    const timeLow = S.timed && S.timeLeft <= 60;
+    if (S.screen === "game" && S.turns > 0 && (S.turns <= 6 || timeLow)) {
       const t = now(); tone(62, "sine", t, 0.01, 0.5, 0.18, 40); tone(58, "sine", t + 0.22, 0.01, 0.35, 0.2, 38);
-      wait = 500 + S.turns * 120;
+      wait = timeLow ? 400 + S.timeLeft * 8 : 500 + S.turns * 120;
     }
     beatTimer = setTimeout(heartbeatLoop, wait);
   }
@@ -1205,6 +1245,7 @@ const Sound = (() => {
       tone(587, "square", t + 0.05, 0.01, 0.08, 0.5); tone(831, "square", t + 0.05, 0.01, 0.06, 0.5);
     },
     wrong() { if (ctx) tone(110, "sine", now(), 0.01, 0.4, 0.4, 45); },
+    tick() { if (ctx) tone(1800, "square", now(), 0.002, 0.05, 0.04); },
     help() { if (!ctx) return; const t = now(); [392, 494, 587].forEach((f, i) => tone(f, "sine", t + i * 0.09, 0.01, 0.12, 0.9)); },
     sabotage() {
       if (!ctx) return; const t = now();
@@ -1248,7 +1289,7 @@ const soundBtn = () => `<button class="sound-btn" data-act="sound" aria-pressed=
 
 function render() {
   Sound.tension();
-  document.body.classList.toggle("urgent", S.screen === "game" && S.turns > 0 && S.turns <= 6);
+  document.body.classList.toggle("urgent", S.screen === "game" && S.turns > 0 && (S.turns <= 6 || (S.timed && S.timeLeft <= 60)));
   if (S.screen === "title") return renderTitle();
   if (S.screen === "files") return renderFiles();
   if (S.screen === "brief") return renderBrief();
@@ -1271,6 +1312,8 @@ function render() {
         <div class="clock" aria-label="남은 행동 ${S.turns}회">
           <div class="pips">${pips}</div>
           <span class="mono">경찰 도착까지 <b>${S.turns}</b>턴</span>
+          ${S.timed ? `<span class="mono timer" id="timer">남은 시간 <b>${mmss(S.timeLeft)}</b></span>` : ""}
+          <span class="diff-chip">${DIFF[S.diff].label}</span>
         </div>
       </div>
       <nav class="tabs" role="tablist">${tabs}<button class="tab quit" data-act="files">사건 목록</button>${soundBtn()}</nav>
@@ -1302,6 +1345,8 @@ function renderTitle() {
         <div><b><span class="k">05</span>범인 지목</b><p>범인·동기·수법·결정적 증거(최대 3개)를 골라 제출한다. 맞힌 만큼 S~F 등급.</p></div>
         <div class="warn"><b><span class="k">주의</span>훼방</b><p>시간이 흐를수록 누군가 수사를 방해한다. 증거가 훼손되고, 방이 잠기고, 용의자가 입을 닫는다. 경찰이 앞당겨 오기도 한다.</p></div>
         <div><b><span class="k">도움</span>조력자</b><p>훼방이 심해지면 사건 현장의 조력자가 나타난다. 잠긴 문을 열어 주거나, 단서를 찾아 주거나, 수상한 진술을 귀띔해 준다.</p></div>
+        <div><b><span class="k">난이도</span>쉬움 → 어려움</b><p>첫 사건은 쉬움, 뒤로 갈수록 어려워진다. 사건을 열 때 난이도와 시간 제한 모드를 직접 고를 수도 있다.</p></div>
+        <div class="warn"><b><span class="k">시간</span>시간 제한 모드</b><p>실제 시계가 흐른다. 쉬움 12분, 보통 9분, 어려움 6분. 마지막 30초엔 초침 소리가 들린다.</p></div>
         <div><b><span class="k">무한</span>무작위 사건</b><p>무대·용의자·동기·수법·범인이 매번 새로 정해진다. 같은 사건은 두 번 나오지 않는다.</p></div>
       </div>
       <p class="hint">효과음은 브라우저에서 바로 만들어 낸다. 남은 턴이 6 이하가 되면 심장 박동이 들린다.</p>
@@ -1344,7 +1389,15 @@ function renderBrief() {
       <span class="label">${c.tag}</span>
       <h1>${c.title}</h1>
       <p class="lede">${c.lede}</p>
-      <div class="brief"><p><b>${esc(pname())} 탐정</b>, ${c.brief}</p><p>주어진 시간은 <b>${S.maxTurns}턴</b>이다.</p></div>
+      <div class="brief"><p><b>${esc(pname())} 탐정</b>, ${c.brief}</p></div>
+      <fieldset class="setup">
+        <legend>난이도</legend>
+        ${Object.entries(DIFF).map(([k, d]) => `<label class="opt"><input type="radio" name="diff" id="diff-${k}" value="${k}" ${S.diff === k ? "checked" : ""}><span><b>${d.label}</b> · ${turnsFor(c) + d.turns}턴 — ${d.desc}</span></label>`).join("")}
+      </fieldset>
+      <fieldset class="setup">
+        <legend>시간 제한 모드</legend>
+        <label class="opt"><input type="checkbox" name="timed" id="timed" ${S.timed ? "checked" : ""}><span>실제 시간 <b>${mmss(DIFF[S.diff].time)}</b> 안에 범인을 지목한다. 시간이 다 되면 턴이 남아도 경찰이 들이닥친다. 성공하면 점수 +5.</span></label>
+      </fieldset>
       <div class="cast">
         ${Object.values(c.suspects).map(p => `<div class="person"><b>${p.name}</b><span>${p.role}</span><span>${p.intro}</span></div>`).join("")}
       </div>
@@ -1483,7 +1536,8 @@ function judge() {
   const ok = { c: pk.culprit === A.culprit, m: pk.motive === A.motive, w: pk.method === A.method };
   const evGood = pk.evidence.filter(e => c.key.includes(e)).length;
   let score = 0;
-  if (ok.c) score = 40 + (ok.m ? 15 : 0) + (ok.w ? 15 : 0) + Math.min(evGood, 3) * 5 + Math.min(S.broken.length, 3) * 3 + Math.min(S.turns, 6) - S.wrong * 2;
+  if (ok.c) score = 40 + (ok.m ? 15 : 0) + (ok.w ? 15 : 0) + Math.min(evGood, 3) * 5 + Math.min(S.broken.length, 3) * 3 + Math.min(S.turns, 6) - S.wrong * 2
+    + DIFF[S.diff].bonus + (S.timed ? 5 : 0);
   score = Math.max(0, Math.min(100, score));
   const grade = !ok.c ? "F" : score >= 92 ? "S" : score >= 78 ? "A" : score >= 62 ? "B" : "C";
   S.result = { ...ok, evGood, score, grade };
@@ -1514,6 +1568,8 @@ function renderResult() {
       ${row("받은 훼방", !S.events.some(e => e.bad), `${S.events.filter(e => e.bad).length}회`)}
       ${row("조력자의 도움", true, `${S.helps}회`)}
       ${row("남은 턴", S.turns > 0, `${S.turns}`)}
+      ${row("난이도", true, `${DIFF[S.diff].label}${DIFF[S.diff].bonus ? ` (+${DIFF[S.diff].bonus})` : ""}`)}
+      ${S.timed ? row("시간 제한", S.timeLeft > 0, S.timeLeft > 0 ? `${mmss(S.timeLeft)} 남김 (+5)` : "시간 초과 (+5)") : ""}
       <div class="score-row"><b>점수</b><b class="mono">${R.score}</b></div>
     </div>
     <h3>사건의 진상</h3>
@@ -1539,7 +1595,7 @@ app.addEventListener("click", e => {
   else if (d.act === "title") { S = fresh(); top = true; }
   else if (d.random) { openRandom(); top = true; }
   else if (d.case) { openCase(d.case); top = true; }
-  else if (d.act === "start") { S.screen = "game"; top = true; Sound.thunder(); flash(); }
+  else if (d.act === "start") { beginCase(); top = true; Sound.thunder(); flash(); }
   else if (d.act === "files") { S = Object.assign(fresh(), { screen: "files" }); top = true; }
   else if (d.act === "cancel") { S.challenge = null; }
   else if (d.act === "wait") { if (S.turns <= 0) return; Sound.step(); spend(); }
@@ -1582,6 +1638,8 @@ app.addEventListener("input", e => { if (e.target.id === "player-name") PLAYER =
 app.addEventListener("change", e => {
   const t = e.target;
   if (t.name === "present") { S.present = t.value; return; }
+  if (t.name === "diff") { S.diff = t.value; render(); return; }
+  if (t.name === "timed") { S.timed = t.checked; render(); return; }
   if (t.name === "evidence") S.pick.evidence = [...app.querySelectorAll('input[name="evidence"]:checked')].map(i => i.value);
   else if (["culprit", "motive", "method"].includes(t.name)) S.pick[t.name] = t.value;
   else return;
