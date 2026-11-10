@@ -1574,14 +1574,14 @@ function guessGender(name) {
 }
 const playerGender = () => PLAYER_G === "f" || PLAYER_G === "m" ? PLAYER_G : guessGender(pname());
 function openRandom() {
-  INTRO.reset();
+  INTRO.reset(); ENDING.reset();
   toastQ.length = 0;
   const c = generateCase(), n = loadRecords().randomSolved || 0;
   const diff = n === 0 ? "easy" : n < 3 ? "normal" : "hard";
   S = Object.assign(fresh(), { screen: "brief", caseId: "random", randomCase: c, room: "crime", suspect: "p0", diff });
 }
 function openCase(id) {
-  INTRO.reset();
+  INTRO.reset(); ENDING.reset();
   toastQ.length = 0;
   const c = caseById(id), idx = CASES.indexOf(c);
   const diff = idx === 0 ? "easy" : idx === 1 ? "normal" : "hard";
@@ -2155,6 +2155,141 @@ const INTRO = (() => {
       if (!raf) raf = requestAnimationFrame(loop);
     },
     finish,
+    office(gg) { gg.drawImage(bg(), 0, 0); for (const [ty, x, y] of FURN) { const f = furnPixel(ty); if (f.ready) gg.drawImage(f.cv, x * TS, y * TS); } },
+  };
+})();
+
+/* ===================== 끝 장면: 해결하면 축하, 실패하면 위로 ===================== */
+const ENDING = (() => {
+  const TS = 16, W = 176, H = 128;
+  let cv = null, g = null, raf = 0, t0 = 0, kind = "", capKey = "", rang = [];
+  const TITLE = { 서하루: "순경", 강무열: "경감", 한서진: "경위", 모은재: "경사", 윤도경: "경사" };
+  function spec() {
+    const c = C(), me = pname();
+    if (kind === "win") {
+      const cid = c.answer.culprit, cul = c.suspects[cid], grade = S.result ? S.result.grade : "B";
+      return {
+        actors: [
+          { id: "cul", name: cul.name, role: cul.role, x: 5, y: 3.5, dir: "down" },
+          { id: "yoon", name: "윤도경", x: 6, y: 3.5, dir: "left" },
+          { id: "me", name: me, player: true, x: 4, y: 5.5, dir: "up" },
+          { id: "kang", name: "강무열", x: 2, y: 5, dir: "right" },
+          { id: "seo", name: "서하루", x: 3, y: 5.6, dir: "up" },
+          { id: "han", name: "한서진", x: 8, y: 5, dir: "left" },
+          { id: "mo", name: "모은재", x: 9, y: 5.6, dir: "left" },
+        ],
+        beats: [
+          { t: 0, who: "", text: "경찰서로 돌아온 강력팀." },
+          { t: 1.8, who: me, text: `${cul.name} 씨, 당신을 살인 혐의로 체포합니다.` },
+          { t: 4.2, who: cul.name, text: "……다 끝났군요." },
+          { t: 5.8, who: "윤도경", text: "연행하겠습니다. 이쪽으로." },
+          { t: 8.4, who: "서하루", text: "해냈어요, 선배님! 진짜 범인을 잡았어요!" },
+          { t: 11, who: "모은재", text: "와… 저도 언젠가 저렇게 추리하고 싶어요!" },
+          { t: 13.6, who: "한서진", text: grade === "S" ? "흠잡을 데 없는 추리였어요. 완벽합니다." : "깔끔했어요. 다음엔 증거를 조금 더 챙겨 보죠." },
+          { t: 16.2, who: "강무열", text: `수고했네, ${me} 형사. 오늘 저녁은 내가 사지!` },
+        ],
+        walks: { cul: [5.8, [[5, 3.5], [5, 9.5]]], yoon: [6.1, [[6, 3.5], [6, 6.5], [5, 6.5], [5, 9.5]]] },
+        party: 7.8,
+      };
+    }
+    return {
+      actors: [
+        { id: "me", name: me, player: true, x: 5, y: 4.6, dir: "down" },
+        { id: "seo", name: "서하루", x: 3, y: 4.8, dir: "down" },
+        { id: "mo", name: "모은재", x: 3, y: 2.6, dir: "down" },
+        { id: "han", name: "한서진", x: 6, y: 2.6, dir: "down" },
+        { id: "kang", name: "강무열", x: 8, y: 4.8, dir: "down" },
+        { id: "yoon", name: "윤도경", x: 9, y: 4.6, dir: "down" },
+      ],
+      beats: [
+        { t: 0, who: "", text: "범인은 혼란을 틈타 사라졌다. 비가 그치지 않는 밤." },
+        { t: 2.4, who: me, text: "…놓쳤어. 거의 다 잡았는데." },
+        { t: 5, who: "서하루", text: "선배님… 제가 더 꼼꼼히 봤어야 했는데요." },
+        { t: 7.6, who: "모은재", text: "증거를 조금만 더 모았어도…" },
+        { t: 10.2, who: "강무열", text: `고개 들게, ${me} 형사. 한 번 더 해 보지! 아직 끝난 거 아니야.` },
+        { t: 13.4, who: "한서진", text: "이번에 놓친 걸 기억하세요. 다음엔 안 놓칩니다." },
+      ],
+      walks: { kang: [9.6, [[8, 4.8], [6, 4.8]]] },
+      gloom: true,
+    };
+  }
+  function walkAt(pts, d) {
+    let rest = d;
+    for (let k = 1; k < pts.length; k++) {
+      const [ax, ay] = pts[k - 1], [bx, by] = pts[k], len = Math.hypot(bx - ax, by - ay);
+      const dir = Math.abs(bx - ax) > Math.abs(by - ay) ? (bx > ax ? "right" : "left") : (by > ay ? "down" : "up");
+      if (rest <= len) { const f = len ? rest / len : 1; return { x: ax + (bx - ax) * f, y: ay + (by - ay) * f, dir, moving: true }; }
+      rest -= len;
+    }
+    const [x, y] = pts[pts.length - 1]; return { x, y, dir: null, moving: false };
+  }
+  function draw(t) {
+    const sp = spec(), beat = sp.beats.filter(b => b.t <= t).pop();
+    g.imageSmoothingEnabled = false;
+    INTRO.office(g);
+    const ents = sp.actors.map(a => {
+      let x = a.x, y = a.y, dir = a.dir, moving = false, dy = 0;
+      const w = sp.walks[a.id];
+      if (w && t >= w[0]) { const r = walkAt(w[1], (t - w[0]) * 3); x = r.x; y = r.y; moving = r.moving; if (r.dir) dir = r.dir; }
+      if (sp.party && t >= sp.party && !w) { dir = "down"; dy = -Math.abs(Math.sin((t * 5) + a.x)) * 3; }
+      if (beat && beat.who === a.name && !moving) dy = Math.min(dy, Math.floor(t * 6) % 2 ? -1 : 0);
+      if (sp.gloom) {
+        if (a.id === "me" && t >= 10.6) dir = "right";
+        else if (a.id === "me") dy = 1;   /* 고개를 떨군 모습 */
+        if (a.id === "kang" && t >= 9.6 + 0.7) dir = "left";
+      }
+      return { a, x, y, dir, moving, dy };
+    }).filter(e => e.y < 9.2).sort((p, q) => p.y - q.y);
+    for (const e of ents) {
+      const sps = charSprites(e.a.name, e.a.role || "", !!e.a.player), f = e.moving ? [0, 1, 0, 2][Math.floor(t * 8) % 4] : 0;
+      g.drawImage(sps[e.dir][f], Math.round(e.x * TS), Math.round(e.y * TS + TS - 20 + e.dy));
+    }
+    if (sp.party && t >= sp.party) {
+      const cols = ["#ffd36b", "#ff7a6b", "#7fd1a0", "#78a8ff", "#e98cff", "#ffffff"];
+      for (let i = 0; i < 46; i++) {
+        const sx = (i * 37 + 11) % W, sp2 = 18 + (i * 7) % 22, y = ((t - sp.party) * sp2 + i * 29) % (H + 20) - 10;
+        const x = sx + Math.sin(t * 3 + i) * 3;
+        g.fillStyle = cols[i % cols.length]; g.fillRect(Math.round(x), Math.round(y), i % 3 ? 2 : 1, i % 3 ? 1 : 2);
+      }
+      /* 반짝이는 별 */
+      g.fillStyle = "#fff4c2";
+      for (let i = 0; i < 5; i++) { if (Math.floor(t * 3 + i) % 2) continue; const x = 20 + i * 34, y = 16 + (i % 2) * 6; g.fillRect(x, y - 2, 1, 5); g.fillRect(x - 2, y, 5, 1); }
+    }
+    if (sp.gloom) {
+      g.fillStyle = "rgba(12,18,32,.42)"; g.fillRect(0, 0, W, H);
+      g.fillStyle = "rgba(160,190,230,.35)";
+      for (let i = 0; i < 40; i++) { const x = (i * 53 + Math.floor(t * 90)) % W, y = (i * 31 + Math.floor(t * 160)) % H; g.fillRect(x, y, 1, 4); }
+    }
+    caption(beat);
+  }
+  function caption(b) {
+    const el = document.getElementById("end-cap");
+    if (!b || !el) return;
+    const k = b.t + "|" + kind; if (capKey === k && el.dataset.k === k) return;
+    capKey = k; el.dataset.k = k;
+    const isMe = b.who === pname(), role = Object.values(C().suspects).find(p => p.name === b.who);
+    el.className = "intro-cap" + (b.who ? "" : " narr");
+    el.innerHTML = b.who ? `${pixelFace(b.who, 40, role ? role.role : "", isMe)}<div><b>${esc(b.who)}${isMe ? " 형사" : TITLE[b.who] ? " " + TITLE[b.who] : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
+  }
+  function sounds(t) {
+    const list = kind === "win" ? [[1.8, "lie"], [7.8, "verdict"], [8.4, "help"]] : [[0.3, "thunder"], [10.2, "help"]];
+    for (const [at, fn] of list) if (t >= at && !rang.includes(at)) { rang.push(at); if (Sound[fn]) fn === "verdict" ? Sound.verdict(true) : Sound[fn](); }
+  }
+  function loop() {
+    raf = 0;
+    if (!cv || !cv.isConnected || !["result", "gameover"].includes(S.screen)) return;
+    const t = (performance.now() - t0) / 1000;
+    draw(t); sounds(t);
+    raf = requestAnimationFrame(loop);
+  }
+  return {
+    mount(el, k) {
+      if (!el) return;
+      if (k !== kind || !t0) { kind = k; t0 = performance.now(); rang = []; capKey = ""; }
+      cv = pxCanvas(W, H); cv.className = "pxcanvas"; el.appendChild(cv); g = cv.getContext("2d");
+      if (!raf) raf = requestAnimationFrame(loop);
+    },
+    reset() { t0 = 0; kind = ""; },
   };
 })();
 
@@ -3148,6 +3283,10 @@ function renderGameOver() {
   const c = C(), pk = S.pick;
   app.innerHTML = `<section class="verdict gameover">
     <span class="label">${esc(pname())} 형사 · ${c.title}</span>
+    <div class="intro-scene end-scene">
+      <div class="pxview" id="end-view" aria-label="범인을 놓친 뒤 강력팀이 서로를 위로하는 장면"><span class="intro-sign">강력팀</span></div>
+      <div class="intro-cap narr" id="end-cap" aria-live="polite"><p>…</p></div>
+    </div>
     <div class="grade fail">GAME OVER</div>
     <h2>범인을 놓쳤다.</h2>
     <p class="lede">${pk.culprit ? `${esc(EUN(c.suspects[pk.culprit].name))} 범인이 아니었다. ` : ""}진짜 범인은 혼란을 틈타 사라졌고, 사건은 미제로 남았다.</p>
@@ -3159,6 +3298,7 @@ function renderGameOver() {
       <div class="truth">${c.truth.map(t => `<p>${esc(t)}</p>`).join("")}</div>
     </details>
   </section>`;
+  ENDING.mount(document.getElementById("end-view"), "lose");
 }
 
 function renderResult() {
@@ -3170,6 +3310,10 @@ function renderResult() {
   const next = c.random ? null : caseById(nextCaseId());
   app.innerHTML = `<section class="verdict">
     <span class="label">${esc(pname())} 형사 · ${c.title} · 수사 결과</span>
+    <div class="intro-scene end-scene">
+      <div class="pxview" id="end-view" aria-label="범인을 체포하고 강력팀이 축하하는 장면"><span class="intro-sign">강력팀</span></div>
+      <div class="intro-cap narr" id="end-cap" aria-live="polite"><p>…</p></div>
+    </div>
     <div class="grade">${R.grade}</div>
     <h2>${headline}</h2>
     <div class="score-rows">
@@ -3198,6 +3342,7 @@ function renderResult() {
       ${c.random ? "" : `<button class="btn ghost" data-case="${c.id}">이 사건 다시 하기</button>`}
     </div>
   </section>`;
+  ENDING.mount(document.getElementById("end-view"), "win");
 }
 
 /* ===================== 이벤트 ===================== */
