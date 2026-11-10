@@ -406,6 +406,27 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .sus-tag { border: 1px solid var(--blood); color: var(--blood); }
 .advice { display: flex; gap: 8px; align-items: center; color: var(--ok); font-size: 14px; }
 .advice-btns { margin-top: 2px; }
+/* 대답 판단 표시 */
+.reads { display: grid; gap: 4px; margin-top: 6px; }
+.read { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; font-size: 13px; line-height: 1.45; padding: 4px 8px; border-left: 3px solid var(--line); background: rgba(255,255,255,.03); border-radius: 0 4px 4px 0; }
+.read b { font-family: var(--f-mono); font-size: 11px; flex: none; }
+.read span { flex: 1 1 160px; min-width: 0; }
+.read i { font-style: normal; font-family: var(--f-mono); font-size: 10.5px; color: var(--muted); flex: none; }
+.read.lie { border-left-color: var(--blood); } .read.lie b { color: #ff8b7d; }
+.read.true { border-left-color: var(--ok); } .read.true b { color: var(--ok); }
+.read.unsure { color: var(--muted); }
+.read.s3 i { color: var(--lamp); }
+.read-box { display: grid; gap: 6px; }
+.choice.stmt > span:nth-child(2) { display: block; }
+/* 시작 장면: 경찰서 */
+.intro-scene { display: grid; gap: 10px; margin: 14px 0; }
+.intro-scene .pxview { width: min(100%, 720px); justify-self: center; }
+.intro-cap { min-height: 64px; display: flex; gap: 10px; align-items: center; padding: 10px 14px; border: 1px solid var(--line); border-radius: 6px; background: rgba(10,13,16,.75); width: min(100%, 720px); justify-self: center; }
+.intro-cap b { display: block; font-family: var(--f-mono); font-size: 12px; color: var(--lamp); }
+.intro-cap p { margin: 0; font-size: 16px; }
+.intro-cap.narr p { color: var(--muted); font-style: italic; }
+.intro-scene .btn-row { justify-content: center; }
+.intro-sign { position: absolute; z-index: 2; left: 29.55%; top: 3.125%; width: 18.2%; height: 6.25%; display: grid; place-items: center; color: #22303c; font-weight: 800; font-size: clamp(8px, 1.6vw, 14px); letter-spacing: .1em; pointer-events: none; }
 .heart { font-family: var(--f-mono); font-size: 11px; margin-left: 6px; } .heart.open { color: #ff8aa0; } .heart.closed { color: var(--muted); }
 .talklog summary { cursor: pointer; color: var(--muted); font-size: 13.5px; }
 .talklog .logq { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; display: grid; gap: 4px; }
@@ -1353,7 +1374,7 @@ const turnsFor = c => {
 };
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
-  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], rebutNotes: {},
+  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], reads: {}, introDone: false,
   chances: 1, penalties: 0, decided: false, advice: {}, cleared: [], persona: {}, heart: {}, secrets: [], lastLine: null, dlg: null, wrongAccuse: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
   mode: "pixel", pos: null, dir: null, autopsyDone: false, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
@@ -1366,19 +1387,15 @@ const PARTNERS = [
     report: (room, list) => list ? `“자물쇠쯤이야. ${room}에서 이런 걸 건졌네. ${list}.”` : `“${room}엔 더 볼 게 없더군.”` },
   { id: "yoon", name: "윤도경", title: "과학수사 경사", rank: "경사", skill: "현장 감식",
     report: (room, list) => list ? `“${room} 감식 끝났습니다. 나온 건 ${list}입니다.”` : `“${room}에서는 새로 나온 게 없습니다.”` },
-  { id: "seo", name: "서하루", title: "순경", rank: "순경", skill: "거짓말 냄새 맡기",
+  { id: "seo", name: "서하루", title: "순경", rank: "순경", skill: "현장 수색",
     report: (room, list) => list ? `“선배님! ${room} 싹 다 뒤져 봤어요. ${list}!”` : `“${room}은 이미 다 조사돼 있던데요?”` },
 ];
 const partner = id => PARTNERS.find(x => x.id === id);
 
-/* 반박 담당: 들은 말이 거짓이면 대신 반박해서 무너뜨린다 */
+/* 심문 담당 프로파일러: 한서진은 거짓말을 바로 간파(몇 번만), 모은재는 모은 증거를 토대로 분석 */
 const REBUTTERS = [
-  { id: "prof", name: "한서진", title: "프로파일러 경위",
-    hit: clue => `“이 사람 말은 행동 패턴과 안 맞습니다. ${clue ? `‘${clue}’만 봐도 ` : ""}이 말은 성립하지 않아요.”`,
-    miss: "“기록과도 맞고 행동 패턴도 일관돼요. 이 말은 사실로 보입니다.”" },
-  { id: "psy", name: "모은재", title: "견습 프로파일러 경사",
-    hit: () => "“방금 시선이 아래로 떨어지고 말이 빨라졌어요. 거짓말할 때 나오는 반응이에요.”",
-    miss: "“목소리도 표정도 흔들림이 없어요. 거짓말은 아닌 것 같아요.”" },
+  { id: "prof", name: "한서진", title: "프로파일러 경위" },
+  { id: "psy", name: "모은재", title: "견습 프로파일러 경사" },
 ];
 
 /* 범인 편: 변수 인물 2명 중 한 명은 공범. 보통·어려움에서만 */
@@ -1446,16 +1463,16 @@ function penalty(why) {
 /* ---------- 난이도: 쉬움은 쉽지만 짧고 도움이 적다 / 어려움은 어렵지만 길고 도움이 많다 ---------- */
 const DIFF = {
   easy:   { label: "쉬움", turns: 24, time: 240, bonus: 0, chances: 1, fakes: 0, sab: null, villains: false, persona: "show", lieTags: true, helpMax: 0,
-            desc: "아주 쉬워요. 가짜 물건·방해·공범이 없고, 수상한 대답에는 표시가 붙어요. 대신 시간이 4분뿐이고 동료는 윤도경 경사 한 번, 한서진 경위 반박 한 번만 와요." },
+            desc: "아주 쉬워요. 가짜 물건·방해·공범이 없고, 내 판단도 조금 더 정확해요. 대신 시간이 4분뿐이고 윤도경 경사 출동 한 번, 한서진 간파 한 번, 모은재 분석 두 번뿐이에요." },
   normal: { label: "보통", turns: 34, time: 420, bonus: 3, chances: 1, fakes: 1, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 }, villains: true, persona: "show", lieTags: false, helpMax: 3,
-            desc: "가짜 물건과 방해, 공범이 있어요. 시간은 7분. 윤도경·서하루를 2번씩 출동시킬 수 있고, 반박은 한서진 1번·모은재 2번이에요." },
+            desc: "가짜 물건과 방해, 공범이 있어요. 시간은 7분. 윤도경·서하루를 2번씩 출동시킬 수 있고, 한서진 간파 1번·모은재 분석 3번이에요." },
   hard:   { label: "어려움", turns: 50, time: 720, bonus: 6, chances: 2, fakes: 2, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 }, villains: true, persona: "hint", lieTags: false, helpMax: 6,
-            desc: "아주 어려워요. 가짜 물건이 많고 방해가 거세며, 용의자 성격도 눈치로 알아내야 해요. 대신 시간 12분, 지목 기회 2번, 동료 셋 다 3번씩 출동하고 반박도 3번씩 도와줘요." },
+            desc: "아주 어려워요. 가짜 물건이 많고 방해가 거세며, 용의자 성격도 눈치로 알아내야 해요. 대신 시간 12분, 지목 기회 2번, 동료 셋 다 3번씩 출동하고, 한서진 간파 2번·모은재 분석 5번이에요." },
 };
 /* 팀원 출동 횟수 */
 const DISPATCH = { easy: { each: 1, who: ["yoon"] }, normal: { each: 2, who: ["yoon", "seo"] }, hard: { each: 3 } };
 /* 반박 횟수 */
-const REBUT = { easy: { prof: 1, psy: 1 }, normal: { prof: 1, psy: 3 }, hard: { prof: 2, psy: 5 } };
+const REBUT = { easy: { prof: 1, psy: 2 }, normal: { prof: 1, psy: 3 }, hard: { prof: 2, psy: 5 } };
 const rebutLeft = id => ((REBUT[S.diff] || {})[id] || 0) - S.rebuts.filter(x => x === id).length;
 const pfull = x => `${x.title} ${x.name}`;
 const MISSION_DELAY = 2;
@@ -1527,12 +1544,14 @@ const mmss = sec => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(s
 let PLAYER = ""; try { PLAYER = localStorage.getItem("midnight-player") || ""; } catch {}
 const pname = () => PLAYER.trim() || "무명";
 function openRandom() {
+  INTRO.reset();
   toastQ.length = 0;
   const c = generateCase(), n = loadRecords().randomSolved || 0;
   const diff = n === 0 ? "easy" : n < 3 ? "normal" : "hard";
   S = Object.assign(fresh(), { screen: "brief", caseId: "random", randomCase: c, room: "crime", suspect: "p0", diff });
 }
 function openCase(id) {
+  INTRO.reset();
   toastQ.length = 0;
   const c = caseById(id), idx = CASES.indexOf(c);
   const diff = idx === 0 ? "easy" : idx === 1 ? "normal" : "hard";
@@ -1596,12 +1615,10 @@ function help() {
     .filter(s => s.clue && !has(S.searched, s.id));
   const keySpots = spots.filter(s => c.key.includes(s.clue));
   if (spots.length) opts.push("reveal");
-  const lies = Object.entries(c.suspects).flatMap(([sid, p]) => p.qs.filter(q => q.lie && !has(S.broken, q.id) && !has(S.hints, q.id)).map(q => ({ q, p })));
-  if (lies.length) opts.push("hint");
   if (vet) opts.push("time");
   if (!opts.length) return;
   const kind = RND.pick(opts);
-  const who = pfull(partner(kind === "reveal" ? "yoon" : kind === "hint" ? "seo" : "kang"));
+  const who = pfull(partner(kind === "reveal" ? "yoon" : "kang"));
   let msg = "";
   if (kind === "unlock") {
     S.locks = {}; S.silence = {};
@@ -1610,9 +1627,6 @@ function help() {
     const s = RND.pick(keySpots.length ? keySpots : spots);
     S.searched.push(s.id); S.found.push(s.clue);
     msg = `${who}: “${pname()} 형사님, ${c.rooms[s.rid].name}에서 이걸 찾았습니다.” — ${c.clues[s.clue].name}`;
-  } else if (kind === "hint") {
-    const { q, p } = RND.pick(lies); S.hints.push(q.id);
-    msg = `${who}: “${pname()} 선배님, ${p.name} 씨가 ‘${q.q}’에 한 대답, 아무래도 냄새가 나요.”`;
   } else {
     S.turns += 2; S.maxTurns = Math.max(S.maxTurns, S.turns); S.timeLeft += 30; S.timeMax = Math.max(S.timeMax, S.timeLeft);
     msg = `${I(who)} 윗선을 설득해 수사 시간을 벌었다. 2턴과 30초가 늘었다.`;
@@ -1620,27 +1634,6 @@ function help() {
   S.helps += 1; S.sinceHelp = 0;
   S.events.push({ bad: false, msg });
   toast(`<b>수사팀</b> — ${esc(msg)}`); Sound.help();
-}
-
-/* ---------- 반박: 턴을 쓰지 않고 동료가 대신 반박 ---------- */
-function rebut(rid, qid) {
-  const f = findQ(qid); if (!f) return;
-  const { q, p, sid } = f, x = REBUTTERS.find(r => r.id === rid);
-  if (!x || rebutLeft(rid) <= 0 || S.turns <= 0 || S.silence[sid] || !has(S.asked, qid) || has(S.broken, qid) || S.rebutNotes[qid]) return;
-  S.rebuts.push(rid); S.dlg = null;
-  const who = `${x.title} ${x.name}`;
-  if (q.lie) {
-    const clue = q.lie.clues.map(id => C().clues[id]).find(Boolean);
-    S.rebutNotes[qid] = { who, text: x.hit(clue && clue.name) };
-    S.broken.push(qid); addTl(q.lie.tl);
-    S.lastLine = { sid, q: x.hit(clue && clue.name), a: q.lie.reply, kind: "broken", who };
-    S.events.push({ bad: false, msg: `${I(who)} ${p.name}의 거짓말을 대신 반박했다.` });
-    toast(`<b>${esc(who)}</b> — ${esc(EUN(p.name))} 말을 바꿨다!`); Sound.lie(); flash();
-  } else {
-    S.rebutNotes[qid] = { who, text: x.miss };
-    S.lastLine = { sid, q: `‘${q.q}’에 대한 대답을 따져 봤다.`, a: x.miss, kind: "rebut-miss", who };
-    toast(`<b>${esc(who)}</b> — 이 말은 사실로 보인다.`); Sound.help();
-  }
 }
 
 /* ---------- 팀원 출동: 장소에 보내면 턴을 쓰지 않고 대신 조사 ---------- */
@@ -1857,6 +1850,7 @@ const Sound = (() => {
       tone(587, "square", t + 0.05, 0.01, 0.08, 0.5); tone(831, "square", t + 0.05, 0.01, 0.06, 0.5);
     },
     wrong() { if (ctx) tone(110, "sine", now(), 0.01, 0.4, 0.4, 45); },
+    ring() { if (!ctx) return; const t = now(); for (let k = 0; k < 14; k++) tone(k % 2 ? 1180 : 940, "square", t + k * 0.045, 0.002, 0.035, 0.035); },
     tick() { if (ctx) tone(1800, "square", now(), 0.002, 0.05, 0.04); },
     door() {   /* 끼이익 문 열리는 소리 + 쿵 */
       if (!ctx) return; const t = now(), o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
@@ -1975,7 +1969,8 @@ function renderTitle() {
         <div><b><span class="k">04</span>수사 수첩</b><p>찾은 단서, 시간표, 숨은 증언이 모여요. 거짓으로 밝혀진 진술에는 줄이 그어져요.</p></div>
         <div class="warn"><b><span class="k">05</span>결단의 시간</b><p>턴이나 시간이 다 되면 증거가 부족해도 범인을 골라야 해요. 범인을 놓치면 그대로 게임 오버예요.</p></div>
         <div><b><span class="k">출동</span>팀원 출동</b><p>장소에서 팀원을 보내면 문으로 들어와 대신 조사하고 2턴 뒤에 보고해요. 턴은 안 줄어요.</p></div>
-        <div><b><span class="k">반박</span>프로파일러</b><p>대화 중 프로파일러에게 반박을 맡기면 거짓말인지 대신 따져 줘요. 턴은 안 줄어요.</p></div>
+        <div><b><span class="k">판단</span>진실일까, 거짓일까</b><p>용의자가 대답하면 주인공이 모은 증거를 토대로 ‘사실 같다/거짓말 같다’를 판단해요. 증거를 적게 모으면 판단도 엉성해요.</p></div>
+        <div><b><span class="k">심문</span>프로파일러</b><p>심문은 주인공과 프로파일러만 해요. 한서진 경위는 거짓말을 바로 알아채지만 몇 번 못 불러요. 모은재 경사는 더 자주 부를 수 있지만, 증거를 많이 모아야 정확해요.</p></div>
         <div class="warn"><b><span class="k">주의</span>방해 · 공범 · 가짜 물건</b><p>보통·어려움에서는 누군가 증거를 망치고 문을 잠가요. 변수 인물 중 한 명이 공범이에요. 가짜 물건도 섞여 있어요.</p></div>
         <div><b><span class="k">난이도</span>쉬움 ↔ 어려움</b><p>쉬움은 아주 쉽지만 시간이 짧고 도움이 적어요. 어려움은 아주 어렵지만 시간·지목 기회·동료 도움이 많아요.</p></div>
         <div><b><span class="k">무한</span>무작위 사건</b><p>무대·용의자·동기·수법·범인이 매번 새로 정해져요.</p></div>
@@ -2013,8 +2008,134 @@ function renderFiles() {
     </section>`;
 }
 
+/* ===================== 시작 장면: 경찰서에서 전화를 받고 출동 ===================== */
+const INTRO = (() => {
+  const TS = 16, W = 176, H = 128, END = 20.5;
+  let cv = null, g = null, raf = 0, t0 = 0, capKey = "", rang = [], bgc = null;
+  const FURN = [["desk", 2, 3], ["desk", 4, 3], ["desk", 7, 3], ["terminal", 9, 3], ["board", 6, 1], ["plant", 0, 2], ["plant", 10, 2], ["box", 10, 6], ["box", 0, 6], ["window", 2, 1], ["window", 8, 1]];
+  const cast = () => [
+    { id: "seo", name: "서하루", x: 4, y: 4, dir: "up" },
+    { id: "kang", name: "강무열", x: 7, y: 4, dir: "up" },
+    { id: "me", name: pname(), player: true, x: 2, y: 4, dir: "up" },
+    { id: "han", name: "한서진", x: 6, y: 2, dir: "up" },
+    { id: "mo", name: "모은재", x: 5, y: 2, dir: "right" },
+    { id: "yoon", name: "윤도경", x: 9, y: 4, dir: "up" },
+  ];
+  const place = () => C().title.replace(/ 사건$/, ""), where = () => (C().where || "").split(" · ")[0];
+  const beats = () => [
+    { t: 0, who: "", text: `밤 11시 40분. 비가 오는 밤, 강력팀 사무실.` },
+    { t: 2.4, who: "", text: "따르릉— 따르릉—" },
+    { t: 4.6, who: "서하루", text: "네, 강력팀 서하루 순경입니다. …네? 사람이 죽었다고요? 위치가 어디죠?" },
+    { t: 8, who: "서하루", text: `선배님들! ${where()} ‘${place()}’에서 살인 사건 신고입니다!` },
+    { t: 11, who: "강무열", text: `가자. ${pname()} 형사, 이번 사건은 자네가 맡게.` },
+    { t: 13.6, who: "한서진", text: "용의자 심문은 저희 프로파일러 둘이 같이 들어가죠." },
+    { t: 16, who: "", text: "강력팀, 출동!" },
+  ];
+  function bg() {
+    if (bgc) return bgc;
+    bgc = pxCanvas(W, H); const b = bgc.getContext("2d");
+    const fl = floorTile("tile", {}), wl = wallTile({ wall: "panel", wallC: "#4d5a66" }, 0);
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 11; x++) b.drawImage(y < 2 ? wl : fl, x * TS, y * TS);
+    b.fillStyle = "#151a1f"; b.fillRect(5 * TS + 2, H - 4, TS - 4, 4);   /* 출입문 */
+    b.fillStyle = "#6b5a3a"; b.fillRect(5 * TS + 1, 7 * TS + 2, TS - 2, 9);   /* 발판 */
+    b.fillStyle = "#e9e2cf"; b.fillRect(3 * TS + 4, 4, 32, 8);   /* 강력팀 현판 (글자는 위에 겹쳐 씀) */
+    return bgc;
+  }
+  function pathOf(p) { return [[p.x, p.y], [p.x, 5.6], [5, 5.6], [5, 9.5]]; }
+  function walkPos(p, d) {
+    const pts = pathOf(p); let rest = d;
+    for (let k = 1; k < pts.length; k++) {
+      const [ax, ay] = pts[k - 1], [bx, by] = pts[k], len = Math.hypot(bx - ax, by - ay);
+      const dir = Math.abs(bx - ax) > Math.abs(by - ay) ? (bx > ax ? "right" : "left") : (by > ay ? "down" : "up");
+      if (rest <= len) { const f = len ? rest / len : 1; return { x: ax + (bx - ax) * f, y: ay + (by - ay) * f, dir, moving: true }; }
+      rest -= len;
+    }
+    return { x: 5, y: 9.5, dir: "down", moving: false };
+  }
+  function face(from, to) { const dx = to.x - from.x, dy = to.y - from.y; return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"); }
+  function draw(t) {
+    g.imageSmoothingEnabled = false;
+    g.drawImage(bg(), 0, 0);
+    for (const [ty, x, y] of FURN) { const f = furnPixel(ty); if (f.ready) g.drawImage(f.cv, x * TS, y * TS); }
+    /* 서하루 책상 위 전화기 */
+    const ringing = t >= 2.4 && t < 4.6, shake = ringing ? (Math.floor(t * 20) % 2 ? 1 : -1) : 0;
+    if (t < 4.6) { g.fillStyle = "#b8322b"; g.fillRect(4 * TS + 9 + shake, 3 * TS + 3, 6, 4); g.fillStyle = "#2a1f1a"; g.fillRect(4 * TS + 9 + shake, 3 * TS + 2, 6, 1); }
+    if (ringing) { g.fillStyle = "#ffd36b"; g.fillRect(4 * TS + 11, 3 * TS - 9, 2, 6); g.fillRect(4 * TS + 11, 3 * TS - 2, 2, 2); }
+    const ppl = cast(), seo = ppl[0], out = t >= 16;
+    const ents = ppl.map((p, i) => {
+      let x = p.x, y = p.y, dir = p.dir, moving = false, dy = 0;
+      if (out) {
+        const st = 16 + i * 0.45, w = walkPos(p, Math.max(0, t - st) * 4);
+        if (t >= st) ({ x, y, dir, moving } = w);
+        else dir = "down";
+      } else if (t >= 8 && p.id !== "seo") dir = face(p, seo);
+      else if (t >= 4.6 && p.id === "seo") dir = t >= 8 ? "down" : "up";
+      const talking = beats().filter(b => b.t <= t).pop();
+      if (talking && talking.who === p.name && !out) dy = Math.floor(t * 6) % 2 ? -1 : 0;
+      if (p.player && !out && t >= 11 && t < 13.6) dy = Math.floor(t * 6) % 2 ? -1 : 0;
+      return { p, x, y, dir, moving, dy };
+    }).filter(e => e.y < 9.2).sort((a, b) => a.y - b.y);
+    for (const e of ents) {
+      const sp = charSprites(e.p.name, "", !!e.p.player), f = e.moving ? [0, 1, 0, 2][Math.floor(t * 8) % 4] : 0;
+      g.drawImage(sp[e.dir][f], Math.round(e.x * TS), Math.round(e.y * TS + TS - 20 + e.dy));
+    }
+    /* 서하루가 전화를 받는 동안 수화기 */
+    if (t >= 4.6 && t < 8) { g.fillStyle = "#b8322b"; g.fillRect(4 * TS + 12, 4 * TS - 3, 3, 6); }
+    /* 출동할 때 경광등 빛 */
+    if (out) { g.fillStyle = Math.floor(t * 4) % 2 ? "rgba(220,40,40,.16)" : "rgba(40,90,230,.16)"; g.fillRect(0, 0, W, H); }
+  }
+  function caption(t) {
+    const b = beats().filter(x => x.t <= t).pop(), el = document.getElementById("intro-cap");
+    if (!b || !el || capKey === b.t + "|" + el.isConnected) return;
+    capKey = b.t + "|" + el.isConnected;
+    const isMe = b.who === pname();
+    el.className = "intro-cap" + (b.who ? "" : " narr");
+    el.innerHTML = b.who ? `${pixelFace(b.who, 40, "", isMe)}<div><b>${esc(b.who)}${b.who === "서하루" ? " 순경" : b.who === "강무열" ? " 경감" : b.who === "한서진" ? " 경위" : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
+  }
+  function sounds(t) {
+    for (const [at, fn] of [[2.4, "ring"], [3.5, "ring"], [8, "thunder"], [16, "siren"]]) {
+      if (t >= at && !rang.includes(at)) { rang.push(at); if (Sound[fn]) Sound[fn](); }
+    }
+  }
+  function loop() {
+    raf = 0;
+    if (S.screen !== "brief" || S.introDone || !cv || !cv.isConnected) return;
+    const t = (performance.now() - t0) / 1000;
+    draw(t); caption(t); sounds(t);
+    if (t >= END) { finish(); return; }
+    raf = requestAnimationFrame(loop);
+  }
+  function finish() { if (raf) cancelAnimationFrame(raf); raf = 0; S.introDone = true; render(); }
+  return {
+    reset() { t0 = performance.now(); rang = []; capKey = ""; },
+    mount(el) {
+      if (!el) return;
+      if (!t0) this.reset();
+      const host = el.querySelector(".pxcanvas");
+      cv = host || pxCanvas(W, H);
+      if (!host) { cv.className = "pxcanvas"; el.appendChild(cv); }
+      g = cv.getContext("2d"); capKey = "";
+      if (!raf) raf = requestAnimationFrame(loop);
+    },
+    finish,
+  };
+})();
+
 function renderBrief() {
   const c = C();
+  if (!S.introDone) {
+    app.innerHTML = `
+    <section class="intro">
+      <span class="label">${c.tag}</span>
+      <div class="intro-scene">
+        <div class="pxview" id="intro-view" aria-label="강력팀 사무실에서 신고 전화를 받는 장면"><span class="intro-sign">강력팀</span></div>
+        <div class="intro-cap narr" id="intro-cap" aria-live="polite"><p>…</p></div>
+        <div class="btn-row"><button class="btn ghost" data-act="skip-intro">건너뛰기</button>${soundBtn()}</div>
+      </div>
+    </section>`;
+    INTRO.mount(document.getElementById("intro-view"));
+    return;
+  }
   app.innerHTML = `
     <section class="intro">
       <span class="label">${c.tag}</span>
@@ -2029,12 +2150,12 @@ function renderBrief() {
         ${Object.values(c.suspects).map(p => `<div class="person">${pixelFace(p.name, 64, p.role)}<b>${p.name}</b><span>${p.role}</span><span>${p.intro}</span></div>`).join("")}
       </div>
       <div class="btn-row">
-        <button class="btn" data-act="start">출동한다</button>
+        <button class="btn" data-act="start">게임 시작</button>
+        <button class="btn ghost" data-act="replay-intro">출동 장면 다시 보기</button>
         <button class="btn ghost" data-act="files">사건 목록</button>
       </div>
     </section>`;
 }
-
 function roomBtn(id, wide) {   /* 방 이동 버튼 (픽셀 화면 아래 작은 줄) */
   const r = C().rooms[id];
   const all = allSpots(id), done = all.filter(s => has(S.searched, s.id)).length, lk = S.locks[id];
@@ -2796,40 +2917,51 @@ function renderDispatch(r) {
   </div>`;
 }
 
-/* ---------- 프로파일러의 조언: 고를 거리 중 하나를 짚어 준다 (한서진 약 80%, 모은재 반반) ---------- */
-const ADVICE_ACC = { prof: .8, psy: .5 };
-function adviseOptions(key) {
-  const c = C(), [kind, id] = key.split(":");
-  if (kind === "heart") return { opts: TONES.map(t => t.id), right: PERSONAS[S.persona[id]].right };
-  if (kind === "stmt") {
-    const p = c.suspects[id], opts = p.qs.filter(q => has(S.asked, q.id) && !has(S.broken, q.id)).map(q => q.id);
-    const lies = opts.filter(qid => findQ(qid).q.lie);
-    return { opts, right: lies.length ? RND.pick(lies) : null };
-  }
-  const q = findQ(id).q, opts = S.found.slice(), good = q.lie ? q.lie.clues.filter(k => has(S.found, k)) : [];
-  return { opts, right: good.length ? good[0] : null };
+/* ---------- 대답 판단: 주인공·모은재는 모은 증거만큼 정확, 한서진은 바로 간파 ---------- */
+const READ_WHO = { me: "내 판단", psy: "모은재", prof: "한서진" };
+const SURE = ["판단 불가", "근거 약함", "근거 보통", "확실"];
+function evidenceCover() { return Math.min(1, S.found.length / Math.max(1, Object.keys(C().clues).length)); }
+function readOf(q, who) {
+  if (who === "prof") return q.lie
+    ? { v: "lie", sure: 3, text: "“거짓말입니다. 말과 눈빛이 따로 놀아요.”" }
+    : { v: "true", sure: 3, text: "“사실입니다. 거짓말하는 얼굴이 아니에요.”" };
+  const c = C(), cov = evidenceCover(), psy = who === "psy";
+  const hit = q.lie && q.lie.clues.find(k => has(S.found, k));
+  if (hit) return psy ? { v: "lie", sure: 3, text: `“‘${c.clues[hit].name}’ 단서랑 어긋나요. 거짓말이에요.”` }
+    : { v: "lie", sure: 2, text: "모은 증거 중에 이 말과 어긋나는 게 있다. 거짓말 같다." };
+  if (cov < (psy ? .1 : .15)) return { v: "unsure", sure: 0, text: psy ? "“아직 증거가 너무 없어요. 판단이 안 서요.”" : "증거가 부족해 아직 판단이 안 선다." };
+  const acc = Math.min(.92, (psy ? .55 : .5) + (psy ? .4 : .35) * cov + (S.diff === "easy" ? .1 : 0));
+  const r = (hashStr([q.id, who, S.found.length, S.fakeSeed].join("|")) % 1000) / 1000;
+  const truth = q.lie ? "lie" : "true", v = r < acc ? truth : truth === "lie" ? "true" : "lie", sure = cov >= .45 ? 2 : 1;
+  const T = psy
+    ? { lie: ["“말끝이 흐려져요… 거짓말일 수도 있어요.”", "“증거랑 조금 안 맞아요. 거짓말 같아요.”"], true: ["“음… 사실 같기도 해요.”", "“증거랑 맞아요. 사실인 것 같아요.”"] }
+    : { lie: ["왠지 걸린다… 거짓말일지도.", "증거와 잘 안 맞는다. 거짓말 같다."], true: ["일단은 말이 되는 것 같다.", "지금까지 모은 증거와 맞아떨어진다. 사실 같다."] };
+  return { v, sure, text: T[v][sure - 1] };
 }
-function advise(rid, key) {
-  if (rebutLeft(rid) <= 0 || S.turns <= 0 || S.advice[key]) return;
-  const x = REBUTTERS.find(r => r.id === rid), { opts, right } = adviseOptions(key);
-  if (!opts.length) return;
-  let pick;
-  if (right && Math.random() < ADVICE_ACC[rid]) pick = right;
-  else { const wrong = opts.filter(o => o !== right); pick = wrong.length ? RND.pick(wrong) : right; }
-  S.rebuts.push(rid);
-  S.advice[key] = { rid, pick, who: `${x.title} ${x.name}` };
-  Sound.help();
+function readTags(q) {
+  if (has(S.broken, q.id)) return "";
+  const r = (S.reads || {})[q.id] || {};
+  const one = (who, x) => `<span class="read ${x.v} s${x.sure}"><b>${READ_WHO[who]}</b><span>${esc(x.text)}</span><i>${SURE[x.sure]}</i></span>`;
+  return `<span class="reads">${one("me", readOf(q, "me"))}${r.psy ? one("psy", r.psy) : ""}${r.prof ? one("prof", r.prof) : ""}</span>`;
 }
-function adviceBar(key) {
-  const a = S.advice[key];
-  if (a) {
-    const x = REBUTTERS.find(r => r.id === a.rid);
-    return `<p class="advice">${pixelFace(x.name, 22)}<span><b>${esc(a.who)}</b> — ${a.rid === "prof" ? "“제 판단으로는 이게 맞습니다.”" : "“음… 아마 이거 아닐까요?”"} (표시된 선택지)</span></p>`;
-  }
-  const btns = REBUTTERS.filter(x => rebutLeft(x.id) > 0).map(x => `<button class="act ally with-face" data-advise="${x.id}" data-key="${key}">${pixelFace(x.name, 22)}${x.name}에게 조언 구하기<span class="cost">${x.id === "prof" ? "정확함" : "반반"} · ${rebutLeft(x.id)}번</span></button>`).join("");
+function readBtns(q, sid) {
+  if (has(S.broken, q.id) || S.silence[sid] || S.turns <= 0 || S.decided) return "";
+  const r = (S.reads || {})[q.id] || {};
+  const btns = REBUTTERS.filter(x => !r[x.id] && rebutLeft(x.id) > 0).map(x => `<button class="act ally with-face" data-read="${x.id}" data-q="${q.id}">${pixelFace(x.name, 22)}${x.name}: ${x.id === "prof" ? "거짓말 간파" : "증거로 분석"}<span class="cost">${x.id === "prof" ? "바로 앎" : "증거만큼 정확"} · ${rebutLeft(x.id)}번</span></button>`).join("");
   return btns ? `<div class="q-actions advice-btns">${btns}</div>` : "";
 }
-const adviceTag = (key, val) => S.advice[key] && S.advice[key].pick === val ? `<span class="adv-tag">${REBUTTERS.find(r => r.id === S.advice[key].rid).name}의 추천</span>` : "";
+function doRead(rid, qid) {
+  const f = findQ(qid); if (!f) return;
+  const { q, p, sid } = f, x = REBUTTERS.find(r => r.id === rid);
+  S.reads = S.reads || {};
+  if (!x || rebutLeft(rid) <= 0 || S.turns <= 0 || S.silence[sid] || !has(S.asked, qid) || has(S.broken, qid)) return;
+  const R = S.reads[qid] = S.reads[qid] || {};
+  if (R[rid]) return;
+  R[rid] = readOf(q, rid); S.rebuts.push(rid);
+  S.lastLine = { sid, who: `${x.title} ${x.name}`, kind: "answer", qid,
+    q: rid === "prof" ? `(${p.name} 씨를 빤히 바라본다) “‘${q.q}’ — 방금 그 말, 한 번만 더 해 보시죠.”` : `“${p.name} 씨, ‘${q.q}’ 다시 여쭤봐도 될까요?”`, a: q.a };
+  toast(`<b>${esc(x.title + " " + x.name)}</b> — ${esc(R[rid].text)}`); Sound.help();
+}
 
 /* ---------- 대화(심문) 화면 ---------- */
 function renderPeople(out) {
@@ -2848,13 +2980,11 @@ function renderPeople(out) {
   const extra = /^v\d$/.test(S.suspect) ? renderVar(+S.suspect[1], out) : "";
   if (extra) return `<div class="split"><div class="people">${list}${side}</div>${extra}</div>`;
   const sid = S.suspect, p = c.suspects[sid], sl = S.silence[sid], per = PERSONAS[S.persona[sid]], show = DIFF[S.diff].persona === "show";
-  const easyTags = DIFF[S.diff].lieTags;
-  const lieTag = q => (easyTags && q.lie && !has(S.broken, q.id) ? `<span class="sus-tag">수상하다</span>` : "") + (has(S.hints, q.id) && !has(S.broken, q.id) ? `<span class="sus-tag">서하루 귀띔</span>` : "");
   /* 말풍선: 마지막 대화 */
   const L = S.lastLine && S.lastLine.sid === sid ? S.lastLine : null;
   const speech = L
     ? `<div class="line mine"><span class="who-tag">${L.who ? esc(L.who) : `형사 ${esc(pname())}`}</span><p>${esc(L.q)}</p></div>
-       <div class="line them ${L.kind}"><span class="who-tag">${esc(p.name)}${L.kind === "broken" ? " · 진술 번복" : L.kind === "secret" ? " · 숨은 증언" : ""}</span><p>${esc(L.a)}</p></div>`
+       <div class="line them ${L.kind}"><span class="who-tag">${esc(p.name)}${L.kind === "broken" ? " · 진술 번복" : L.kind === "secret" ? " · 숨은 증언" : ""}</span><p>${esc(L.a)}</p></div>${L.kind === "answer" && L.qid && findQ(L.qid) ? `<div class="read-box">${readTags(findQ(L.qid).q)}${readBtns(findQ(L.qid).q, sid)}</div>` : ""}`
     : `<div class="line them"><span class="who-tag">${esc(p.name)}</span><p>“…무슨 일이시죠, 형사님?”</p></div>`;
   /* 선택지 */
   let choices = "";
@@ -2871,22 +3001,20 @@ function renderPeople(out) {
       + (locked ? `<p class="locked">단서를 더 찾으면 물어볼 것이 ${locked}개 더 생긴다.</p>` : "")
       + (!avail.length && !statements.length ? `<p class="locked">지금은 더 물어볼 것이 없다.</p>` : "");
   } else if (D.step === "statement") {
-    const key = "stmt:" + sid;
-    choices = `<p class="step-title">어느 대답이 거짓말일까?</p>` + statements.map(q => `<button class="choice" data-stmt="${q.id}"><span class="ck">대답</span><span>“${esc(q.a)}”</span>${lieTag(q)}${adviceTag(key, q.id)}</button>`).join("")
-      + adviceBar(key) + `<button class="choice back" data-dlg="back"><span>그만둔다</span></button>`;
+    choices = `<p class="step-title">어느 대답이 거짓말일까? (아래 판단은 모은 증거가 많을수록 정확하다)</p>` + statements.map(q => `<button class="choice stmt" data-stmt="${q.id}"><span class="ck">대답</span><span>“${esc(q.a)}”${readTags(q)}</span></button>`).join("")
+      + `<button class="choice back" data-dlg="back"><span>그만둔다</span></button>`;
   } else if (D.step === "clue") {
-    const q = findQ(D.q).q, key = "clue:" + D.q;
-    choices = `<p class="step-title">“${esc(q.a)}” — 이 말과 맞지 않는 단서는?</p>` + S.found.map(id => `<button class="choice" data-confront="${id}"><span class="ck">단서</span><span>${esc(c.clues[id].name)}</span>${adviceTag(key, id)}</button>`).join("")
-      + adviceBar(key) + `<button class="choice back" data-dlg="back"><span>그만둔다</span></button>`;
+    const q = findQ(D.q).q;
+    choices = `<p class="step-title">“${esc(q.a)}” — 이 말과 맞지 않는 단서는?</p>` + S.found.map(id => `<button class="choice" data-confront="${id}"><span class="ck">단서</span><span>${esc(c.clues[id].name)}</span></button>`).join("")
+      + `<button class="choice back" data-dlg="back"><span>그만둔다</span></button>`;
   } else if (D.step === "heart") {
-    const key = "heart:" + sid;
-    choices = `<p class="step-title">어떤 말투로 다가갈까? 잘못 고르면 숨은 증언은 영영 들을 수 없다.</p>` + TONES.map(t => `<button class="choice heart" data-tone="${t.id}"><span class="ck">${t.label}</span><span>“${esc(t.line)}”</span>${adviceTag(key, t.id)}</button>`).join("")
-      + adviceBar(key) + `<button class="choice back" data-dlg="back"><span>그만둔다</span></button>`;
+    choices = `<p class="step-title">어떤 말투로 다가갈까? 잘못 고르면 숨은 증언은 영영 들을 수 없다.</p>` + TONES.map(t => `<button class="choice heart" data-tone="${t.id}"><span class="ck">${t.label}</span><span>“${esc(t.line)}”</span></button>`).join("")
+      + `<button class="choice back" data-dlg="back"><span>그만둔다</span></button>`;
   }
   /* 지난 대화 기록 */
   const log = p.qs.filter(q => has(S.asked, q.id)).map(q => {
     const broken = has(S.broken, q.id);
-    return `<div class="logq"><p class="q">“${esc(q.q)}”</p><p class="answer${broken ? " retracted" : ""}">${esc(q.a)}</p>${broken ? `<span class="verdict-tag">진술 번복</span><p class="answer broken">${esc(q.lie.reply)}</p>` : lieTag(q)}</div>`;
+    return `<div class="logq"><p class="q">“${esc(q.q)}”</p><p class="answer${broken ? " retracted" : ""}">${esc(q.a)}</p>${broken ? `<span class="verdict-tag">진술 번복</span><p class="answer broken">${esc(q.lie.reply)}</p>` : readTags(q) + readBtns(q, sid)}</div>`;
   }).join("") + S.secrets.filter(x => x.sid === sid).map(x => `<div class="logq"><span class="verdict-tag ally">숨은 증언</span><p class="answer rebut">${esc(x.text)}</p></div>`).join("");
   return `<div class="split">
     <div class="people">${list}${side}</div>
@@ -3078,13 +3206,14 @@ app.addEventListener("click", e => {
   else if (d.act === "title") { S = fresh(); top = true; }
   else if (d.random) { openRandom(); top = true; }
   else if (d.case) { openCase(d.case); top = true; }
+  else if (d.act === "skip-intro") { INTRO.finish(); return; }
+  else if (d.act === "replay-intro") { S.introDone = false; INTRO.reset(); top = true; }
   else if (d.act === "start") { beginCase(); top = true; Sound.thunder(); flash(); }
   else if (d.act === "files") { S = Object.assign(fresh(), { screen: "files" }); top = true; }
   else if (d.act === "wait") { if (S.turns <= 0) return; Sound.step(); spend(); }
   else if (d.tab) { S.tab = d.tab; S.dlg = null; }
   else if (d.room) { S.room = d.room; }
   else if (d.dispatch) { dispatch(d.dispatch); }
-  else if (d.rebut) { rebut(d.rebut, d.q); }
   else if (d.vtalk) { talkVar(+d.vtalk); }
   else if (d.vaccuse) { accuseVar(+d.vaccuse); }
   else if (d.suspect) { S.suspect = d.suspect; S.dlg = null; }
@@ -3103,7 +3232,7 @@ app.addEventListener("click", e => {
   else if (d.stmt) { S.dlg = { step: "clue", q: d.stmt }; }
   else if (d.confront) { confront(S.dlg && S.dlg.q, d.confront); }
   else if (d.tone) { openHeart(S.suspect, d.tone); }
-  else if (d.advise) { advise(d.advise, d.key); }
+  else if (d.read) { doRead(d.read, d.q); }
   else return;
   render();
   if (top) window.scrollTo(0, 0);
