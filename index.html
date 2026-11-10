@@ -330,6 +330,13 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .name-form input { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; color: var(--ink); font: inherit; font-size: 16px; min-width: 0; }
 .name-form input:focus { border-color: var(--lamp); outline: none; }
 
+#police { position: fixed; inset: 0; z-index: 40; pointer-events: none; display: grid; place-items: center;
+  background: radial-gradient(ellipse at 0% 50%, rgba(255,40,40,.55), transparent 55%), radial-gradient(ellipse at 100% 50%, rgba(40,90,255,.55), transparent 55%); }
+#police.light { place-items: start center; padding-top: calc(16px + env(safe-area-inset-top, 0px)); background: radial-gradient(ellipse at 0% 50%, rgba(255,40,40,.35), transparent 45%), radial-gradient(ellipse at 100% 50%, rgba(40,90,255,.35), transparent 45%); }
+@media (prefers-reduced-motion: no-preference) { #police { animation: siren .36s steps(1) infinite; } @keyframes siren { 50% { filter: hue-rotate(180deg); } } }
+.police-card { display: grid; gap: 4px; justify-items: center; text-align: center; background: rgba(8,10,14,.82); border: 1px solid var(--blood); border-radius: 6px; padding: 14px 26px; color: var(--ink); }
+.police-card b { font-family: var(--f-display); font-size: clamp(28px, 7vw, 44px); color: #fff; letter-spacing: .04em; }
+.police-card span:last-child { color: var(--muted); font-size: 14px; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 20; background: var(--surface-2); border: 1px solid var(--lamp); color: var(--ink); border-radius: 4px; padding: 10px 16px; font-size: 14px; max-width: calc(100% - 32px); box-shadow: 0 8px 30px rgba(0,0,0,.4); }
 .toast.bad { border-color: var(--blood); }
 .toast b { color: var(--lamp); }
@@ -1255,7 +1262,7 @@ const REBUTTERS = [
   { id: "prof", name: "한서진", title: "프로파일러",
     hit: clue => `“이 사람 말은 행동 패턴과 안 맞아요. ${clue ? `‘${clue}’만 봐도 ` : ""}이 말은 성립하지 않아요.”`,
     miss: "“기록과도 맞고 행동 패턴도 일관돼요. 이 말은 사실로 보여요.”" },
-  { id: "psy", name: "모은재", title: "심리 탐정",
+  { id: "psy", name: "모은재", title: "견습 프로파일러",
     hit: () => "“방금 시선이 아래로 떨어지고 말이 빨라졌어요. 거짓말할 때 나오는 반응이에요. 솔직하게 말씀하시죠.”",
     miss: "“목소리도 표정도 흔들림이 없어요. 거짓말은 아닌 것 같아요.”" },
 ];
@@ -1323,7 +1330,7 @@ function accuseVar(i) {
   }
 }
 
-/* 반박 횟수: 보통은 프로파일러 1번·심리 탐정 2번, 어려움은 2번·2번, 쉬움은 없음 */
+/* 반박 횟수: 보통은 프로파일러 1번·견습 프로파일러 2번, 어려움은 2번·2번, 쉬움은 없음 */
 const REBUT = { normal: { prof: 1, psy: 2 }, hard: { prof: 2, psy: 2 } };
 const rebutLeft = id => ((REBUT[S.diff] || {})[id] || 0) - S.rebuts.filter(x => x === id).length;
 const pfull = x => `${x.title} ${x.name}`;
@@ -1361,9 +1368,9 @@ const DIFF = {
   easy:   { label: "쉬움",   turns: 30, time: 720, bonus: 0, sab: null,
             desc: "방해가 없어요. 처음 하는 사람에게 추천!" },
   normal: { label: "보통",   turns: 35, time: 540, bonus: 3, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 },
-            desc: "중간쯤부터 가끔 방해가 들어와요. 윤도경이 알아서 시신을 살피고 단서를 찾아 주고, 서하루가 거짓말을 알려 줘요. 두 사람을 2번씩 출동시킬 수 있고, 프로파일러 1번·심리 탐정 2번 반박을 맡길 수 있어요. 변호사는 2번." },
+            desc: "중간쯤부터 가끔 방해가 들어와요. 윤도경이 알아서 시신을 살피고 단서를 찾아 주고, 서하루가 거짓말을 알려 줘요. 두 사람을 2번씩 출동시킬 수 있고, 프로파일러 1번·견습 프로파일러 2번 반박을 맡길 수 있어요. 변호사는 2번." },
   hard:   { label: "어려움", turns: 45, time: 360, bonus: 6, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 },
-            desc: "일찍부터 방해가 자주 들어와요. 탐정 세 명이 모두 돕고, 탐정마다 3번씩 출동시킬 수 있어요. 프로파일러·심리 탐정 반박은 2번씩, 변호사는 3번." },
+            desc: "일찍부터 방해가 자주 들어와요. 탐정 세 명이 모두 돕고, 탐정마다 3번씩 출동시킬 수 있어요. 프로파일러·견습 프로파일러 반박은 2번씩, 변호사는 3번." },
 };
 const mmss = sec => `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
 let PLAYER = ""; try { PLAYER = localStorage.getItem("midnight-player") || ""; } catch {}
@@ -1539,9 +1546,22 @@ function resolveMissions() {
 }
 
 function policeArrive(why) {
-  S.turns = 0; S.tab = "accuse"; S.challenge = null; S.locks = {}; S.silence = {}; S.missions = [];
+  S.turns = 0; S.challenge = null; S.locks = {}; S.silence = {}; S.missions = [];
   toast(`<b>경찰 도착</b> — ${why}. 이제 범인을 지목해야 한다.`, true); Sound.siren();
+  if (policeShowing) return;
+  policeShowing = true;
+  const toAccuse = () => { policeShowing = false; hidePoliceOverlay(); S.tab = "accuse"; render(); window.scrollTo(0, 0); };
+  showPoliceOverlay(why);
+  if (!V3.policeScene(toAccuse)) setTimeout(toAccuse, 2800);   /* 3D가 아니면 경광등 화면만 잠깐 */
 }
+let policeShowing = false;
+function showPoliceOverlay(why) {
+  let o = document.getElementById("police");
+  if (!o) { o = document.createElement("div"); o.id = "police"; o.setAttribute("role", "alert"); document.body.appendChild(o); }
+  o.innerHTML = `<div class="police-card"><span class="label">${esc(why)}</span><b>경찰 도착</b><span>이제 범인을 지목해야 한다</span></div>`;
+  o.hidden = false; o.className = S.tab === "rooms" && S.mode === "3d" ? "light" : "";
+}
+function hidePoliceOverlay() { const o = document.getElementById("police"); if (o) o.hidden = true; }
 
 /* ---------- 시간 제한: 실제 초가 흐른다 ---------- */
 setInterval(() => {
@@ -1734,6 +1754,7 @@ const soundBtn = () => `<button class="sound-btn" data-act="sound" aria-pressed=
 
 function render() {
   Sound.tension();
+  if (policeShowing && (S.screen !== "game" || S.tab !== "rooms")) { policeShowing = false; hidePoliceOverlay(); V3.cancelPolice(); }
   document.body.classList.toggle("urgent", S.screen === "game" && S.turns > 0 && (S.turns <= 6 || (S.timed && S.timeLeft <= 60)));
   if (S.screen === "title") return renderTitle();
   if (S.screen === "files") return renderFiles();
@@ -1801,7 +1822,7 @@ function renderTitle() {
         <div><b><span class="k">난이도</span>쉬움 → 어려움</b><p>첫 사건은 쉬움, 뒤로 갈수록 어려워진다. 사건을 열 때 난이도와 시간 제한 모드를 직접 고를 수도 있다.</p></div>
         <div><b><span class="k">변호사</span>변호사 차도율</b><p>용의자가 “변호사가 오기 전엔 말 안 해요”라며 입을 닫으면, 심문 화면에서 변호사를 불러 바로 다시 말하게 할 수 있어요. 턴은 안 줄어요. 보통 2번, 어려움 3번.</p></div>
         <div class="warn"><b><span class="k">범인 편</span>공범</b><p>보통·어려움에는 변수 인물 두 명이 나와요. 그중 한 명은 범인 편 공범이라 증거를 망치고 문을 잠그며 현장에 흔적을 남겨요. 흔적을 비교해 공범을 잡으면 방해가 멈춰요. 누가 공범인지는 매번 바뀌어요.</p></div>
-        <div><b><span class="k">반박</span>프로파일러 한서진 · 심리 탐정 모은재</b><p>들은 말 아래 ‘반박’ 버튼을 누르면 탐정이 대신 따져 줘요. 거짓말이면 바로 무너지고, 사실이면 사실이라고 알려 줘요. 턴은 안 줄어요. 보통은 프로파일러 1번·심리 탐정 2번, 어려움은 2번·2번.</p></div>
+        <div><b><span class="k">반박</span>프로파일러 한서진 · 견습 프로파일러 모은재</b><p>들은 말 아래 ‘반박’ 버튼을 누르면 탐정이 대신 따져 줘요. 거짓말이면 바로 무너지고, 사실이면 사실이라고 알려 줘요. 턴은 안 줄어요. 보통은 프로파일러 1번·견습 프로파일러 2번, 어려움은 2번·2번.</p></div>
         <div class="warn"><b><span class="k">시간</span>시간 제한 모드</b><p>실제 시계가 흐른다. 쉬움 12분, 보통 9분, 어려움 6분. 마지막 30초엔 초침 소리가 들린다.</p></div>
         <div><b><span class="k">무한</span>무작위 사건</b><p>무대·용의자·동기·수법·범인이 매번 새로 정해진다. 같은 사건은 두 번 나오지 않는다.</p></div>
       </div>
@@ -2407,7 +2428,8 @@ const V3 = (() => {
   }
   /* 게임 캐릭터: 3.5등신(키 약 1.45m), 둥근 몸, 적당히 짧은 팔다리, 무릎·팔꿈치 관절 */
   function person(p) {
-    const T = Face.traits(p.name, ageOf(p.role)), root = new THREE.Group(), body = new THREE.Group();
+    let T = Face.traits(p.name, ageOf(p.role)); const root = new THREE.Group(), body = new THREE.Group();
+    if (p.police) T = { ...T, cloth: "#22314f", pants: "#1b2335", top: "suit", glasses: null, style: T.F ? "bun" : "short" };
     body.scale.setScalar(T.F ? .96 : 1); root.add(body);
     const skin = toon(T.skin), cloth = toon(T.cloth), pants = toon(T.pants), hairM = toon(T.hair), shoe = toon(0x2a201c);
     const skirt = T.F && hashStr(p.name) % 2 === 0;
@@ -2466,8 +2488,16 @@ const V3 = (() => {
       for (const sx of [-1, 1]) { const ring = new THREE.Mesh(T.glasses === "round" ? new THREE.TorusGeometry(.045, .009, 8, 20) : new THREE.TorusGeometry(.05, .009, 4, 4), gm); ring.position.set(sx * .066, .2, .182); ring.rotation.y = sx * .2; ring.userData.noOutline = true; if (T.glasses === "rect") ring.rotation.z = Math.PI / 4; head.add(ring); }
       const br = box(.045, .008, .008, gm, 0, .205, .195); br.userData.noOutline = true; head.add(br); }
     if (T.facial === "mustache") { const ms = sph(.04, hairM, 0, .12, .186); ms.scale.set(1.6, .45, .5); ms.userData.noOutline = true; head.add(ms); }
+    if (p.police) {   /* 경찰모 · 모자 휘장 · 가슴 배지 */
+      const navy = toon(0x1c2740), gold = toon(0xd8b46a);
+      head.add(cyl(HR * .98, HR * .9, .1, navy, 0, .37, 0, 28));
+      const top = cyl(HR * 1.08, HR * 1.0, .03, navy, 0, .43, -.01, 28); head.add(top);
+      const brim = cyl(HR * .75, HR * .75, .015, toon(0x111111), 0, .33, .1, 24); brim.scale.z = .7; head.add(brim);
+      const emb = sph(.03, gold, 0, .38, HR * .98); emb.scale.set(1, 1.2, .4); emb.userData.noOutline = true; head.add(emb);
+      const badge = box(.05, .06, .012, gold, .08, .3, front + .01); badge.userData.noOutline = true; torso.add(badge);
+    }
     outline(body, 1.07);
-    const nm = textSprite(p.name); nm.position.y = 1.62; root.add(nm);
+    const nm = textSprite(p.name, p.police ? "#cfe0ff" : undefined); nm.position.y = 1.62; root.add(nm);
     return { root, body, torso, head, legs, knees, arms, elbows };
   }
 
@@ -2749,6 +2779,69 @@ const V3 = (() => {
     R.bubble.position.y = 1.86 + Math.sin(t / 300) * .03;
   }
 
+  /* ---------- 경찰 출동 장면: 경광등이 번쩍이고 경찰 3명이 문으로 들어와 나에게 걸어온다 ---------- */
+  let police = null;
+  function policeScene(onDone) {
+    if (!scene || !host || !renderer || sceneRoom !== S.room || S.mode !== "3d" || S.tab !== "rooms" || !document.body.contains(renderer.domElement)) return false;
+    const L = layout(S.room), d = L.doors[0];
+    if (!d) return false;
+    walk = null; for (const k in keys) keys[k] = false;
+    const inX = d.side === "b" ? d.x : 1, inY = d.side === "b" ? EXH - 2 : d.y;
+    const names = [["김 경장", "m"], ["박 순경", "f"], ["최 형사", "m"]];
+    const me = [Math.floor(cam.x), Math.floor(cam.z)];
+    const blocked = (x, y) => x < 1 || x > EXW - 2 || y < 1 || y > EXH - 2 || L.items.some(o => o.x === x && o.y === y) || L.deco.some(o => o.x === x && o.y === y) || (x === me[0] && y === me[1]);
+    const near = NB.map(([dx, dy]) => [me[0] + dx, me[1] + dy]).filter(([x, y]) => !blocked(x, y)).concat([[inX, inY]]);
+    const officers = names.map(([nm, g], i) => {
+      GENDER[nm] = g;
+      const rig = person({ name: nm, role: "경찰", police: true });
+      const goal = near[i % near.length];
+      const key = (x, y) => x + "," + y, prev = new Map([[key(inX, inY), null]]), q = [[inX, inY]];
+      let path = [[inX, inY]];
+      while (q.length) { const [x, y] = q.shift(); if (x === goal[0] && y === goal[1]) { const out = []; let c = [x, y]; while (c) { out.unshift(c); c = prev.get(key(...c)); } path = out; break; }
+        for (const [dx, dy] of NB) { const nx = x + dx, ny = y + dy; if (prev.has(key(nx, ny)) || blocked(nx, ny)) continue; prev.set(key(nx, ny), [x, y]); q.push([nx, ny]); } }
+      const o = { rig, wx: d.x + .5, wz: d.y + .5, pts: path.map(([x, y]) => [x + .5, y + .5]), i: 0, delay: i * .7, heading: Math.atan2(inX - d.x, inY - d.y), phase: 0, walkAmt: 0 };
+      rig.root.position.set(o.wx, 0, o.wz); rig.root.visible = false; scene.add(rig.root);
+      return o;
+    });
+    const red = new THREE.PointLight(lin(0xff2a2a), 0, 9, 1.6), blue = new THREE.PointLight(lin(0x2a5bff), 0, 9, 1.6);
+    red.position.set(d.x + .5, 2.2, Math.min(d.y + .5, EXH - 1.4)); blue.position.set(d.x + .5, 2.2, Math.min(d.y + .5, EXH - 1.4));
+    scene.add(red, blue);
+    police = { officers, red, blue, t: 0, start: performance.now(), onDone, door: d };
+    Sound.door();
+    return true;
+  }
+  function updatePolice(dt, t) {
+    const P = police; P.t += dt;
+    const on = Math.floor(t / 180) % 2;   /* 빨강·파랑 번갈아 */
+    P.red.intensity = on ? 2.4 : .2; P.blue.intensity = on ? .2 : 2.4;
+    let lead = null;
+    for (const o of P.officers) {
+      if (P.t < o.delay) continue;
+      o.rig.root.visible = true;
+      let moving = false;
+      if (o.i < o.pts.length) {
+        const [tx, tz] = o.pts[o.i], dx = tx - o.wx, dz = tz - o.wz, dd = Math.hypot(dx, dz), stp = 1.5 * dt;
+        o.heading = angTo(o.heading, Math.atan2(dx, dz), Math.min(1, dt * 8));
+        if (dd <= stp) { o.wx = tx; o.wz = tz; o.i++; } else { o.wx += dx / dd * stp; o.wz += dz / dd * stp; }
+        moving = true;
+      } else o.heading = angTo(o.heading, Math.atan2(cam.x - o.wx, cam.z - o.wz), Math.min(1, dt * 5));
+      if (!lead) lead = o;
+      const R = o.rig;
+      o.walkAmt += ((moving ? 1 : 0) - o.walkAmt) * Math.min(1, dt * 6); o.phase += dt * (moving ? 10 : 1.5);
+      const a = Math.sin(o.phase), wa = o.walkAmt;
+      R.legs[0].rotation.x = a * .6 * wa; R.legs[1].rotation.x = -a * .6 * wa;
+      R.knees[0].rotation.x = (Math.max(0, a) * .9 + .08) * wa; R.knees[1].rotation.x = (Math.max(0, -a) * .9 + .08) * wa;
+      R.arms[0].rotation.x = -a * .5 * wa; R.arms[1].rotation.x = a * .5 * wa;
+      R.elbows[0].rotation.x = -(.15 + Math.max(0, a) * .5 * wa); R.elbows[1].rotation.x = -(.15 + Math.max(0, -a) * .5 * wa);
+      R.arms[0].rotation.z = -.1; R.arms[1].rotation.z = .1;
+      R.body.position.y = Math.abs(Math.sin(o.phase)) * .04 * wa;
+      R.root.position.set(o.wx, 0, o.wz); R.root.rotation.y = o.heading;
+    }
+    if (lead) { cam.yaw = angTo(cam.yaw, Math.atan2(-(lead.wx - cam.x), -(lead.wz - cam.z)), Math.min(1, dt * 3)); cam.pitch += (-.1 - cam.pitch) * Math.min(1, dt * 3); }
+    const allIn = P.officers.every(o => o.i >= o.pts.length), real = (performance.now() - P.start) / 1000;
+    if ((allIn && real > 4) || real > 9) { const done = P.onDone; police = null; done(); }   /* 느린 기기에서도 최대 9초 */
+  }
+
   /* ---------- 카메라 · 이동 ---------- */
   function placeCamera() {
     camera.position.set(cam.x, EYE + Math.sin(bob) * .028, cam.z);
@@ -2796,7 +2889,7 @@ const V3 = (() => {
     else if (t.kind === "person") { S.tab = "people"; S.suspect = t.ref.id; S.challenge = null; S.deflectOn = null; render(); window.scrollTo(0, 0); }
   }
   function go(t) {
-    if (!t) return;
+    if (!t || police) return;
     if (t.kind === "person" && t.ref.kind === "h") { act(t); return; }
     if (t.kind === "person") { const n = npcs.find(x => x.p === t.ref); if (n) { n.hold = 8; n.path = null; } }
     if (t.kind === "door") { walkTo(t, () => enterDoor(t.ref)); return; }
@@ -2860,6 +2953,7 @@ const V3 = (() => {
     if (!host || !document.body.contains(renderer.domElement)) { cancelAnimationFrame(raf); raf = 0; return; }
     const dt = Math.min(.05, (t - last) / 1000 || 0); last = t;
     /* 키보드 이동 */
+    if (police) for (const k in keys) keys[k] = false;
     const f = (keys.w || keys.arrowup ? 1 : 0) - (keys.s || keys.arrowdown ? 1 : 0);
     const st = (keys.d ? 1 : 0) - (keys.a ? 1 : 0);
     if (keys.arrowleft) cam.yaw += dt * 2.2;
@@ -2871,6 +2965,7 @@ const V3 = (() => {
       if (tryMove(cam.x + (fx * f + rx * st) / len * SPEED * dt, cam.z + (fz * f + rz * st) / len * SPEED * dt) === "door") return;
     }
     for (const n of npcs) updateNpc(n, dt, t);
+    if (police) updatePolice(dt, t);
     for (const h of Object.values(helpers)) if (h.room === S.room && h.rig && sceneRoom === S.room) updateHelper(h, dt, t);
     if (cutscene) {
       const h = helpers[cutscene.pid];
@@ -2936,7 +3031,7 @@ const V3 = (() => {
       resize();
       if (cam.room !== S.room || !S.pos || S.pos.room !== S.room) { ensurePos(); spawn(); }
       const key = [S.caseId, C().title, S.room, S.searched.length, S.tampered.length, JSON.stringify(S.locks), JSON.stringify(S.silence), S.accCaught, S.vars.map(v => v.name).join()].join("|");
-      if (key !== sceneKey || !scene) { sceneKey = key; build(); }
+      if ((key !== sceneKey || !scene) && !police) { sceneKey = key; build(); }
       if (!raf) { last = performance.now(); raf = requestAnimationFrame(loop); }
     },
     key(e, isDown) {
@@ -2948,7 +3043,8 @@ const V3 = (() => {
     interact() { go(looking && looking.kind !== "floor" ? looking : null); },
     clearKeys() { for (const k in keys) keys[k] = false; },
     debug() { return { cam: { ...cam }, looking, objs: clickables.length, walking: !!walk, npcs: npcs.map(n => ({ name: n.p.name, x: +n.wx.toFixed(2), z: +n.wz.toFixed(2), tile: [n.p.x, n.p.y], walking: !!n.seg })) }; },
-    go, pick, helperEnter,
+    go, pick, helperEnter, policeScene, get policeActive() { return !!police; },
+    cancelPolice() { if (police && scene) { for (const o of police.officers) scene.remove(o.rig.root); scene.remove(police.red, police.blue); } police = null; },
     prune() {   /* 보고가 끝난 탐정: 지금 3D로 보고 있으면 걸어 나가고, 아니면 바로 사라진다 */
       for (const h of Object.values(helpers)) if (!missionAlive(h) && !(h.rig && sceneRoom === h.room && S.room === h.room && S.mode === "3d" && S.tab === "rooms")) dropHelper(h);
     },
