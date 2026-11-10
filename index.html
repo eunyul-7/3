@@ -1000,7 +1000,7 @@ const turnsFor = c => {
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
   locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null,
-  diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
+  autopsyDone: false, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
@@ -1022,7 +1022,7 @@ const DIFF = {
   easy:   { label: "쉬움",   turns: 30, time: 720, bonus: 0, sab: null,
             desc: "훼방도 동료 탐정도 없다. 처음 해 보는 사람에게." },
   normal: { label: "보통",   turns: 35, time: 540, bonus: 3, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 },
-            desc: "중반부터 가끔 훼방이 들어온다. 견습 탐정 서하루가 거짓말을 귀띔하고, 법의학 탐정 윤도경에게 사건 현장 감식을 한 번 맡길 수 있다." },
+            desc: "중반부터 가끔 훼방이 들어온다. 법의학 탐정 윤도경이 알아서 시신을 감식하고 단서를 찾아 주며, 견습 탐정 서하루가 거짓말을 귀띔한다." },
   hard:   { label: "어려움", turns: 45, time: 360, bonus: 6, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 },
             desc: "일찍부터 훼방이 잦고 갈수록 거세진다. 베테랑 탐정 강무열까지 세 명이 돕고, 동료를 현장에 직접 보낼 수 있다." },
 };
@@ -1072,6 +1072,7 @@ function spend(n = 1) {
   if (S.turns <= 0) { policeArrive("턴이 모두 지났다"); return; }
   S.sinceEvent += 1; S.sinceHelp += 1; S.actions += n;
   resolveMissions();
+  autoAutopsy();
   maybeSabotage();
   maybeHelp();
 }
@@ -1093,7 +1094,7 @@ function help() {
   const spots = Object.entries(c.rooms).flatMap(([rid, r]) => r.spots.map(s => ({ ...s, rid })))
     .filter(s => s.clue && !has(S.searched, s.id));
   const keySpots = spots.filter(s => c.key.includes(s.clue));
-  if (spots.length && vet) opts.push("reveal");   /* 보통에서 윤도경은 현장 파견 전용 */
+  if (spots.length) opts.push("reveal");
   const lies = Object.entries(c.suspects).flatMap(([sid, p]) => p.qs.filter(q => q.lie && !has(S.broken, q.id) && !has(S.hints, q.id)).map(q => ({ q, p })));
   if (lies.length) opts.push("hint");
   if (vet) opts.push("time");
@@ -1121,22 +1122,35 @@ function help() {
 }
 
 /* ---------- 어려움: 동료 탐정을 현장에 보내 직접 조사시키기 ---------- */
-/* 보통: 윤도경만, 사건 현장의 시신(현장 핵심 증거) 감식만 맡길 수 있다 */
+/* 사건 현장의 첫 조사 지점 = 시신(박물관은 매병) */
 const crimeRoomId = () => Object.keys(C().rooms).find(k => C().rooms[k].crime);
 const bodySpot = () => C().rooms[crimeRoomId()].spots[0];
 function canDispatch(pid) {
   if (S.turns <= 0 || has(S.dispatched, pid) || S.missions.some(m => m.room === S.room)) return false;
-  if (S.diff === "hard") return true;
-  return S.diff === "normal" && pid === "yoon" && S.room === crimeRoomId() && !has(S.searched, bodySpot().id);
+  return S.diff === "hard";
 }
 function dispatch(pid) {
   if (!canDispatch(pid)) return;
   S.dispatched.push(pid);
-  S.missions.push({ pid, room: S.room, due: S.actions + MISSION_DELAY, only: S.diff === "normal" ? bodySpot().id : null });
+  S.missions.push({ pid, room: S.room, due: S.actions + MISSION_DELAY, only: null });
   const x = partner(pid), rn = C().rooms[S.room].name;
   toast(`<b>${esc(x.name)}</b> — “${esc(EUN(rn))} 제게 맡기세요. ${MISSION_DELAY}턴 뒤에 보고하겠습니다.”`);
   Sound.ask();
 }
+const AUTOPSY_AFTER = 3;   /* 행동 3번 뒤 도착 */
+function autoAutopsy() {
+  if (S.diff === "easy" || S.autopsyDone || S.actions < AUTOPSY_AFTER) return;
+  S.autopsyDone = true;
+  const sp = bodySpot();
+  if (has(S.searched, sp.id)) return;   /* 이미 직접 살폈으면 조용히 넘어간다 */
+  S.searched.push(sp.id);
+  if (sp.clue && !has(S.found, sp.clue)) S.found.push(sp.clue);
+  const c = C(), rn = c.rooms[crimeRoomId()].name;
+  const msg = `법의학 탐정 윤도경의 감식 — “${pname()} 탐정님, ${rn} 감식 끝났어요. ${c.clues[sp.clue].text}”`;
+  S.events.push({ bad: false, msg });
+  toast(`<b>현장 감식</b> — 윤도경이 ${esc(EUL(c.clues[sp.clue].name))} 확인했다.`); Sound.clue();
+}
+
 function resolveMissions() {
   const c = C(), done = S.missions.filter(m => S.actions >= m.due);
   S.missions = S.missions.filter(m => S.actions < m.due);
@@ -1396,8 +1410,8 @@ function renderTitle() {
         <div><b><span class="k">04</span>수사 수첩</b><p>찾은 단서와 진술로 만든 시간표가 모인다. 거짓으로 밝혀진 진술에는 줄이 그어진다.</p></div>
         <div><b><span class="k">05</span>범인 지목</b><p>범인·동기·수법·결정적 증거(최대 3개)를 골라 제출한다. 맞힌 만큼 S~F 등급.</p></div>
         <div class="warn"><b><span class="k">주의</span>훼방</b><p>시간이 흐를수록 누군가 수사를 방해한다. 증거가 훼손되고, 방이 잠기고, 용의자가 입을 닫는다. 경찰이 앞당겨 오기도 한다.</p></div>
-        <div><b><span class="k">도움</span>동료 탐정</b><p>훼방이 심해지면 동료 탐정들이 달려온다. 보통에서는 견습 탐정 서하루(수상한 진술 귀띔)가, 어려움에서는 법의학 탐정 윤도경(단서 찾기)과 베테랑 탐정 강무열(잠긴 문 열기·시간 벌기)까지 나온다.</p></div>
-        <div><b><span class="k">어려움</span>현장 파견</b><p>턴을 쓰지 않고 동료를 보내 2턴 뒤 보고를 받는다. 보통에서는 윤도경에게 사건 현장의 시신 감식을 한 번 맡길 수 있다. 어려움에서는 세 명 모두 어느 장소에든(잠긴 방까지) 한 번씩 보낼 수 있다.</p></div>
+        <div><b><span class="k">도움</span>동료 탐정</b><p>훼방이 심해지면 동료 탐정들이 달려온다. 보통·어려움에서는 법의학 탐정 윤도경(수사 초반 시신 감식, 단서 찾기)과 견습 탐정 서하루(수상한 진술 귀띔)가, 어려움에서는 베테랑 탐정 강무열(잠긴 문 열기·시간 벌기)까지 나온다.</p></div>
+        <div><b><span class="k">어려움</span>현장 파견</b><p>어려움에서는 장소 화면의 ‘동료 탐정에게 맡기기’로 동료를 직접 보낼 수 있다. 턴을 쓰지 않고, 2턴 뒤 그 장소에서 찾은 단서를 모두 보고한다. 잠긴 방도 들어가며, 탐정마다 한 번씩.</p></div>
         <div><b><span class="k">난이도</span>쉬움 → 어려움</b><p>첫 사건은 쉬움, 뒤로 갈수록 어려워진다. 사건을 열 때 난이도와 시간 제한 모드를 직접 고를 수도 있다.</p></div>
         <div class="warn"><b><span class="k">시간</span>시간 제한 모드</b><p>실제 시계가 흐른다. 쉬움 12분, 보통 9분, 어려움 6분. 마지막 30초엔 초침 소리가 들린다.</p></div>
         <div><b><span class="k">무한</span>무작위 사건</b><p>무대·용의자·동기·수법·범인이 매번 새로 정해진다. 같은 사건은 두 번 나오지 않는다.</p></div>
@@ -1495,16 +1509,6 @@ function renderRooms(out) {
 }
 
 function renderDispatch(r) {
-  if (S.diff === "normal") {
-    const busy = S.missions.find(m => m.room === S.room);
-    if (S.room !== crimeRoomId() || (!busy && (has(S.dispatched, "yoon") || has(S.searched, bodySpot().id)))) return "";
-    return `<div class="dispatch">
-      <b>법의학 탐정 윤도경에게 감식 맡기기</b>
-      <p class="hint">${busy ? `윤도경이 ‘${bodySpot().label}’를 감식하고 있다. ${busy.due - S.actions}턴 뒤 보고.`
-        : `턴을 쓰지 않는다. 윤도경이 ‘${bodySpot().label}’를 대신 맡아 ${MISSION_DELAY}턴 뒤 보고한다. 한 번만 쓸 수 있다.`}</p>
-      <div class="q-actions"><button class="act ally" data-dispatch="yoon" ${busy ? "disabled" : ""}>윤도경<span class="cost">법의학 탐정</span></button></div>
-    </div>`;
-  }
   if (S.diff !== "hard") return "";
   const left = r.spots.some(sp => !has(S.searched, sp.id));
   const busy = S.missions.find(m => m.room === S.room);
