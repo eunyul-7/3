@@ -762,78 +762,125 @@ const CASES = [
 ];
 
 /* =====================================================================
-   얼굴 그림: 그림 파일 없이 이름으로 정해지는 SVG 초상화 (이름이 같으면 늘 같은 얼굴)
+   얼굴 그림: 그림 파일 없이 SVG로 그리는 초상화
+   - 성별은 등장인물마다 직접 정해 둔다(GENDER). 이름이 같으면 늘 같은 얼굴
+   - 나이가 많으면 흰머리와 주름
    ===================================================================== */
+const GENDER = {
+  /* 청람장 */ 서지현: "f", 최강호: "m", 박만수: "m", 윤채린: "f",
+  /* 달빛극장 */ 문태준: "m", 오세나: "f", 강민혁: "m", 장경수: "m",
+  /* 야간열차 */ 이현우: "m", 김도겸: "m", 류미선: "f", 정유나: "f",
+  /* 박물관 */ 민서영: "f", 표지훈: "m", 노승철: "m", 홍예진: "f",
+  /* 수사팀 */ 강무열: "m", 윤도경: "m", 서하루: "f", 한서진: "f", 모은재: "f", 차도율: "m",
+  /* 무작위 사건 이름 */ 서도윤: "m", 한예린: "f", 박준서: "m", 김하율: "f", 이서진: "f", 정민재: "m", 최유나: "f", 오태경: "m",
+  윤소이: "f", 강지후: "m", 문채원: "f", 배성훈: "m", 임가온: "f", 장우빈: "m", 송다인: "f", 홍재민: "m", 류시아: "f", 권태오: "m",
+  신보람: "f", 차은호: "m", 백지안: "f", 노현우: "m", 유해원: "f", 표나래: "f",
+  /* 변수 인물 */ 구해람: "f", 탁준기: "m", 엄소율: "f", 하도겸: "m", 봉지우: "f", 편세아: "f", 길태환: "m", 마여름: "f", 석동주: "m", 원채이: "f",
+};
+const ageOf = role => +((String(role || "").match(/(\d+)세/) || [])[1] || 0);
 const Face = (() => {
-  const SKIN = ["#f1d3b8", "#e6bf9c", "#d2a47c", "#b07d55", "#87593a"];
-  const HAIR = ["#1c1917", "#2f2219", "#5a3b24", "#8c6239", "#7d7a76", "#c7c1b6", "#4a1f1a"];
-  const CLOTH = ["#2c3a47", "#4a2c2c", "#33443a", "#56462f", "#30303f", "#5b3434", "#24313a", "#4b4a52"];
+  const SKIN = ["#f3dac4", "#edcbad", "#e4bd9b", "#d8ad88"];
+  const HAIR = ["#1b1716", "#241c18", "#33261f", "#46332a", "#5a4031"];
+  const GRAY = ["#8e8a85", "#aaa59e", "#c2bdb5"];
+  const SUIT = ["#2b3540", "#333038", "#3a3a34", "#2e3a33", "#3d3030"];
+  const SOFT = ["#7c8c99", "#a07f72", "#7f8f78", "#8d7f99", "#b19a78", "#6f7f8f"];
   const cache = new Map();
   function rng(str) {
-    let h = 1779033703 ^ str.length;
-    for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
-    return () => { h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); h ^= h >>> 16; return (h >>> 0) / 4294967296; };
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }
-  function svg(name, look) {
+  function draw(name, age, look) {
     const r = rng(name), pick = a => a[Math.floor(r() * a.length)];
-    const skin = pick(SKIN), hair = look.hair || pick(HAIR), cloth = look.cloth || pick(CLOTH);
-    const style = look.style || pick(["short", "short", "long", "bob", "curly", "bald", "pony", "side"]);
-    const glasses = look.glasses ?? pick([null, null, null, "round", "square"]);
-    const hat = look.hat ?? pick([null, null, null, null, null, "fedora", "cap"]);
-    const facial = look.facial ?? pick([null, null, null, "mustache", "beard"]);
-    const top = look.top || pick(["suit", "suit", "sweater", "coat", "shirt"]);
-    const browY = 39 + r() * 2, mouth = pick(["M45 56 Q50 58 55 56", "M45 57 L55 57", "M45 58 Q50 55 55 58"]);
-    const shade = "rgba(0,0,0,.18)";
-    let back = "", front = "";
-    if (style === "long") back = `<path d="M29 42 C29 20 41 16 50 16 C60 16 71 20 71 42 L74 78 L26 78 Z" fill="${hair}"/>`;
-    if (style === "bob") back = `<path d="M30 42 C30 21 41 17 50 17 C60 17 70 21 70 42 L70 60 L30 60 Z" fill="${hair}"/>`;
-    if (style === "pony") back = `<circle cx="67" cy="30" r="8" fill="${hair}"/>`;
-    if (style === "curly") back = [26, 34, 42, 50, 58, 66, 74].map((x, i) => `<circle cx="${x}" cy="${i % 2 ? 24 : 30}" r="9" fill="${hair}"/>`).join("") + `<circle cx="30" cy="40" r="7" fill="${hair}"/><circle cx="70" cy="40" r="7" fill="${hair}"/>`;
-    if (style === "short" || style === "long" || style === "bob" || style === "pony") front = `<path d="M33 42 C31 23 42 19 50 19 C60 19 70 24 67 42 C63 33 56 29 49 30 C42 30 36 34 33 42 Z" fill="${hair}"/>`;
-    if (style === "side") front = `<path d="M33 44 C30 22 44 18 52 19 C62 20 70 26 67 42 C62 30 52 27 40 31 C37 34 34 38 33 44 Z" fill="${hair}"/>`;
-    if (style === "bald") front = `<path d="M33 46 C33 40 34 37 35 36 L36 46 Z M67 46 C67 40 66 37 65 36 L64 46 Z" fill="${hair}"/>`;
-    let clothes = `<path d="M8 100 C12 77 30 70 50 70 C70 70 88 77 92 100 Z" fill="${cloth}"/>`;
-    if (top === "suit") clothes += `<path d="M42 70 L50 86 L58 70 Z" fill="#e8e4dc"/><path d="M48 72 L52 72 L53 86 L50 90 L47 86 Z" fill="${pick(["#7a2a2a", "#2a3a5a", "#1c1c1c", "#5a4a1a"])}"/><path d="M36 72 L50 92 L40 100 Z M64 72 L50 92 L60 100 Z" fill="${shade}"/>`;
-    if (top === "sweater") clothes += `<path d="M40 71 Q50 78 60 71" stroke="${shade}" stroke-width="4" fill="none"/>`;
-    if (top === "coat") clothes += `<path d="M34 74 L44 70 L50 84 L56 70 L66 74 L58 92 L50 86 L42 92 Z" fill="${shade}"/>`;
-    if (top === "shirt") clothes += `<path d="M42 70 L50 80 L58 70 L56 76 L50 84 L44 76 Z" fill="#e8e4dc"/>`;
-    let face = "";
-    if (facial === "mustache") face += `<path d="M42 53 Q50 50 58 53 Q50 55 42 53 Z" fill="${hair}"/>`;
-    if (facial === "beard") face += `<path d="M34 48 C35 64 43 67 50 67 C57 67 65 64 66 48 C62 58 56 60 50 60 C44 60 38 58 34 48 Z" fill="${hair}"/>`;
-    if (glasses === "round") face += `<g fill="none" stroke="#141414" stroke-width="1.6"><circle cx="43" cy="45" r="5"/><circle cx="57" cy="45" r="5"/><path d="M48 45 L52 45"/></g>`;
-    if (glasses === "square") face += `<g fill="none" stroke="#141414" stroke-width="1.6"><rect x="37.5" y="41" width="10" height="8" rx="1.5"/><rect x="52.5" y="41" width="10" height="8" rx="1.5"/><path d="M47.5 45 L52.5 45"/></g>`;
-    let hatSvg = "";
-    if (hat === "fedora") hatSvg = `<ellipse cx="50" cy="27" rx="27" ry="5" fill="#1d1d1f"/><path d="M36 27 C36 12 42 10 50 13 C58 10 64 12 64 27 Z" fill="#1d1d1f"/><rect x="36" y="22" width="28" height="4" fill="#6b2a2a"/>`;
-    if (hat === "cap") hatSvg = `<path d="M33 32 C33 17 45 15 50 15 C58 15 67 18 67 32 Z" fill="${cloth}"/><path d="M50 30 L76 31 L74 34 L50 33 Z" fill="${cloth}"/>`;
+    const g = look.g || GENDER[name] || (r() < 0.5 ? "f" : "m");
+    age = look.age || age || 30 + Math.floor(r() * 25);
+    const skin = pick(SKIN), old = age >= 56;
+    const hair = look.hair || (old ? pick(GRAY) : age >= 48 && r() < 0.4 ? pick(GRAY.slice(0, 1).concat(HAIR.slice(2))) : pick(HAIR));
+    const shade = "rgba(80,45,30,.16)", line = "rgba(60,35,25,.55)";
+    const F = g === "f";
+    const style = look.style || (F ? pick(["long", "long", "bob", "bun", "wave"]) : pick(old ? ["short", "side", "thin"] : ["short", "side", "side", "crew"]));
+    const glasses = look.glasses !== undefined ? look.glasses : pick([null, null, null, null, "round", "rect"]);
+    const facial = F ? null : look.facial !== undefined ? look.facial : pick([null, null, null, null, "stubble", "mustache"]);
+    const top = look.top || (F ? pick(["blouse", "cardigan", "jacket", "knit"]) : pick(["suit", "suit", "shirt", "knit", "jacket"]));
+    const cloth = look.cloth || (top === "suit" || top === "jacket" ? pick(SUIT) : pick(SOFT));
+
+    /* 머리 뒤쪽(어깨 뒤로 넘어가는 부분) */
+    let back = "";
+    if (style === "long") back = `<path d="M31 40 C30 22 40 15 50 15 C61 15 70 22 69 40 L70 72 C66 79 34 79 30 72 Z" fill="${hair}"/>`;
+    if (style === "wave") back = `<path d="M31 40 C30 22 40 15 50 15 C61 15 70 22 69 40 C72 50 68 56 71 64 C73 72 66 78 60 76 L40 76 C34 78 27 72 29 64 C32 56 28 50 31 40 Z" fill="${hair}"/>`;
+    if (style === "bob") back = `<path d="M31 41 C30 22 40 16 50 16 C60 16 70 22 69 41 L70 60 C66 64 34 64 30 60 Z" fill="${hair}"/>`;
+    if (style === "bun") back = `<circle cx="50" cy="15" r="7.5" fill="${hair}"/>`;
+
+    /* 옷 */
+    const body = `<path d="M13 100 C15 83 29 77 50 77 C71 77 85 83 87 100 Z" fill="${cloth}"/>`;
+    let clothes = body;
+    if (top === "suit") clothes += `<path d="M43 77 L50 90 L57 77 Z" fill="#ece8e1"/><path d="M48.6 79 L51.4 79 L52.4 91 L50 94 L47.6 91 Z" fill="${pick(["#6e2c2c", "#2c3d5c", "#1d1d1d", "#4d4426"])}"/><path d="M37 79 L50 95 L44 100 L31 100 Z M63 79 L50 95 L56 100 L69 100 Z" fill="rgba(0,0,0,.18)"/>`;
+    if (top === "shirt") clothes += `<path d="M43 77 L50 86 L57 77 L55 83 L50 88 L45 83 Z" fill="#ece8e1"/><path d="M50 88 L50 100" stroke="rgba(0,0,0,.18)" stroke-width="1"/>`;
+    if (top === "jacket") clothes += `<path d="M42 78 Q50 86 58 78 L58 100 L42 100 Z" fill="${F ? "#ece8e1" : "#3b3b3b"}"/><path d="M38 80 L46 100 M62 80 L54 100" stroke="rgba(0,0,0,.25)" stroke-width="2"/>`;
+    if (top === "knit") clothes += `<path d="M41 78 Q50 84 59 78" stroke="rgba(0,0,0,.2)" stroke-width="3" fill="none"/>`;
+    if (top === "blouse") clothes += `<path d="M42 77 L50 85 L58 77 L56 81 L50 87 L44 81 Z" fill="rgba(255,255,255,.35)"/>`;
+    if (top === "cardigan") clothes += `<path d="M43 78 Q50 84 57 78 L55 100 L45 100 Z" fill="#ece8e1"/><path d="M45 100 L44 80 M55 100 L56 80" stroke="rgba(0,0,0,.2)" stroke-width="1.5"/>`;
+
+    /* 얼굴형 */
+    const head = F
+      ? `M34 42 C34 27 41 20 50 20 C59 20 66 27 66 42 C66 52 63 59 57.5 64 C55 66.5 52.5 67.5 50 67.5 C47.5 67.5 45 66.5 42.5 64 C37 59 34 52 34 42 Z`
+      : `M33 42 C33 26 41 19 50 19 C59 19 67 26 67 42 C67 53 64.5 60 59 65 C56 67.5 53 68.5 50 68.5 C47 68.5 44 67.5 41 65 C35.5 60 33 53 33 42 Z`;
+
+    /* 앞머리 */
+    let front = "";
+    if (F && (style === "long" || style === "wave" || style === "bob")) front = `<path d="M33.5 44 C31 25 41 17 50 17 C60 17 69 25 66.5 44 C65 35 61 29 55 26 C50 31 42 35 33.5 44 Z" fill="${hair}"/>`;
+    if (F && style === "bun") front = `<path d="M34 41 C32 25 41 18 50 18 C59 18 68 25 66 41 C63 31 57 26 50 26 C43 26 37 31 34 41 Z" fill="${hair}"/>`;
+    if (!F && style === "short") front = `<path d="M33.5 40 C32 25 40 17.5 50 17.5 C60.5 17.5 68 25 66.5 40 C65.5 34.5 63 31 60 29.5 C54 31.5 46 31.5 40 29.5 C37 31 34.5 34.5 33.5 40 Z" fill="${hair}"/>`;
+    if (!F && style === "side") front = `<path d="M33.5 41 C31.5 24 41 16.5 51 16.5 C61 16.5 69 24 66.5 41 C65 33 61.5 28 55 26.5 C49 29 41 29 37 31.5 C35 34 34 37 33.5 41 Z" fill="${hair}"/>`;
+    if (!F && style === "crew") front = `<path d="M34 37 C35 25 42 19.5 50 19.5 C58 19.5 65 25 66 37 C60 31.5 40 31.5 34 37 Z" fill="${hair}"/>`;
+    if (!F && style === "thin") front = `<path d="M33.5 44 C33 37 34 33 36 30 L37.5 42 Z M66.5 44 C67 37 66 33 64 30 L62.5 42 Z" fill="${hair}"/><path d="M40 25 C45 22 55 22 60 25" stroke="${hair}" stroke-width="1.5" fill="none" opacity=".6"/>`;
+
+    /* 눈 · 눈썹 · 코 · 입 */
+    const ey = 44.5, bw = F ? 1.4 : 2.1, by = F ? 39.2 : 39.8;
+    const brows = F
+      ? `<path d="M39 ${by + 1} Q42.5 ${by - 1} 46.5 ${by + .4} M53.5 ${by + .4} Q57.5 ${by - 1} 61 ${by + 1}" stroke="${hair}" stroke-width="${bw}" fill="none" stroke-linecap="round"/>`
+      : `<path d="M38.5 ${by + .6} L46.5 ${by} M53.5 ${by} L61.5 ${by + .6}" stroke="${hair}" stroke-width="${bw}" stroke-linecap="round"/>`;
+    const eyes = `<ellipse cx="43" cy="${ey}" rx="2.3" ry="${F ? 1.7 : 1.5}" fill="#2a1d18"/><ellipse cx="57" cy="${ey}" rx="2.3" ry="${F ? 1.7 : 1.5}" fill="#2a1d18"/>
+      <circle cx="43.7" cy="${ey - .5}" r=".55" fill="#fff" opacity=".8"/><circle cx="57.7" cy="${ey - .5}" r=".55" fill="#fff" opacity=".8"/>
+      ${F ? `<path d="M40.3 ${ey - 1} Q43 ${ey - 2.8} 45.7 ${ey - 1.2} M54.3 ${ey - 1.2} Q57 ${ey - 2.8} 59.7 ${ey - 1}" stroke="#2a1d18" stroke-width=".9" fill="none"/>` : ""}`;
+    const nose = `<path d="M50.5 46.5 Q48.6 52 50.2 53.2 Q51.5 53.6 52.4 52.8" stroke="${shade.replace(".16", ".45")}" stroke-width="1.1" fill="none" stroke-linecap="round"/>`;
+    const mouth = F
+      ? `<path d="M46 58 Q50 56.6 54 58 Q50 60.6 46 58 Z" fill="#b8625c"/>`
+      : `<path d="M46 58.2 Q50 59.3 54 58.2" stroke="#8a4a40" stroke-width="1.5" fill="none" stroke-linecap="round"/>`;
+    const blush = F ? `<ellipse cx="40" cy="52" rx="3.5" ry="2" fill="#e88f86" opacity=".22"/><ellipse cx="60" cy="52" rx="3.5" ry="2" fill="#e88f86" opacity=".22"/>` : "";
+    const wrinkles = old ? `<path d="M39.5 48.5 Q41 49.5 43 49 M60.5 48.5 Q59 49.5 57 49 M43 33 Q50 31.5 57 33" stroke="${line}" stroke-width=".6" fill="none" opacity=".7"/><path d="M44 55.5 Q43 57.5 44.5 59.5 M56 55.5 Q57 57.5 55.5 59.5" stroke="${line}" stroke-width=".6" fill="none" opacity=".6"/>` : "";
+    let extra = "";
+    if (facial === "stubble") extra += `<path d="M37 52 C38 62 44 67 50 67 C56 67 62 62 63 52 C60 59 56 61.5 50 61.5 C44 61.5 40 59 37 52 Z" fill="${hair}" opacity=".28"/>`;
+    if (facial === "mustache") extra += `<path d="M44.5 55.8 Q50 53.6 55.5 55.8 Q50 56.8 44.5 55.8 Z" fill="${hair}"/>`;
+    if (glasses === "round") extra += `<g fill="rgba(255,255,255,.08)" stroke="#2b2522" stroke-width="1.1"><circle cx="43" cy="${ey}" r="4.8"/><circle cx="57" cy="${ey}" r="4.8"/><path d="M47.8 ${ey} Q50 ${ey - 1.2} 52.2 ${ey}" fill="none"/></g>`;
+    if (glasses === "rect") extra += `<g fill="rgba(255,255,255,.08)" stroke="#2b2522" stroke-width="1.1"><rect x="37.6" y="${ey - 3.6}" width="10.6" height="7" rx="2"/><rect x="51.8" y="${ey - 3.6}" width="10.6" height="7" rx="2"/><path d="M48.2 ${ey - .5} L51.8 ${ey - .5}" fill="none"/></g>`;
+    let hat = "";
+    if (look.hat === "fedora") hat = `<ellipse cx="50" cy="26.5" rx="25" ry="4.5" fill="#262321"/><path d="M37 26.5 C36.5 14 42 11.5 50 14 C58 11.5 63.5 14 63 26.5 Z" fill="#2c2926"/><rect x="37" y="22" width="26" height="3.4" fill="#5c2b26"/>`;
+
     return `<svg viewBox="0 0 100 100" aria-hidden="true">${back}
-      <rect x="43" y="56" width="14" height="16" fill="${skin}"/><rect x="43" y="64" width="14" height="6" fill="${shade}"/>
+      <path d="M43.5 60 L43.5 76 Q50 80 56.5 76 L56.5 60 Z" fill="${skin}"/><path d="M43.5 66 Q50 71 56.5 66 L56.5 70 Q50 74 43.5 70 Z" fill="${shade}"/>
       ${clothes}
-      <ellipse cx="33" cy="47" rx="3.5" ry="5" fill="${skin}"/><ellipse cx="67" cy="47" rx="3.5" ry="5" fill="${skin}"/>
-      <ellipse cx="50" cy="45" rx="17" ry="20" fill="${skin}"/>
-      ${front}
-      <path d="M38 ${browY} L46 ${browY - 1} M54 ${browY - 1} L62 ${browY}" stroke="${hair === "#c7c1b6" ? "#6a655e" : hair}" stroke-width="2" stroke-linecap="round"/>
-      <ellipse cx="43" cy="45.5" rx="1.8" ry="2.2" fill="#1a1512"/><ellipse cx="57" cy="45.5" rx="1.8" ry="2.2" fill="#1a1512"/>
-      <path d="M50 46 L48 52 L51 52" stroke="${shade}" stroke-width="1.4" fill="none"/>
-      <path d="${mouth}" stroke="#6b3a32" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-      ${face}${hatSvg}</svg>`;
+      <ellipse cx="${F ? 34.2 : 33.4}" cy="46" rx="2.8" ry="4.2" fill="${skin}"/><ellipse cx="${F ? 65.8 : 66.6}" cy="46" rx="2.8" ry="4.2" fill="${skin}"/>
+      <path d="${head}" fill="${skin}"/>
+      ${blush}${wrinkles}${front}${brows}${eyes}${nose}${mouth}${extra}${hat}</svg>`;
   }
-  /* 수사팀은 특징을 정해 둔다 */
+  /* 수사팀은 모습을 정해 둔다 */
   const LOOKS = {
-    "강무열": { style: "short", hair: "#7d7a76", hat: "fedora", facial: "mustache", top: "coat", cloth: "#3b3226", glasses: null },
-    "윤도경": { style: "bob", hair: "#1c1917", glasses: "square", hat: null, facial: null, top: "shirt", cloth: "#d9dde0" },
-    "서하루": { style: "pony", hair: "#5a3b24", hat: "cap", glasses: null, facial: null, top: "sweater", cloth: "#2f4a5c" },
-    "한서진": { style: "side", hair: "#2f2219", glasses: "round", hat: null, facial: null, top: "suit", cloth: "#24313a" },
-    "모은재": { style: "curly", hair: "#4a1f1a", glasses: null, hat: null, facial: null, top: "sweater", cloth: "#5b4a3a" },
-    "차도율": { style: "short", hair: "#1c1917", glasses: "square", hat: null, facial: null, top: "suit", cloth: "#1f2530" },
+    강무열: { g: "m", age: 58, style: "short", hat: "fedora", facial: "mustache", top: "suit", cloth: "#3b3226", glasses: null },
+    윤도경: { g: "m", age: 41, style: "side", glasses: "rect", facial: null, top: "shirt", cloth: "#cfd6dc" },
+    서하루: { g: "f", age: 24, style: "bun", glasses: null, top: "knit", cloth: "#4f6a7c", hair: "#3b2a20" },
+    한서진: { g: "f", age: 37, style: "bob", glasses: "round", top: "jacket", cloth: "#2b3540", hair: "#1b1716" },
+    모은재: { g: "f", age: 33, style: "wave", glasses: null, top: "cardigan", cloth: "#9a7f6a", hair: "#46332a" },
+    차도율: { g: "m", age: 45, style: "side", glasses: "rect", facial: null, top: "suit", cloth: "#1f2530", hair: "#241c18" },
   };
-  return (name, size = 40, cls = "") => {
-    const key = name;
-    if (!cache.has(key)) cache.set(key, svg(name, LOOKS[name] || {}));
+  return (name, size = 40, cls = "", age = 0) => {
+    const key = name + "|" + age;
+    if (!cache.has(key)) cache.set(key, draw(name, age, LOOKS[name] || {}));
     return `<span class="face ${cls}" style="width:${size}px;height:${size}px">${cache.get(key)}</span>`;
   };
 })();
 /* 크게 보이는 머그샷(키 눈금 배경) */
-const mug = name => `<span class="mug">${Face(name, 96, "big")}</span>`;
+const mug = (name, age = 0) => `<span class="mug">${Face(name, 96, "big", age)}</span>`;
 
 /* =====================================================================
    무작위 사건 생성기 — 무대 · 사람 · 흔적 · 동기 · 수법 · 범인을 매번 새로 뽑는다
@@ -1681,7 +1728,7 @@ function renderBrief() {
         <label class="opt"><input type="checkbox" name="timed" id="timed" ${S.timed ? "checked" : ""}><span>실제 시간 <b>${mmss(DIFF[S.diff].time)}</b> 안에 범인을 지목한다. 시간이 다 되면 턴이 남아도 경찰이 들이닥친다. 성공하면 점수 +5.</span></label>
       </fieldset>
       <div class="cast">
-        ${Object.values(c.suspects).map(p => `<div class="person">${Face(p.name, 64)}<b>${p.name}</b><span>${p.role}</span><span>${p.intro}</span></div>`).join("")}
+        ${Object.values(c.suspects).map(p => `<div class="person">${Face(p.name, 64, "", ageOf(p.role))}<b>${p.name}</b><span>${p.role}</span><span>${p.intro}</span></div>`).join("")}
       </div>
       <div class="btn-row">
         <button class="btn" data-act="start">수사를 시작한다</button>
@@ -1785,7 +1832,7 @@ function renderPeople(out) {
     const open = p.qs.filter(q => !q.need || has(S.found, q.need));
     const left = open.filter(q => !has(S.asked, q.id)).length;
     const nb = p.qs.filter(q => has(S.broken, q.id)).length, sl = S.silence[id];
-    return `<button class="who has-face${sl ? " is-silent" : ""}" aria-pressed="${S.suspect === id}" data-suspect="${id}">${Face(p.name, 44)}
+    return `<button class="who has-face${sl ? " is-silent" : ""}" aria-pressed="${S.suspect === id}" data-suspect="${id}">${Face(p.name, 44, "", ageOf(p.role))}
       <span class="who-text"><b>${p.name}</b><span>${p.role}</span><span class="mono">${sl ? `침묵 ${sl}턴` : `새 질문 ${left}${nb ? ` · 번복 ${nb}` : ""}`}</span></span></button>`;
   }).join("");
   const side = S.vars.length ? `<span class="label side-label">변수 인물 · 한 명은 공범</span>
@@ -1799,7 +1846,7 @@ function renderPeople(out) {
   return `<div class="split">
     <div class="people">${list}${side}</div>
     <section class="panel" aria-live="polite">
-      <div class="person-head">${mug(p.name)}<div><span class="label">${p.role}</span><h3 style="font-size:24px">${p.name}</h3></div></div>
+      <div class="person-head">${mug(p.name, ageOf(p.role))}<div><span class="label">${p.role}</span><h3 style="font-size:24px">${p.name}</h3></div></div>
       <p class="desc">${p.intro}</p>
       ${sl ? `<p class="locked-room">“변호사가 오기 전엔 아무 말도 안 하겠어요.” ${sl}턴 동안 심문할 수 없다.</p>
         ${lawyerLeft() > 0 && !out ? `<div class="q-actions"><button class="act ally with-face" data-lawyer="${S.suspect}">${Face(LAWYER.name, 24)}${LAWYER.title} ${LAWYER.name} 부르기<span class="cost">${lawyerLeft()}번 남음</span></button></div>` : ""}` : ""}
@@ -1901,7 +1948,7 @@ function renderResult() {
       ${S.timed ? row("시간 제한", S.timeLeft > 0, S.timeLeft > 0 ? `${mmss(S.timeLeft)} 남김 (+5)` : "시간 초과 (+5)") : ""}
       <div class="score-row"><b>점수</b><b class="mono">${R.score}</b></div>
     </div>
-    <div class="person-head culprit">${mug(real)}<div><span class="label">진범</span><h3 style="font-size:24px">${real}</h3><span class="hint">${c.suspects[c.answer.culprit].role}</span></div></div>
+    <div class="person-head culprit">${mug(real, ageOf(c.suspects[c.answer.culprit].role))}<div><span class="label">진범</span><h3 style="font-size:24px">${real}</h3><span class="hint">${c.suspects[c.answer.culprit].role}</span></div></div>
     <h3>사건의 진상</h3>
     <div class="truth">${c.truth.map(t => `<p>${esc(t)}</p>`).join("")}</div>
     <div class="btn-row">
