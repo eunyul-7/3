@@ -231,6 +231,23 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .timer b { color: var(--lamp); font-weight: 500; }
 .urgent .timer b { color: var(--blood); }
 .diff-chip { font-family: var(--f-mono); font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 1px 7px; }
+/* 얼굴 그림 */
+.face { display: inline-block; flex: none; border-radius: 50%; overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); vertical-align: middle; }
+.face svg { width: 100%; height: 100%; display: block; }
+.who.has-face { display: flex; gap: 10px; align-items: center; }
+.who-text { display: grid; gap: 2px; min-width: 0; }
+.who-text span { font-size: 13px; color: var(--muted); }
+.person-head { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.mug { display: inline-block; padding: 6px; border: 1px solid var(--line); border-radius: 4px;
+  background: repeating-linear-gradient(to bottom, var(--surface) 0 11px, var(--line) 11px 12px); }
+.mug .face.big { border-radius: 3px; background: transparent; border: 0; }
+.person-head.culprit .mug { border-color: var(--blood); }
+.cast .person .face { margin-bottom: 4px; }
+.with-face { display: inline-flex; align-items: center; gap: 6px; }
+.team { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
+.member { display: grid; justify-items: center; text-align: center; gap: 4px; }
+.member b { font-family: var(--f-display); font-size: 16px; }
+.member span { color: var(--muted); font-size: 12.5px; }
 .name-form { display: grid; gap: 6px; max-width: 360px; }
 .name-form label { font-family: var(--f-mono); font-size: 12px; letter-spacing: .12em; color: var(--muted); }
 .name-form input { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 10px 12px; color: var(--ink); font: inherit; font-size: 16px; min-width: 0; }
@@ -743,6 +760,80 @@ const CASES = [
   ],
 },
 ];
+
+/* =====================================================================
+   얼굴 그림: 그림 파일 없이 이름으로 정해지는 SVG 초상화 (이름이 같으면 늘 같은 얼굴)
+   ===================================================================== */
+const Face = (() => {
+  const SKIN = ["#f1d3b8", "#e6bf9c", "#d2a47c", "#b07d55", "#87593a"];
+  const HAIR = ["#1c1917", "#2f2219", "#5a3b24", "#8c6239", "#7d7a76", "#c7c1b6", "#4a1f1a"];
+  const CLOTH = ["#2c3a47", "#4a2c2c", "#33443a", "#56462f", "#30303f", "#5b3434", "#24313a", "#4b4a52"];
+  const cache = new Map();
+  function rng(str) {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+    return () => { h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); h ^= h >>> 16; return (h >>> 0) / 4294967296; };
+  }
+  function svg(name, look) {
+    const r = rng(name), pick = a => a[Math.floor(r() * a.length)];
+    const skin = pick(SKIN), hair = look.hair || pick(HAIR), cloth = look.cloth || pick(CLOTH);
+    const style = look.style || pick(["short", "short", "long", "bob", "curly", "bald", "pony", "side"]);
+    const glasses = look.glasses ?? pick([null, null, null, "round", "square"]);
+    const hat = look.hat ?? pick([null, null, null, null, null, "fedora", "cap"]);
+    const facial = look.facial ?? pick([null, null, null, "mustache", "beard"]);
+    const top = look.top || pick(["suit", "suit", "sweater", "coat", "shirt"]);
+    const browY = 39 + r() * 2, mouth = pick(["M45 56 Q50 58 55 56", "M45 57 L55 57", "M45 58 Q50 55 55 58"]);
+    const shade = "rgba(0,0,0,.18)";
+    let back = "", front = "";
+    if (style === "long") back = `<path d="M29 42 C29 20 41 16 50 16 C60 16 71 20 71 42 L74 78 L26 78 Z" fill="${hair}"/>`;
+    if (style === "bob") back = `<path d="M30 42 C30 21 41 17 50 17 C60 17 70 21 70 42 L70 60 L30 60 Z" fill="${hair}"/>`;
+    if (style === "pony") back = `<circle cx="67" cy="30" r="8" fill="${hair}"/>`;
+    if (style === "curly") back = [26, 34, 42, 50, 58, 66, 74].map((x, i) => `<circle cx="${x}" cy="${i % 2 ? 24 : 30}" r="9" fill="${hair}"/>`).join("") + `<circle cx="30" cy="40" r="7" fill="${hair}"/><circle cx="70" cy="40" r="7" fill="${hair}"/>`;
+    if (style === "short" || style === "long" || style === "bob" || style === "pony") front = `<path d="M33 42 C31 23 42 19 50 19 C60 19 70 24 67 42 C63 33 56 29 49 30 C42 30 36 34 33 42 Z" fill="${hair}"/>`;
+    if (style === "side") front = `<path d="M33 44 C30 22 44 18 52 19 C62 20 70 26 67 42 C62 30 52 27 40 31 C37 34 34 38 33 44 Z" fill="${hair}"/>`;
+    if (style === "bald") front = `<path d="M33 46 C33 40 34 37 35 36 L36 46 Z M67 46 C67 40 66 37 65 36 L64 46 Z" fill="${hair}"/>`;
+    let clothes = `<path d="M8 100 C12 77 30 70 50 70 C70 70 88 77 92 100 Z" fill="${cloth}"/>`;
+    if (top === "suit") clothes += `<path d="M42 70 L50 86 L58 70 Z" fill="#e8e4dc"/><path d="M48 72 L52 72 L53 86 L50 90 L47 86 Z" fill="${pick(["#7a2a2a", "#2a3a5a", "#1c1c1c", "#5a4a1a"])}"/><path d="M36 72 L50 92 L40 100 Z M64 72 L50 92 L60 100 Z" fill="${shade}"/>`;
+    if (top === "sweater") clothes += `<path d="M40 71 Q50 78 60 71" stroke="${shade}" stroke-width="4" fill="none"/>`;
+    if (top === "coat") clothes += `<path d="M34 74 L44 70 L50 84 L56 70 L66 74 L58 92 L50 86 L42 92 Z" fill="${shade}"/>`;
+    if (top === "shirt") clothes += `<path d="M42 70 L50 80 L58 70 L56 76 L50 84 L44 76 Z" fill="#e8e4dc"/>`;
+    let face = "";
+    if (facial === "mustache") face += `<path d="M42 53 Q50 50 58 53 Q50 55 42 53 Z" fill="${hair}"/>`;
+    if (facial === "beard") face += `<path d="M34 48 C35 64 43 67 50 67 C57 67 65 64 66 48 C62 58 56 60 50 60 C44 60 38 58 34 48 Z" fill="${hair}"/>`;
+    if (glasses === "round") face += `<g fill="none" stroke="#141414" stroke-width="1.6"><circle cx="43" cy="45" r="5"/><circle cx="57" cy="45" r="5"/><path d="M48 45 L52 45"/></g>`;
+    if (glasses === "square") face += `<g fill="none" stroke="#141414" stroke-width="1.6"><rect x="37.5" y="41" width="10" height="8" rx="1.5"/><rect x="52.5" y="41" width="10" height="8" rx="1.5"/><path d="M47.5 45 L52.5 45"/></g>`;
+    let hatSvg = "";
+    if (hat === "fedora") hatSvg = `<ellipse cx="50" cy="27" rx="27" ry="5" fill="#1d1d1f"/><path d="M36 27 C36 12 42 10 50 13 C58 10 64 12 64 27 Z" fill="#1d1d1f"/><rect x="36" y="22" width="28" height="4" fill="#6b2a2a"/>`;
+    if (hat === "cap") hatSvg = `<path d="M33 32 C33 17 45 15 50 15 C58 15 67 18 67 32 Z" fill="${cloth}"/><path d="M50 30 L76 31 L74 34 L50 33 Z" fill="${cloth}"/>`;
+    return `<svg viewBox="0 0 100 100" aria-hidden="true">${back}
+      <rect x="43" y="56" width="14" height="16" fill="${skin}"/><rect x="43" y="64" width="14" height="6" fill="${shade}"/>
+      ${clothes}
+      <ellipse cx="33" cy="47" rx="3.5" ry="5" fill="${skin}"/><ellipse cx="67" cy="47" rx="3.5" ry="5" fill="${skin}"/>
+      <ellipse cx="50" cy="45" rx="17" ry="20" fill="${skin}"/>
+      ${front}
+      <path d="M38 ${browY} L46 ${browY - 1} M54 ${browY - 1} L62 ${browY}" stroke="${hair === "#c7c1b6" ? "#6a655e" : hair}" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="43" cy="45.5" rx="1.8" ry="2.2" fill="#1a1512"/><ellipse cx="57" cy="45.5" rx="1.8" ry="2.2" fill="#1a1512"/>
+      <path d="M50 46 L48 52 L51 52" stroke="${shade}" stroke-width="1.4" fill="none"/>
+      <path d="${mouth}" stroke="#6b3a32" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      ${face}${hatSvg}</svg>`;
+  }
+  /* 수사팀은 특징을 정해 둔다 */
+  const LOOKS = {
+    "강무열": { style: "short", hair: "#7d7a76", hat: "fedora", facial: "mustache", top: "coat", cloth: "#3b3226", glasses: null },
+    "윤도경": { style: "bob", hair: "#1c1917", glasses: "square", hat: null, facial: null, top: "shirt", cloth: "#d9dde0" },
+    "서하루": { style: "pony", hair: "#5a3b24", hat: "cap", glasses: null, facial: null, top: "sweater", cloth: "#2f4a5c" },
+    "한서진": { style: "side", hair: "#2f2219", glasses: "round", hat: null, facial: null, top: "suit", cloth: "#24313a" },
+    "모은재": { style: "curly", hair: "#4a1f1a", glasses: null, hat: null, facial: null, top: "sweater", cloth: "#5b4a3a" },
+    "차도율": { style: "short", hair: "#1c1917", glasses: "square", hat: null, facial: null, top: "suit", cloth: "#1f2530" },
+  };
+  return (name, size = 40, cls = "") => {
+    const key = name;
+    if (!cache.has(key)) cache.set(key, svg(name, LOOKS[name] || {}));
+    return `<span class="face ${cls}" style="width:${size}px;height:${size}px">${cache.get(key)}</span>`;
+  };
+})();
+/* 크게 보이는 머그샷(키 눈금 배경) */
+const mug = name => `<span class="mug">${Face(name, 96, "big")}</span>`;
 
 /* =====================================================================
    무작위 사건 생성기 — 무대 · 사람 · 흔적 · 동기 · 수법 · 범인을 매번 새로 뽑는다
@@ -1518,6 +1609,11 @@ function renderTitle() {
         <button class="btn" data-act="enter">사건 파일 열기</button>
         ${soundBtn()}
       </div>
+      <h2>수사팀</h2>
+      <div class="team">
+        ${[...PARTNERS.map(x => [x.name, x.title]), ...REBUTTERS.map(x => [x.name, x.title]), [LAWYER.name, LAWYER.title]]
+          .map(([n, t]) => `<div class="member">${Face(n, 72)}<b>${n}</b><span>${t}</span></div>`).join("")}
+      </div>
       <h2>조작 방법</h2>
       <div class="howto">
         <div><b><span class="k">01</span>현장 조사</b><p>평면도에서 장소를 누르고 ‘조사한다’를 누른다. 장소 이동은 공짜, 조사 한 번에 1턴.</p></div>
@@ -1585,7 +1681,7 @@ function renderBrief() {
         <label class="opt"><input type="checkbox" name="timed" id="timed" ${S.timed ? "checked" : ""}><span>실제 시간 <b>${mmss(DIFF[S.diff].time)}</b> 안에 범인을 지목한다. 시간이 다 되면 턴이 남아도 경찰이 들이닥친다. 성공하면 점수 +5.</span></label>
       </fieldset>
       <div class="cast">
-        ${Object.values(c.suspects).map(p => `<div class="person"><b>${p.name}</b><span>${p.role}</span><span>${p.intro}</span></div>`).join("")}
+        ${Object.values(c.suspects).map(p => `<div class="person">${Face(p.name, 64)}<b>${p.name}</b><span>${p.role}</span><span>${p.intro}</span></div>`).join("")}
       </div>
       <div class="btn-row">
         <button class="btn" data-act="start">수사를 시작한다</button>
@@ -1636,8 +1732,8 @@ function renderDispatch(r) {
   const btns = PARTNERS.filter(x => !rule.who || rule.who.includes(x.id)).map(x => {
     const left = dispatchLeft(x.id), away = S.missions.some(m => m.pid === x.id);
     const tag = away ? "출동 중" : left <= 0 ? "끝" : rule.each ? `${left}번 남음` : x.title;
-    return `<button class="act ally" data-dispatch="${x.id}" ${canDispatch(x.id) ? "" : "disabled"}>
-      ${x.name}<span class="cost">${tag}</span></button>`;
+    return `<button class="act ally with-face" data-dispatch="${x.id}" ${canDispatch(x.id) ? "" : "disabled"}>
+      ${Face(x.name, 24)}${x.name}<span class="cost">${tag}</span></button>`;
   }).join("");
   const howMany = rule.total ? `모두 합쳐 ${rule.total}번 (남은 횟수 ${Math.max(0, dispatchLeft())}번)` : `탐정마다 ${rule.each}번`;
   return `<div class="dispatch">
@@ -1659,7 +1755,7 @@ function renderQ(q, p, outRaw) {
   if (asked) {
     html += `<p class="answer${broken ? " retracted" : ""}">${esc(q.a)}</p>`;
     const note = S.rebutNotes[q.id];
-    if (note) html += `<span class="verdict-tag ally">${esc(note.who)}의 반박</span><p class="answer rebut">${esc(note.text)}</p>`;
+    if (note) html += `<span class="verdict-tag ally with-face">${Face(note.who.split(" ").pop(), 22)}${esc(note.who)}의 반박</span><p class="answer rebut">${esc(note.text)}</p>`;
     if (broken) {
       html += `<span class="verdict-tag">진술 번복</span><p class="answer broken">${esc(q.lie.reply)}</p>`;
     } else {
@@ -1674,7 +1770,7 @@ function renderQ(q, p, outRaw) {
         </div>`;
       } else {
         const rb = note ? "" : REBUTTERS.filter(x => rebutLeft(x.id) > 0)
-          .map(x => `<button class="act ally" data-rebut="${x.id}" data-q="${q.id}" ${out ? "disabled" : ""}>${x.name}(${x.title}) 반박<span class="cost">${rebutLeft(x.id)}번 남음</span></button>`).join("");
+          .map(x => `<button class="act ally with-face" data-rebut="${x.id}" data-q="${q.id}" ${out ? "disabled" : ""}>${Face(x.name, 24)}${x.name}(${x.title}) 반박<span class="cost">${rebutLeft(x.id)}번 남음</span></button>`).join("");
         const ch = S.found.length ? `<button class="act press" data-challenge="${q.id}" ${out ? "disabled" : ""}>모순 지적</button>` : "";
         if (ch || rb) html += `<div class="q-actions">${ch}${rb}</div>`;
       }
@@ -1689,12 +1785,12 @@ function renderPeople(out) {
     const open = p.qs.filter(q => !q.need || has(S.found, q.need));
     const left = open.filter(q => !has(S.asked, q.id)).length;
     const nb = p.qs.filter(q => has(S.broken, q.id)).length, sl = S.silence[id];
-    return `<button class="who${sl ? " is-silent" : ""}" aria-pressed="${S.suspect === id}" data-suspect="${id}">
-      <b>${p.name}</b><span>${p.role}</span><span class="mono">${sl ? `침묵 ${sl}턴` : `새 질문 ${left}${nb ? ` · 번복 ${nb}` : ""}`}</span></button>`;
+    return `<button class="who has-face${sl ? " is-silent" : ""}" aria-pressed="${S.suspect === id}" data-suspect="${id}">${Face(p.name, 44)}
+      <span class="who-text"><b>${p.name}</b><span>${p.role}</span><span class="mono">${sl ? `침묵 ${sl}턴` : `새 질문 ${left}${nb ? ` · 번복 ${nb}` : ""}`}</span></span></button>`;
   }).join("");
   const side = S.vars.length ? `<span class="label side-label">변수 인물 · 한 명은 공범</span>
-    ${S.vars.map((v, i) => `<button class="who" aria-pressed="${S.suspect === "v" + i}" data-suspect="v${i}"><b>${v.name}</b><span>${v.role} · 변수 인물</span>
-      <span class="mono">${S.accCaught && v.acc ? "공범 체포" : has(S.accWrong, i) ? "공범 아님" : has(S.varTalked, i) ? "이야기 나눔" : "아직 모름"}</span></button>`).join("")}` : "";
+    ${S.vars.map((v, i) => `<button class="who has-face" aria-pressed="${S.suspect === "v" + i}" data-suspect="v${i}">${Face(v.name, 44)}<span class="who-text"><b>${v.name}</b><span>${v.role} · 변수 인물</span>
+      <span class="mono">${S.accCaught && v.acc ? "공범 체포" : has(S.accWrong, i) ? "공범 아님" : has(S.varTalked, i) ? "이야기 나눔" : "아직 모름"}</span></span></button>`).join("")}` : "";
   const extra = /^v\d$/.test(S.suspect) ? renderVar(+S.suspect[1], out) : "";
   if (extra) return `<div class="split"><div class="people">${list}${side}</div>${extra}</div>`;
   const p = c.suspects[S.suspect], sl = S.silence[S.suspect];
@@ -1703,10 +1799,10 @@ function renderPeople(out) {
   return `<div class="split">
     <div class="people">${list}${side}</div>
     <section class="panel" aria-live="polite">
-      <div><span class="label">${p.role}</span><h3 style="font-size:24px">${p.name}</h3></div>
+      <div class="person-head">${mug(p.name)}<div><span class="label">${p.role}</span><h3 style="font-size:24px">${p.name}</h3></div></div>
       <p class="desc">${p.intro}</p>
       ${sl ? `<p class="locked-room">“변호사가 오기 전엔 아무 말도 안 하겠어요.” ${sl}턴 동안 심문할 수 없다.</p>
-        ${lawyerLeft() > 0 && !out ? `<div class="q-actions"><button class="act ally" data-lawyer="${S.suspect}">${LAWYER.title} ${LAWYER.name} 부르기<span class="cost">${lawyerLeft()}번 남음</span></button></div>` : ""}` : ""}
+        ${lawyerLeft() > 0 && !out ? `<div class="q-actions"><button class="act ally with-face" data-lawyer="${S.suspect}">${Face(LAWYER.name, 24)}${LAWYER.title} ${LAWYER.name} 부르기<span class="cost">${lawyerLeft()}번 남음</span></button></div>` : ""}` : ""}
       <div class="qa">${qs}</div>
       ${locked ? `<p class="locked">단서를 더 찾으면 물어볼 것이 ${locked}개 더 생긴다.</p>` : ""}
       ${S.found.length ? "" : `<p class="locked">단서를 하나라도 찾으면 진술의 모순을 지적할 수 있다.</p>`}
@@ -1718,7 +1814,7 @@ function renderVar(i, out) {
   const v = S.vars[i]; if (!v) return "";
   const talked = has(S.varTalked, i), wrong = has(S.accWrong, i), caught = S.accCaught && v.acc;
   return `<section class="panel" aria-live="polite">
-    <div><span class="label">${v.role} · 변수 인물</span><h3 style="font-size:24px">${v.name}</h3></div>
+    <div class="person-head">${mug(v.name)}<div><span class="label">${v.role} · 변수 인물</span><h3 style="font-size:24px">${v.name}</h3></div></div>
     <p class="desc">사건이 난 밤 이곳에 있던 ${v.role}. 용의자는 아니지만, 두 변수 인물 중 한 명은 범인 편 공범이다. 공범은 증거를 망치고 문을 잠그며 현장에 흔적을 남긴다.</p>
     ${talked ? `<p class="answer">${esc(S.varNotes[i])}</p>` : `<div class="q-actions"><button class="act" data-vtalk="${i}" ${out ? "disabled" : ""}>이야기한다<span class="cost">−1턴</span></button></div>`}
     ${caught ? `<p class="locked-room">공범으로 체포되었다.</p>` : wrong ? `<p class="locked">공범이 아니었다.</p>`
@@ -1805,6 +1901,7 @@ function renderResult() {
       ${S.timed ? row("시간 제한", S.timeLeft > 0, S.timeLeft > 0 ? `${mmss(S.timeLeft)} 남김 (+5)` : "시간 초과 (+5)") : ""}
       <div class="score-row"><b>점수</b><b class="mono">${R.score}</b></div>
     </div>
+    <div class="person-head culprit">${mug(real)}<div><span class="label">진범</span><h3 style="font-size:24px">${real}</h3><span class="hint">${c.suspects[c.answer.culprit].role}</span></div></div>
     <h3>사건의 진상</h3>
     <div class="truth">${c.truth.map(t => `<p>${esc(t)}</p>`).join("")}</div>
     <div class="btn-row">
