@@ -2136,6 +2136,20 @@ function renderExplore(out, plan) {
 const modeBtns = () => `<div class="mode-btns" role="group" aria-label="보기 방식">
   ${[["3d", "3D"], ["map", "지도"], ["list", "목록"]].map(([m, t]) => `<button class="act${S.mode === m ? " on" : ""}" data-act="mode" data-m="${m}" aria-pressed="${S.mode === m}">${t}</button>`).join("")}</div>`;
 const floorKindOf = name => /부엌|주방|식당|욕실|기관|장비|보안|경비|공방|창고|수장고|승무원/.test(name) ? "tile" : /의 방|객실|선실|손님|게스트|칸|대기실|숙소/.test(name) ? "carpet" : "wood";
+/* 사건·무대마다 3D 방 분위기: 벽 무늬·색, 바닥, 조명, 창 */
+const THEMES = {
+  default:            { wall: "stripe" },
+  theater:            { wall: "curtain", wallC: "#5c1d22", floor: "wood", lamp: 0xffcfae, amb: .5 },
+  train:              { wall: "panel", wallC: "#5e4229", floor: "carpet", carpetC: "#2c3b56", lamp: 0xffe0b0, windows: "night", narrow: true },
+  museum:             { wall: "plain", wallC: "#dcd7cc", floor: "stone", lamp: 0xf6f2ea, amb: .72 },
+  "파랑새 호텔":       { wall: "damask", wallC: "#2d3d58", floor: "carpet", carpetC: "#5a2a30", lamp: 0xffd9a8 },
+  "설봉 산장":         { wall: "log", wallC: "#7c5634", floor: "wood", lamp: 0xffc98a, windows: "snow" },
+  "물안개 섬 별장":     { wall: "plain", wallC: "#c9d6d2", floor: "wood", lamp: 0xf3ecdc, amb: .65, windows: "fog" },
+  "구름다리 미술관":    { wall: "plain", wallC: "#e4e1d9", floor: "stone", lamp: 0xf6f4ee, amb: .75 },
+  "은빛 물결호":       { wall: "panel", wallC: "#4c3625", floor: "carpet", carpetC: "#1f3a4a", lamp: 0xffe2b5, windows: "porthole" },
+  "해담 와이너리":     { wall: "stone", wallC: "#6e6152", floor: "tile", lamp: 0xffc480, amb: .45 },
+};
+const themeOf = () => { const c = C(); return (c.random ? THEMES[c.title.replace(/ 사건$/, "")] : THEMES[c.id]) || THEMES.default; };
 const wallSideOf = it => it.y === 1 ? "n" : it.x === 1 ? "w" : it.x === EXW - 2 ? "e" : it.y === EXH - 2 ? "s" : null;
 
 const V3 = (() => {
@@ -2168,8 +2182,8 @@ const V3 = (() => {
     texCache.set(key, tex); return tex;
   }
   const rnd = seed => () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  function floorTex(kind, seed) {
-    return canvasTexture("floor" + kind + seed, 512, 512, (g, w, h) => {
+  function floorTex(kind, seed, carpetC) {
+    return canvasTexture("floor" + kind + seed + (carpetC || ""), 512, 512, (g, w, h) => {
       const r = rnd(seed + 11);
       if (kind === "wood") {
         g.fillStyle = "#5b4330"; g.fillRect(0, 0, w, h);
@@ -2185,19 +2199,46 @@ const V3 = (() => {
       } else if (kind === "tile") {
         for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { g.fillStyle = (i + j) % 2 ? "#6c7178" : "#8c9198"; g.fillRect(i * 64, j * 64, 64, 64); }
         g.strokeStyle = "rgba(0,0,0,.25)"; g.lineWidth = 2; for (let i = 0; i <= 8; i++) { g.beginPath(); g.moveTo(i * 64, 0); g.lineTo(i * 64, h); g.stroke(); g.beginPath(); g.moveTo(0, i * 64); g.lineTo(w, i * 64); g.stroke(); }
+      } else if (kind === "stone") {
+        g.fillStyle = "#8f8a82"; g.fillRect(0, 0, w, h);
+        for (let k = 0; k < 40; k++) { const grd = g.createRadialGradient(r() * w, r() * h, 0, r() * w, r() * h, 60 + r() * 80); grd.addColorStop(0, `rgba(${r() < .5 ? "255,255,255" : "0,0,0"},.07)`); grd.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = grd; g.fillRect(0, 0, w, h); }
+        g.strokeStyle = "rgba(0,0,0,.18)"; g.lineWidth = 2; for (let i = 0; i <= 4; i++) { g.beginPath(); g.moveTo(i * 128, 0); g.lineTo(i * 128, h); g.stroke(); g.beginPath(); g.moveTo(0, i * 128); g.lineTo(w, i * 128); g.stroke(); }
       } else {
-        g.fillStyle = "#463a52"; g.fillRect(0, 0, w, h);
+        g.fillStyle = carpetC || "#463a52"; g.fillRect(0, 0, w, h);
         for (let k = 0; k < 9000; k++) { g.fillStyle = r() < .5 ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.12)"; g.fillRect(r() * w, r() * h, 2, 2); }
       }
     }, kind === "carpet" ? [3, 2] : [3, 2]);
   }
-  function wallTex(seed) {
-    const base = ["#6a5d50", "#55626c", "#6b5552", "#58665a"][seed % 4];
-    return canvasTexture("wall" + seed, 256, 256, (g, w, h) => {
+  function wallTex(seed, th) {
+    const style = th.wall || "stripe", base = th.wallC || ["#6a5d50", "#55626c", "#6b5552", "#58665a"][seed % 4];
+    return canvasTexture("wall" + style + base, 512, 512, (g, w, h) => {
+      const r = rnd(seed + 5);
       g.fillStyle = base; g.fillRect(0, 0, w, h);
-      for (let x = 0; x < w; x += 32) { g.fillStyle = "rgba(255,255,255,.035)"; g.fillRect(x, 0, 14, h); }
-      g.fillStyle = "rgba(0,0,0,.18)"; g.fillRect(0, h * .62, w, 6);
-    }, [4, 1]);
+      if (style === "stripe") {
+        for (let x = 0; x < w; x += 64) { g.fillStyle = "rgba(255,255,255,.035)"; g.fillRect(x, 0, 28, h); }
+        g.fillStyle = "rgba(0,0,0,.18)"; g.fillRect(0, h * .62, w, 10);
+      } else if (style === "curtain") {          /* 주름진 무대 커튼 */
+        for (let x = 0; x < w; x++) { const v = Math.sin(x / w * Math.PI * 12); g.fillStyle = v > 0 ? `rgba(255,190,180,${v * .12})` : `rgba(0,0,0,${-v * .35})`; g.fillRect(x, 0, 1, h); }
+        g.fillStyle = "rgba(0,0,0,.25)"; g.fillRect(0, h - 30, w, 30);
+      } else if (style === "panel") {            /* 열차·선실 나무 벽판 */
+        g.fillStyle = "rgba(0,0,0,.25)"; g.fillRect(0, h * .55, w, 8);
+        for (let x = 0; x < w; x += 128) { g.strokeStyle = "rgba(0,0,0,.3)"; g.lineWidth = 4; g.strokeRect(x + 14, 20, 100, h * .55 - 40); g.strokeRect(x + 14, h * .55 + 22, 100, h * .45 - 44);
+          g.strokeStyle = "rgba(255,230,190,.08)"; g.lineWidth = 2; g.strokeRect(x + 18, 24, 92, h * .55 - 48); }
+        for (let k = 0; k < 160; k++) { g.strokeStyle = "rgba(0,0,0,.05)"; g.beginPath(); const y = r() * h; g.moveTo(0, y); g.lineTo(w, y + r() * 6); g.stroke(); }
+      } else if (style === "plain") {            /* 전시실·별장 흰 벽 */
+        for (let k = 0; k < 4000; k++) { g.fillStyle = r() < .5 ? "rgba(255,255,255,.04)" : "rgba(0,0,0,.035)"; g.fillRect(r() * w, r() * h, 2, 2); }
+      } else if (style === "damask") {           /* 호텔 무늬 벽지 */
+        for (let y = 0; y < h; y += 64) for (let x = (y / 64) % 2 ? 32 : 0; x < w; x += 64) {
+          g.fillStyle = "rgba(220,190,120,.12)"; g.beginPath(); g.moveTo(x + 32, y + 8); g.quadraticCurveTo(x + 52, y + 32, x + 32, y + 56); g.quadraticCurveTo(x + 12, y + 32, x + 32, y + 8); g.fill(); }
+        g.fillStyle = "rgba(0,0,0,.22)"; g.fillRect(0, h * .62, w, 10);
+      } else if (style === "log") {              /* 산장 통나무 */
+        for (let y = 0; y < h; y += 64) { const grd = g.createLinearGradient(0, y, 0, y + 64); grd.addColorStop(0, "rgba(0,0,0,.35)"); grd.addColorStop(.25, "rgba(255,220,170,.10)"); grd.addColorStop(.75, "rgba(0,0,0,.05)"); grd.addColorStop(1, "rgba(0,0,0,.4)"); g.fillStyle = grd; g.fillRect(0, y, w, 64); }
+      } else if (style === "stone") {            /* 와인 저장고 돌벽 */
+        for (let y = 0, row = 0; y < h; y += 48, row++) for (let x = row % 2 ? -48 : 0; x < w; x += 96) {
+          const tone = r() * .18; g.fillStyle = `rgba(${r() < .5 ? "0,0,0" : "255,240,220"},${tone})`; g.fillRect(x + 3, y + 3, 90, 42); }
+        g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = 3; for (let y = 0; y < h; y += 48) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+      }
+    }, [style === "log" || style === "stone" ? 3 : 2, 1]);
   }
   function textSprite(text, color = "#f4ecdc", bg = "rgba(10,14,18,.82)", scale = .22) {
     const tex = canvasTexture("txt" + text + color + bg, 512, 96, (g, w, h) => {
@@ -2305,57 +2346,67 @@ const V3 = (() => {
   }
   /* 머리·몸통·팔·다리가 따로 움직이는 인물 */
   function person(p) {
+    /* 키 약 1.74m(여자 0.95배), 머리는 키의 1/7. 몸통은 앞뒤로 납작, 무릎·팔꿈치 관절 */
     const T = Face.traits(p.name, ageOf(p.role)), root = new THREE.Group(), body = new THREE.Group();
-    const sc = T.F ? .95 : 1; body.scale.setScalar(sc); root.add(body);
+    body.scale.setScalar(T.F ? .95 : 1); root.add(body);
     const skin = mat(T.skin, { r: .7 }), cloth = mat(T.cloth, { r: .85 }), pants = mat(T.pants, { r: .9 }), hairM = mat(T.hair, { r: .9 }), shoe = mat(0x1a1716, { r: .5 });
     const skirt = T.F && hashStr(p.name) % 2 === 0;
-    const limb = (r, h, m) => { const piv = new THREE.Group(); piv.add(cyl(r, r * .82, h, m, 0, -h / 2, 0, 14)); piv.add(sph(r, m, 0, 0, 0)); return piv; };
-    /* 다리 (치마면 다리는 스타킹 색) */
+    const seg = (r0, r1, len, m, flat = 1) => { const g = new THREE.Group(); const c = cyl(r0, r1, len, m, 0, -len / 2, 0, 14); c.scale.z = flat; g.add(c); const j = sph(r0, m, 0, 0, 0); j.scale.z = flat; g.add(j); return g; };
+    /* 다리: 허벅지 → 무릎 → 정강이 → 신발 */
     const legM = skirt ? mat(T.skin, { r: .6 }) : pants;
-    const legs = [-1, 1].map(sx => {
-      const L = limb(skirt ? .06 : .078, .76, legM); L.position.set(sx * .095, .8, 0);
-      L.add(box(.12, .08, .24, shoe, 0, -.78, .045)); body.add(L); return L;
-    });
-    if (skirt) body.add(cyl(.17, .28, .42, mat(T.pants === "#1f2226" ? "#3a2f3f" : T.pants, { r: .9 }), 0, .66, 0, 24));
-    else body.add(cyl(.17, .16, .16, pants, 0, .84, 0, 18));
-    /* 몸통 */
-    const torso = new THREE.Group(); torso.position.y = .88; body.add(torso);
-    const tw = T.F ? .175 : .205;
-    torso.add(cyl(tw, tw * .8, .5, cloth, 0, .25, 0, 20));
-    torso.add(sph(tw, cloth, 0, .48, 0)).children.at(-1).scale.set(1.08, .38, .78);
-    if (["suit", "shirt", "jacket", "blouse", "cardigan"].includes(T.top)) {
-      const col = new THREE.Mesh(new THREE.ConeGeometry(.055, .09, 3), mat(0xece8e1)); col.position.set(0, .46, tw * .74); col.rotation.set(Math.PI + .25, 0, 0); torso.add(col);
+    const legs = [], knees = [];
+    for (const sx of [-1, 1]) {
+      const hip = seg(skirt ? .07 : .085, skirt ? .058 : .07, .41, legM); hip.position.set(sx * .09, .88, 0);
+      const knee = seg(skirt ? .056 : .066, .048, .39, legM); knee.position.y = -.41; hip.add(knee);
+      knee.add(box(.1, .075, .25, shoe, 0, -.39, .05));
+      body.add(hip); legs.push(hip); knees.push(knee);
     }
-    if (T.top === "suit" || T.top === "jacket") for (const sx of [-1, 1]) { const lp = box(.05, .3, .02, mat(T.cloth, { r: .7 }), sx * .055, .33, tw * .78); lp.rotation.z = sx * .32; torso.add(lp); }
-    if (T.top === "suit") torso.add(box(.035, .24, .02, mat(0x5c2b26), 0, .32, tw * .8));
-    /* 팔 */
-    const arms = [-1, 1].map(sx => {
-      const A = limb(.056, .54, cloth); A.position.set(sx * (tw + .045), .45, 0);
-      A.add(sph(.055, skin, 0, -.58, .01)); torso.add(A); return A;
-    });
-    /* 머리 */
-    const head = new THREE.Group(); head.position.y = .52; torso.add(head);
-    head.add(cyl(.05, .056, .1, skin, 0, .03, 0, 12));
-    const HR = .145;
+    /* 골반 · 치마 */
+    const pelvis = cyl(T.F ? .18 : .17, T.F ? .19 : .17, .18, pants, 0, .92, 0, 20); pelvis.scale.z = .72; body.add(pelvis);
+    if (skirt) { const sk = cyl(.17, .27, .42, mat(T.pants === "#1f2226" ? "#3a2f3f" : T.pants, { r: .9 }), 0, .7, 0, 24); sk.scale.z = .85; body.add(sk); }
+    /* 몸통: 허리는 좁고 가슴·어깨는 넓게, 앞뒤로 납작하게 */
+    const torso = new THREE.Group(); torso.position.y = .96; body.add(torso);
+    const chest = T.F ? .172 : .2, waist = T.F ? .135 : .158, FL = .62;
+    const trunk = cyl(chest, waist, .44, cloth, 0, .22, 0, 24); trunk.scale.z = FL; torso.add(trunk);
+    const sh = sph(chest, cloth, 0, .43, 0); sh.scale.set(1.14, .34, FL); torso.add(sh);
+    const front = chest * FL;
+    if (["suit", "shirt", "jacket", "blouse", "cardigan"].includes(T.top)) {
+      const col = new THREE.Mesh(new THREE.ConeGeometry(.05, .085, 3), mat(0xece8e1)); col.position.set(0, .41, front - .005); col.rotation.set(Math.PI + .3, 0, 0); torso.add(col);
+    }
+    if (T.top === "suit" || T.top === "jacket") for (const sx of [-1, 1]) { const lp = box(.045, .28, .015, mat(T.cloth, { r: .7 }), sx * .05, .3, front + .004); lp.rotation.z = sx * .3; torso.add(lp); }
+    if (T.top === "suit") torso.add(box(.032, .22, .015, mat(0x5c2b26), 0, .3, front + .008));
+    /* 팔: 어깨 → 위팔 → 팔꿈치 → 아래팔 → 손 (손목이 엉덩이 아래 높이) */
+    const arms = [], elbows = [];
+    for (const sx of [-1, 1]) {
+      const shoulder = seg(.05, .044, .28, cloth, .9); shoulder.position.set(sx * (chest * 1.1 + .012), .41, 0);
+      const elbow = seg(.043, .036, .26, sx ? cloth : cloth, .9); elbow.position.y = -.28; shoulder.add(elbow);
+      const hand = sph(.045, skin, 0, -.29, .005); hand.scale.set(.8, 1.15, .6); elbow.add(hand);
+      torso.add(shoulder); arms.push(shoulder); elbows.push(elbow);
+    }
+    /* 목 · 머리 */
+    torso.add(cyl(.045, .05, .08, skin, 0, .47, 0, 12));
+    const head = new THREE.Group(); head.position.y = .48; torso.add(head);
+    const HR = .118;
     const skull = new THREE.Mesh(new THREE.SphereGeometry(HR, 36, 24), mat(0xffffff, { map: faceTexture(T, p.name), r: .7 }));
-    skull.position.y = .19; skull.scale.set(.92, 1.06, .98); head.add(skull);
-    for (const sx of [-1, 1]) head.add(sph(.03, skin, sx * .135, .19, 0));
-    const cap = (tl, tilt, sz = 1.07) => { const m = new THREE.Mesh(new THREE.SphereGeometry(HR * sz, 32, 16, 0, Math.PI * 2, 0, Math.PI * tl), hairM); m.position.y = .195; m.rotation.x = tilt; m.scale.set(.94, 1.06, 1); head.add(m); return m; };
-    const band = (h, y, r0, r1, gap = .2) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, 28, 1, true, Math.PI * gap, Math.PI * (2 - gap * 2)), mat(T.hair, { r: .9, side: THREE.DoubleSide })); m.position.set(0, y, -.006); head.add(m); return m; };
-    const bangs = () => { const m = new THREE.Mesh(new THREE.SphereGeometry(HR * 1.08, 24, 10, Math.PI * .1, Math.PI * .8, Math.PI * .18, Math.PI * .2), hairM); m.position.y = .195; m.scale.set(.94, 1.06, 1); head.add(m); };
+    skull.position.y = .14; skull.scale.set(.9, 1.1, .96); head.add(skull);
+    const jaw = sph(HR * .78, skin, 0, .085, .01); jaw.scale.set(.95, .7, .9); head.add(jaw);
+    for (const sx of [-1, 1]) head.add(sph(.024, skin, sx * .106, .14, 0));
+    const cap = (tl, tilt, sz = 1.07) => { const m = new THREE.Mesh(new THREE.SphereGeometry(HR * sz, 32, 16, 0, Math.PI * 2, 0, Math.PI * tl), hairM); m.position.y = .145; m.rotation.x = tilt; m.scale.set(.92, 1.1, .98); head.add(m); return m; };
+    const band = (h, y, r0, r1, gap = .2) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, 28, 1, true, Math.PI * gap, Math.PI * (2 - gap * 2)), mat(T.hair, { r: .9, side: THREE.DoubleSide })); m.position.set(0, y, -.006); m.scale.z = .95; head.add(m); return m; };
+    const bangs = () => { const m = new THREE.Mesh(new THREE.SphereGeometry(HR * 1.08, 24, 10, Math.PI * .1, Math.PI * .8, Math.PI * .18, Math.PI * .2), hairM); m.position.y = .145; m.scale.set(.92, 1.1, .98); head.add(m); };
     const st = T.style;
     if (st === "short" || st === "side") { const c0 = cap(.42, -.32); if (st === "side") c0.rotation.z = .12; }
     if (st === "crew") cap(.38, -.28, 1.04);
-    if (st === "thin") { for (const sx of [-1, 1]) head.add(sph(.06, hairM, sx * .12, .19, -.03)).children.at(-1).scale.set(.5, .9, 1.2); }
-    if (st === "long" || st === "wave") { cap(.46, -.18); bangs(); band(.42, .06, .15, st === "wave" ? .2 : .17, .17); }
-    if (st === "bob") { cap(.46, -.18); bangs(); band(.2, .14, .152, .165, .17); }
-    if (st === "bun") { cap(.45, -.26); head.add(sph(.07, hairM, 0, .33, -.1)); }
+    if (st === "thin") for (const sx of [-1, 1]) { const t0 = sph(.05, hairM, sx * .098, .14, -.03); t0.scale.set(.5, .9, 1.2); head.add(t0); }
+    if (st === "long" || st === "wave") { cap(.46, -.18); bangs(); band(.34, .0, .124, st === "wave" ? .17 : .145, .17); }
+    if (st === "bob") { cap(.46, -.18); bangs(); band(.16, .08, .126, .138, .17); }
+    if (st === "bun") { cap(.45, -.26); head.add(sph(.058, hairM, 0, .27, -.085)); }
     if (T.glasses) { const gm = mat(0x2b2522, { r: .3, m: .6 });
-      for (const sx of [-1, 1]) { const ring = new THREE.Mesh(T.glasses === "round" ? new THREE.TorusGeometry(.032, .006, 6, 18) : new THREE.TorusGeometry(.034, .006, 4, 4), gm); ring.position.set(sx * .05, .2, .133); if (T.glasses === "rect") ring.rotation.z = Math.PI / 4; head.add(ring); }
-      head.add(box(.034, .006, .006, gm, 0, .203, .139)); }
-    if (T.facial === "mustache") head.add(box(.07, .015, .02, hairM, 0, .135, .134));
-    const nm = textSprite(p.name); nm.position.y = 2.05; root.add(nm);
-    return { root, body, torso, head, legs, arms };
+      for (const sx of [-1, 1]) { const ring = new THREE.Mesh(T.glasses === "round" ? new THREE.TorusGeometry(.027, .005, 6, 18) : new THREE.TorusGeometry(.029, .005, 4, 4), gm); ring.position.set(sx * .041, .148, .108); if (T.glasses === "rect") ring.rotation.z = Math.PI / 4; head.add(ring); }
+      head.add(box(.028, .005, .005, gm, 0, .151, .113)); }
+    if (T.facial === "mustache") head.add(box(.058, .012, .018, hairM, 0, .099, .108));
+    const nm = textSprite(p.name); nm.position.y = 2.0; root.add(nm);
+    return { root, body, torso, head, legs, knees, arms, elbows };
   }
 
   /* ---------- 장면 ---------- */
@@ -2366,9 +2417,10 @@ const V3 = (() => {
     scene = new THREE.Scene(); clickables = []; marks = []; flames = []; npcs = [];
     scene.background = lin(0x0b0e12); scene.fog = new THREE.Fog(lin(0x0b0e12), 5, 15);
     const X0 = 1, X1 = EXW - 1, Z0 = 1, Z1 = EXH - 1, CW = X1 - X0, CD = Z1 - Z0, CX = (X0 + X1) / 2, CZ = (Z0 + Z1) / 2, HGT = 2.8;
-    const floor = plane(CW, CD, mat(0xffffff, { map: floorTex(floorKindOf(r.name), hh % 97), r: .85 }), CX, 0, CZ); floor.rotation.x = -Math.PI / 2; floor.userData.floor = true; scene.add(floor); clickables.push(floor);
+    const TH = themeOf(), fk0 = floorKindOf(r.name), fk = fk0 === "tile" && TH.floor !== "stone" ? "tile" : TH.floor || fk0;
+    const floor = plane(CW, CD, mat(0xffffff, { map: floorTex(fk, hh % 97, TH.carpetC), r: fk === "stone" ? .5 : .85 }), CX, 0, CZ); floor.rotation.x = -Math.PI / 2; floor.userData.floor = true; scene.add(floor); clickables.push(floor);
     const ceil = plane(CW, CD, mat(0x1c1f23, { r: 1 }), CX, HGT, CZ); ceil.rotation.x = Math.PI / 2; scene.add(ceil);
-    const wm = mat(0xffffff, { map: wallTex(hh), r: .95 });
+    const wm = mat(0xffffff, { map: wallTex(hh, TH), r: .95 });
     const walls = [[CW, CX, Z0, 0], [CW, CX, Z1, Math.PI], [CD, X0, CZ, Math.PI / 2], [CD, X1, CZ, -Math.PI / 2]];
     for (const [w, x, z, ry] of walls) {
       const p = plane(w, HGT, wm, x, HGT / 2, z); p.rotation.y = ry; scene.add(p);
@@ -2381,9 +2433,25 @@ const V3 = (() => {
     const lampY = HGT - .35;
     scene.add(cyl(.005, .005, .35, mat(0x111111), CX, HGT - .17, CZ));
     scene.add(sph(.13, mat(0xfff0c8, { e: 0xffd890, ei: 1.4 }), CX, lampY, CZ));
-    scene.add(new THREE.AmbientLight(lin(0x8d99ac), .55));
+    scene.add(new THREE.AmbientLight(lin(0x8d99ac), TH.amb ?? .55));
     scene.add(new THREE.HemisphereLight(lin(0xffe2b0), lin(0x141a22), .45));
-    const lamp = new THREE.PointLight(lin(0xffd59a), 1.6, 13, 1.5); lamp.position.set(CX, lampY - .05, CZ); scene.add(lamp);
+    const lamp = new THREE.PointLight(lin(TH.lamp ?? 0xffd59a), 1.6, 13, 1.5); lamp.position.set(CX, lampY - .05, CZ); scene.add(lamp);
+    /* 테마 창문: 동쪽 벽에 두 개 */
+    if (TH.windows) {
+      for (const wz of [CZ - 1.4, CZ + 1.2]) {
+        const g = new THREE.Group(); g.position.set(X1 - .02, 0, wz); g.rotation.y = -Math.PI / 2;
+        const sky = { night: 0x0e1626, snow: 0x9fb2c4, fog: 0xb9c6c8, porthole: 0x0d1b2c }[TH.windows];
+        if (TH.windows === "porthole") {
+          const glass = new THREE.Mesh(new THREE.CircleGeometry(.32, 28), mat(sky, { e: sky, ei: .6 })); glass.position.set(0, 1.5, .01); g.add(glass);
+          const rim = new THREE.Mesh(new THREE.TorusGeometry(.33, .045, 10, 32), mat(0xb08a4a, { m: .7, r: .35 })); rim.position.set(0, 1.5, .02); g.add(rim);
+        } else {
+          g.add(plane(1.1, .8, mat(sky, { e: sky, ei: TH.windows === "night" ? .5 : .9 }), 0, 1.5, .01));
+          for (const [w2, h2, x, y] of [[1.2, .06, 0, 1.92], [1.2, .06, 0, 1.08], [.06, .9, -.58, 1.5], [.06, .9, .58, 1.5], [.04, .8, 0, 1.5]]) g.add(box(w2, h2, .06, mat(0x3a2a1c), x, y, .03));
+          if (TH.windows === "night") for (let k = 0; k < 3; k++) { const l = plane(.18, .03, mat(0xffe6a8, { e: 0xffd27a, ei: 1.5 }), -.5 + k * .3, 1.35 + k * .12, .015); l.userData.slide = { base: -.5, speed: .9 + k * .4 }; g.add(l); flames.push(l); }
+        }
+        scene.add(g);
+      }
+    }
     /* 가구 */
     for (const it of L.items) {
       const side = WALL_T.has(it.type) || ["window", "board", "photo", "wallear"].includes(it.type) ? wallSideOf(it) : null;
@@ -2490,10 +2558,14 @@ const V3 = (() => {
     n.walkAmt = (n.walkAmt || 0) + (sw - (n.walkAmt || 0)) * Math.min(1, dt * 6);
     n.phase += dt * (moving ? 7.5 : 1.6);
     const a = Math.sin(n.phase), wa = n.walkAmt;
-    R.legs[0].rotation.x = a * .55 * wa; R.legs[1].rotation.x = -a * .55 * wa;
-    R.arms[0].rotation.x = -a * .45 * wa + Math.sin(t / 900 + n.phase) * .03 * (1 - wa); R.arms[1].rotation.x = a * .45 * wa - Math.sin(t / 900 + n.phase) * .03 * (1 - wa);
-    R.arms[0].rotation.z = -.06; R.arms[1].rotation.z = .06;
-    R.body.position.y = Math.abs(Math.sin(n.phase)) * .03 * wa;
+    /* 엉덩이 관절이 뒤로 갈 때 무릎이 굽고, 팔은 반대로 흔들며 앞으로 갈 때 팔꿈치가 굽는다 */
+    R.legs[0].rotation.x = a * .5 * wa; R.legs[1].rotation.x = -a * .5 * wa;
+    R.knees[0].rotation.x = (Math.max(0, a) * .85 + .08) * wa; R.knees[1].rotation.x = (Math.max(0, -a) * .85 + .08) * wa;
+    const idle = Math.sin(t / 900 + n.phase) * .03 * (1 - wa);
+    R.arms[0].rotation.x = -a * .38 * wa + idle; R.arms[1].rotation.x = a * .38 * wa - idle;
+    R.elbows[0].rotation.x = -(.12 + Math.max(0, a) * .45 * wa); R.elbows[1].rotation.x = -(.12 + Math.max(0, -a) * .45 * wa);
+    R.arms[0].rotation.z = -.07; R.arms[1].rotation.z = .07;
+    R.body.position.y = (Math.abs(Math.sin(n.phase)) * .03 - .012) * wa;
     R.torso.scale.y = 1 + Math.sin(t / 700 + n.phase) * .012 * (1 - wa);
     R.torso.rotation.y = a * .08 * wa;
     R.root.position.set(n.wx, 0, n.wz); R.root.rotation.y = n.heading;
@@ -2642,7 +2714,11 @@ const V3 = (() => {
     } else bob = Math.round(bob / Math.PI) * Math.PI;
     /* 물음표 통통 · 불꽃 */
     for (const m of marks) m.position.y = m.userData.baseY + Math.sin(t / 380 + m.position.x) * .04;
-    for (const fl of flames) { if (fl.isLight) fl.intensity = .7 + Math.random() * .4; else fl.scale.y = .9 + Math.sin(t / 90) * .1; }
+    for (const fl of flames) {
+      if (fl.isLight) fl.intensity = .7 + Math.random() * .4;
+      else if (fl.userData.slide) fl.position.x = .5 - (((t / 1000) * fl.userData.slide.speed) % 1.1);   /* 달리는 열차 창밖 불빛 */
+      else fl.scale.y = .9 + Math.sin(t / 90) * .1;
+    }
     placeCamera();
     renderer.render(scene, camera);
     /* 화면 가운데에 보이는 것 안내 */
