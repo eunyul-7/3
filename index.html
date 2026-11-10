@@ -1391,15 +1391,15 @@ let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
 /* 수사팀(경찰): 어려워지면 돕고, 직접 현장에 보낼 수 있다 */
 const PARTNERS = [
-  { id: "kang", name: "강무열", title: "강력계 경감", rank: "경감", skill: "잠긴 문 열기·수사 시간 벌기",
+  { id: "kang", name: "강무열", title: "경감", rank: "경감", skill: "잠긴 문 열기·수사 시간 벌기",
     report: (room, list) => list ? `“자물쇠쯤이야. ${room}에서 이런 걸 건졌네. ${list}.”` : `“${room}엔 더 볼 게 없더군.”` },
   { id: "yoon", name: "윤도경", title: "과학수사 경사", rank: "경사", skill: "현장 감식",
     report: (room, list) => list ? `“${room} 감식 끝났습니다. 나온 건 ${list}입니다.”` : `“${room}에서는 새로 나온 게 없습니다.”` },
   { id: "byun", name: "변주원", title: "과학수사 경장", rank: "경장", skill: "현장 감식",
     report: (room, list) => list ? `“${room} 감식 마쳤습니다. 채취한 건 ${list}입니다.”` : `“${room}에선 더 나올 게 없습니다.”` },
-  { id: "gong", name: "공태하", title: "강력계 순경", rank: "순경", skill: "쓸데없는 물건 치우기·압박", noDispatch: true,
+  { id: "gong", name: "공태하", title: "순경", rank: "순경", skill: "쓸데없는 물건 치우기·압박", noDispatch: true,
     report: (room) => `“경감님 따라 ${room} 한 바퀴 돌았습니다. 사건이랑 상관없는 건 싹 치워 뒀습니다.”` },
-  { id: "seo", name: "서하루", title: "형사 순경", rank: "순경", skill: "현장 수색",
+  { id: "seo", name: "서하루", title: "순경", rank: "순경", skill: "현장 수색",
     report: (room, list) => list ? `“선배님! ${room} 싹 다 뒤져 봤어요. ${list}!”` : `“${room}은 이미 다 조사돼 있던데요?”` },
 ];
 const partner = id => PARTNERS.find(x => x.id === id);
@@ -1509,18 +1509,18 @@ function counterattack(sid) {
 /* ---------- 난이도: 쉬움은 쉽지만 짧고 도움이 적다 / 어려움은 어렵지만 길고 도움이 많다 ---------- */
 const DIFF = {
   easy:   { label: "쉬움", turns: 24, time: 240, bonus: 0, chances: 1, fakes: 0, sab: null, villains: false, persona: "show", lieTags: true, helpMax: 0,
-            desc: "아주 쉬워요. 가짜 물건·방해·공범이 없고, 내 판단도 조금 더 정확해요. 대신 시간이 4분뿐이고 윤도경 경사 출동 한 번, 한서진 간파 한 번, 모은재 분석 두 번뿐이에요." },
+            desc: "아주 쉬워요. 가짜 물건·방해·공범이 없고, 내 판단도 조금 더 정확해요. 대신 시간이 4분뿐이고, 경위·경감(한서진·강무열)은 오지 않아요. 순경·경장·경사는 2번씩 부를 수 있어요." },
   normal: { label: "보통", turns: 34, time: 420, bonus: 3, chances: 1, fakes: 1, sab: { start: 0.35, base: 0.08, k: 0.25, cd: 4, late: 0.7 }, villains: true, persona: "show", lieTags: false, helpMax: 3,
-            desc: "가짜 물건과 방해, 공범이 있어요. 시간은 7분. 윤도경·변주원 2번씩, 서하루 3번 출동시킬 수 있고, 공태하 순경이 쓸데없는 물건을 한 번 치워 줘요. 한서진 간파 1번·모은재 분석 2번이에요." },
+            desc: "가짜 물건과 방해, 공범이 있어요. 시간은 7분. 팀원 모두 3번씩 부를 수 있어요(강무열이 출동하면 공태하도 따라와요)." },
   hard:   { label: "어려움", turns: 50, time: 720, bonus: 6, chances: 2, fakes: 2, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 }, villains: true, persona: "hint", lieTags: false, helpMax: 6,
-            desc: "아주 어려워요. 가짜 물건이 많고 방해가 거세며, 용의자 성격도 눈치로 알아내야 해요. 대신 시간 12분, 지목 기회 2번, 서하루 5번, 윤도경·변주원 3번씩, 강무열 2번 출동하고(강무열과 함께 공태하도 따라와요), 공태하가 물건을 두 번 치워 줘요. 한서진 간파 2번·모은재 분석 3번이에요." },
+            desc: "아주 어려워요. 가짜 물건이 많고 방해가 거세며, 용의자 성격도 눈치로 알아내야 해요. 대신 시간 12분, 지목 기회 2번, 팀원 모두 5번씩 부를 수 있어요." },
 };
 /* 팀원 출동 횟수 */
-/* 계급별 최대 출동 횟수(어려움 기준): 순경 서하루 5 · 경장/경사 3 · 경위/경감 2. 쉬울수록 줄어든다 */
-const DISPATCH = { easy: { max: { yoon: 1 } }, normal: { max: { yoon: 2, byun: 2, seo: 3 } }, hard: { max: { kang: 2, yoon: 3, byun: 3, seo: 5 } } };
+/* 계급별 호출 횟수: 순경·경장·경사는 쉬움 2 · 보통 3 · 어려움 5, 경위·경감은 쉬움 없음 · 보통 3 · 어려움 5 */
+const DISPATCH = { easy: { max: { yoon: 2, byun: 2, seo: 2 } }, normal: { max: { kang: 3, yoon: 3, byun: 3, seo: 3 } }, hard: { max: { kang: 5, yoon: 5, byun: 5, seo: 5 } } };
 const PLAYER_RANK = "경장";
 /* 강력계 순경 공태하: 강무열과 다니며 쓸데없는 물건을 치우고, 비협조적인 용의자를 압박한다 */
-const GONG = { normal: { clear: 1 }, hard: { clear: 2 } };
+const GONG = { easy: { clear: 2 }, normal: { clear: 3 }, hard: { clear: 5 } };   /* 순경 공태하 */
 const PRESS_RISK = [0, 0.15, 0.5, 0.85];   /* 같은 사람을 몇 번째로 압박하나 → 역효과 확률 */
 const gongOn = () => !!GONG[S.diff];
 const clearLeft = () => gongOn() ? GONG[S.diff].clear - (S.cleared2 || 0) : 0;
@@ -1534,7 +1534,7 @@ function clearFakes() {
   const said = fakes.length
     ? `“${rn}에 사건이랑 상관없는 게 ${fakes.length}개 있길래 치워 뒀습니다.”`
     : `“${rn}엔 치울 만한 게 없네요. 전부 사건이랑 관계있어 보입니다.”`;
-  S.events.push({ bad: false, msg: `강력계 순경 공태하 — ${said}` });
+  S.events.push({ bad: false, msg: `순경 공태하 — ${said}` });
   toast(`<b>공태하 순경</b> — ${esc(said)}`); Sound.door(); PX.prune();
 }
 function pressure(sid) {
@@ -1542,7 +1542,7 @@ function pressure(sid) {
   if (!gongOn() || !p || S.turns <= 0 || S.decided) return;
   S.press = S.press || {}; S.pressOpen = S.pressOpen || [];
   const n = (S.press[sid] || 0) + 1; S.press[sid] = n;
-  const who = "강력계 순경 공태하";
+  const who = "순경 공태하";
   S.dlg = null;
   if (Math.random() < PRESS_RISK[Math.min(n, 3)]) {
     /* 너무 몰아붙였다: 입을 닫고, 그사이 단서 하나를 놓친다 */
@@ -1574,7 +1574,7 @@ function pressure(sid) {
   spend();
 }
 /* 반박 횟수 */
-const REBUT = { easy: { prof: 1, psy: 2 }, normal: { prof: 1, psy: 2 }, hard: { prof: 2, psy: 3 } };   /* 경위 한서진 최대 2 · 경사 모은재 최대 3 */
+const REBUT = { easy: { prof: 0, psy: 2 }, normal: { prof: 3, psy: 3 }, hard: { prof: 5, psy: 5 } };   /* 경위 한서진 · 경사 모은재 */
 const rebutLeft = id => ((REBUT[S.diff] || {})[id] || 0) - S.rebuts.filter(x => x === id).length;
 const pfull = x => `${x.title} ${x.name}`;
 const MISSION_DELAY = 2;
@@ -1735,7 +1735,7 @@ function help() {
   if (!DIFF[S.diff].helpMax) return;
   const c = C(), opts = [];
   const blocked = Object.keys(S.locks).length || Object.keys(S.silence).length;
-  const vet = S.diff === "hard";   /* 베테랑 강무열(문 열기·시간 벌기)은 어려움에서만 */
+  const vet = S.diff !== "easy";   /* 강력계 경감 강무열(문 열기·시간 벌기)은 보통·어려움에서 */
   if (blocked && vet) opts.push("unlock", "unlock");
   const spots = Object.entries(c.rooms).flatMap(([rid, r]) => r.spots.map(s => ({ ...s, rid })))
     .filter(s => s.clue && !has(S.searched, s.id));
@@ -2056,7 +2056,7 @@ function render() {
   app.innerHTML = `
     <header class="board">
       <div class="board-top">
-        <div><span class="label">형사 ${PLAYER_RANK} ${esc(pname())}</span><h2>${c.title}</h2></div>
+        <div><span class="label">${PLAYER_RANK} ${esc(pname())}</span><h2>${c.title}</h2></div>
         <div class="clock" aria-label="남은 행동 ${S.turns}회, 남은 시간 ${mmss(S.timeLeft)}">
           <div class="pips">${pips}</div>
           <span class="mono">결단까지 <b>${S.turns}</b>턴</span>
@@ -2106,10 +2106,10 @@ function renderTitle() {
         <div class="warn"><b><span class="k">호감도</span>마음 열기</b><p>용의자마다 성격이 있어요. ‘마음을 연다’에서 성격에 맞는 말투를 고르면 숨은 증언을 들려줘요. 잘못 고르면 그 증언은 영영 들을 수 없어요.</p></div>
         <div><b><span class="k">04</span>수사 수첩</b><p>찾은 단서, 시간표, 숨은 증언이 모여요. 거짓으로 밝혀진 진술에는 줄이 그어져요.</p></div>
         <div class="warn"><b><span class="k">05</span>결단의 시간</b><p>턴이나 시간이 다 되면 증거가 부족해도 범인을 골라야 해요. 범인을 놓치면 그대로 게임 오버예요.</p></div>
-        <div class="warn"><b><span class="k">압박</span>강력계 순경 공태하</b><p>보통·어려움에서 강무열 경감과 함께 다녀요. 방에서 사건과 상관없는 물건을 치워 주고, 비협조적인 용의자에게 겁을 줘서 입을 열게 해요. 하지만 같은 사람을 너무 몰아붙이면 입을 닫고, 그 소란에 단서를 놓쳐요.</p></div>
+        <div class="warn"><b><span class="k">압박</span>순경 공태하</b><p>강무열 경감과 함께 다녀요. 방에서 사건과 상관없는 물건을 치워 주고, 비협조적인 용의자에게 겁을 줘서 입을 열게 해요. 하지만 같은 사람을 너무 몰아붙이면 입을 닫고, 그 소란에 단서를 놓쳐요.</p></div>
         <div><b><span class="k">출동</span>팀원 출동</b><p>장소에서 팀원을 보내면 문으로 들어와 대신 조사하고 2턴 뒤에 보고해요. 턴은 안 줄어요.</p></div>
         <div><b><span class="k">판단</span>진실일까, 거짓일까</b><p>용의자가 대답하면 주인공이 모은 증거를 토대로 ‘사실 같다/거짓말 같다’를 판단해요. 증거를 적게 모으면 판단도 엉성해요.</p></div>
-        <div><b><span class="k">심문</span>프로파일러</b><p>심문은 주인공과 프로파일러만 해요. 한서진 경위는 거짓말을 바로 알아채지만 몇 번 못 불러요. 용의자가 입을 다물면 한서진이 대신 나서서 반격해요. 단, 실패하면 30초와 3턴을 잃어요. 모은재 경사는 더 자주 부를 수 있지만, 증거를 많이 모아야 정확해요.</p></div>
+        <div><b><span class="k">심문</span>프로파일러</b><p>심문은 주인공과 프로파일러만 해요. 한서진 경위는 거짓말을 바로 알아채요(쉬움에선 오지 않아요). 용의자가 입을 다물면 한서진이 대신 나서서 반격해요. 단, 실패하면 30초와 3턴을 잃어요. 모은재 경사는 더 자주 부를 수 있지만, 증거를 많이 모아야 정확해요.</p></div>
         <div class="warn"><b><span class="k">주의</span>방해 · 공범 · 가짜 물건</b><p>보통·어려움에서는 누군가 증거를 망치고 문을 잠가요. 변수 인물 중 한 명이 공범이에요. 가짜 물건도 섞여 있어요.</p></div>
         <div><b><span class="k">난이도</span>쉬움 ↔ 어려움</b><p>쉬움은 아주 쉽지만 시간이 짧고 도움이 적어요. 어려움은 아주 어렵지만 시간·지목 기회·동료 도움이 많아요.</p></div>
         <div><b><span class="k">무한</span>무작위 사건</b><p>무대·용의자·동기·수법·범인이 매번 새로 정해져요.</p></div>
@@ -3192,10 +3192,10 @@ function renderPixel(out) {
 }
 
 function renderGong() {
-  if (!gongOn() || !allSpots(S.room).some(sp => !has(S.searched, sp.id))) return "";
+  if (!gongOn() || !DIFF[S.diff].fakes || !allSpots(S.room).some(sp => !has(S.searched, sp.id))) return "";   /* 쉬움엔 가짜 물건이 없으니 압박만 */
   const can = clearLeft() > 0 && S.turns > 0 && !S.locks[S.room];
   return `<div class="dispatch">
-    <b>강력계 순경 공태하</b>
+    <b>순경 공태하</b>
     <p class="hint">강무열 경감과 다니며 사건과 상관없어 보이는 물건을 치워요. 가짜 물건이 사라지고, 턴은 안 줄어요.</p>
     <div class="q-actions"><button class="act ally with-face" data-clearfakes="1" ${can ? "" : "disabled"}>${pixelFace("공태하", 24)}이 방 쓸데없는 물건 치우기<span class="cost">${clearLeft() > 0 ? `${clearLeft()}번 남음` : "끝"}</span></button></div>
   </div>`;
