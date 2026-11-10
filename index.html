@@ -233,37 +233,67 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .diff-chip { font-family: var(--f-mono); font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 1px 7px; }
 /* 걸어 다니는 지도 */
 .room-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
-.map { position: relative; width: 100%; aspect-ratio: 11 / 8; border-radius: 4px; overflow: hidden; outline: none; touch-action: manipulation; cursor: pointer;
-  background-color: #3b2f26;
-  background-image: linear-gradient(90deg, rgba(0,0,0,.22) 1px, transparent 1px), linear-gradient(rgba(0,0,0,.14) 1px, transparent 1px);
-  background-size: calc(100% / 11) calc(100% / 8); }
-.map:focus-visible { box-shadow: 0 0 0 2px var(--lamp); }
-.wall { position: absolute; background: #2b3138; box-shadow: inset 0 -3px 0 rgba(0,0,0,.35); }
-.floor-rug { position: absolute; background: rgba(110,48,40,.45); border: 2px solid rgba(216,180,106,.35); border-radius: 3px; }
+.map { position: relative; width: 100%; aspect-ratio: 11 / 8; border-radius: 6px; overflow: hidden; outline: none; touch-action: manipulation; cursor: pointer;
+  border: 2px solid #12161a; box-shadow: 0 10px 30px rgba(0,0,0,.45); background-color: #3d3027; }
+.map.floor-wood { background-color: #4a3727;
+  background-image: repeating-linear-gradient(180deg, rgba(0,0,0,.0) 0 calc(100% / 16 - 1px), rgba(0,0,0,.28) calc(100% / 16 - 1px) calc(100% / 16)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 7%, rgba(0,0,0,.05) 7% 14%, rgba(255,255,255,.02) 14% 23%); }
+.map.floor-tile { background-color: #5b6066;
+  background-image: conic-gradient(#666b71 25%, #50555b 0 50%, #666b71 0 75%, #50555b 0); background-size: calc(100% / 11) calc(100% / 8); }
+.map.floor-carpet { background-color: #3a3346;
+  background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 1.5px), radial-gradient(rgba(0,0,0,.18) 1px, transparent 1.5px);
+  background-size: 9px 9px, 13px 13px; background-position: 0 0, 4px 5px; }
+.map:focus-visible { box-shadow: 0 0 0 2px var(--lamp), 0 10px 30px rgba(0,0,0,.45); }
+.wall { position: absolute; z-index: 1; }
+.wall.top { background: linear-gradient(180deg, #232a31 0 55%, #47515b 55% 88%, #2a2219 88% 100%); }
+.wall.bottom { background: linear-gradient(180deg, #1c2227, #11161a); }
+.wall.side { background: linear-gradient(90deg, #1b2025, #262d34); }
+.wall.side.r { background: linear-gradient(270deg, #1b2025, #262d34); }
+.wall-deco { position: absolute; z-index: 1; pointer-events: none; }
+.wall-deco.frame { background: #6f7f72; border: 3px solid #b48d4c; box-shadow: 0 2px 3px rgba(0,0,0,.5); }
+.wall-deco.sconce { border-radius: 50% 50% 4px 4px; background: radial-gradient(circle at 50% 70%, #ffe7a8, #e2b25c 45%, #8a6a2e); box-shadow: 0 0 14px 6px rgba(255,214,140,.35); }
+.floor-rug { position: absolute; background: var(--rug); border-radius: 4px; box-shadow: inset 0 0 0 4px rgba(0,0,0,.18), inset 0 0 0 6px rgba(216,180,106,.35), 0 2px 4px rgba(0,0,0,.3); opacity: .85; }
 .obj, .npc, .door, .deco, .me { position: absolute; padding: 0; border: 0; background: none; }
-.obj { cursor: pointer; z-index: 2; }
-.obj svg, .deco svg { width: 100%; height: 100%; display: block; }
-.obj:hover svg, .obj:focus-visible svg { filter: brightness(1.25); }
-.obj .mark { position: absolute; right: 0; top: 0; width: 34%; height: 34%; min-width: 12px; min-height: 12px; border-radius: 50%; display: grid; place-items: center;
-  font: 600 clamp(8px, 1.6vw, 11px)/1 var(--f-mono); background: var(--lamp); color: #1a1408; }
-.obj.done .mark { background: var(--ok); }
+.obj { cursor: pointer; }
+.obj-art, .deco { display: block; }
+.obj-art { width: 100%; height: 100%; transform: scale(1.14); transition: transform .15s; }
+.obj svg, .deco svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 3px 2px rgba(0,0,0,.5)); }
+.deco svg { transform: scale(1.1); }
+.obj:hover .obj-art, .obj:focus-visible .obj-art { transform: scale(1.24); }
+.obj:focus-visible { outline: 2px solid var(--lamp); outline-offset: 1px; border-radius: 4px; }
+.obj .mark { position: absolute; z-index: 6; left: 50%; top: -34%; transform: translateX(-50%); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
+  display: grid; place-items: center; font: 700 11px/1 var(--f-mono); background: var(--lamp); color: #1a1408; box-shadow: 0 2px 4px rgba(0,0,0,.5); }
+.obj .mark::after { content: ""; position: absolute; left: 50%; bottom: -4px; margin-left: -4px; border: 4px solid transparent; border-bottom: 0; border-top-color: var(--lamp); }
+.obj.done .mark { top: -8%; left: auto; right: -6%; transform: none; min-width: 13px; height: 13px; font-size: 9px; background: var(--ok); }
+.obj.done .mark::after { display: none; }
 .obj.tam .mark { background: var(--blood); color: #fff; }
-.obj.done svg { opacity: .7; }
-.npc { z-index: 3; display: grid; place-items: center; cursor: pointer; }
-.npc .face, .me .face { width: 82%; height: 82%; }
-.npc .face { border: 2px solid var(--ink); }
+.obj.tam .mark::after { border-top-color: var(--blood); }
+.obj.done .obj-art { opacity: .72; }
+.npc { z-index: 2; display: grid; place-items: center; cursor: pointer; }
+.npc::before, .me .shadow { content: ""; position: absolute; left: 18%; right: 18%; bottom: 2%; height: 16%; border-radius: 50%; background: rgba(0,0,0,.45); filter: blur(1px); }
+.npc .face, .me .face { width: 80%; height: 80%; position: relative; }
+.npc .face { border: 2px solid #e9e4da; box-shadow: 0 3px 6px rgba(0,0,0,.5); }
 .npc.silent .face { border-color: var(--blood); filter: grayscale(.6); }
-.npc .nm { position: absolute; top: 92%; left: 50%; transform: translateX(-50%); font-size: clamp(8px, 1.6vw, 11px); white-space: nowrap; color: var(--ink);
-  background: rgba(10,14,18,.75); padding: 0 4px; border-radius: 3px; pointer-events: none; }
-.door { z-index: 2; background: #6b5038; display: grid; place-items: center; cursor: pointer; overflow: visible; }
-.door span { font-size: clamp(8px, 1.5vw, 10.5px); color: #f1e6d2; white-space: nowrap; background: rgba(10,14,18,.7); padding: 0 3px; border-radius: 2px; }
-.door.b span { transform: translateY(-2%); }
-.door.l span { position: absolute; left: 4px; }
-.door.locked { background: var(--blood); }
+.npc .nm { position: absolute; z-index: 6; top: 94%; left: 50%; transform: translateX(-50%); font-size: clamp(8px, 1.6vw, 11px); white-space: nowrap; color: var(--ink);
+  background: rgba(10,14,18,.82); padding: 1px 5px; border-radius: 3px; pointer-events: none; }
+.door { z-index: 2; cursor: pointer; overflow: visible; display: grid; place-items: center;
+  background: linear-gradient(180deg, #7a5a3c, #5a4029); box-shadow: inset 0 0 0 3px #3a2a1b; }
+.door.l { background: linear-gradient(90deg, #5a4029, #7a5a3c); }
+.door span { position: relative; z-index: 6; font-size: clamp(8px, 1.5vw, 10.5px); color: #f6ecd8; white-space: nowrap; background: rgba(10,14,18,.8); padding: 1px 4px; border-radius: 3px; }
+.door.l span { position: absolute; left: 6px; }
+.door.locked { background: linear-gradient(180deg, #8a3a33, #5a2420); }
 .door:hover, .door:focus-visible { filter: brightness(1.3); }
-.me { z-index: 4; display: grid; place-items: center; transition: left .11s linear, top .11s linear; pointer-events: none; }
-.me .face { border: 2px solid var(--lamp); box-shadow: 0 0 0 3px rgba(226,178,92,.25); }
-.map-lock { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(120,30,25,.35); color: #fff; font-family: var(--f-display); font-size: 22px; pointer-events: none; }
+.light { position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background: radial-gradient(circle at var(--lx) var(--ly), rgba(255,220,160,.10) 0, rgba(255,220,160,.04) 14%, rgba(6,9,13,.22) 34%, rgba(6,9,13,.5) 62%, rgba(6,9,13,.62) 100%);
+  transition: background-position .12s; }
+.me { z-index: 5; display: grid; place-items: center; transition: left .12s ease-out, top .12s ease-out; pointer-events: none; }
+.me .face { border: 2px solid var(--lamp); box-shadow: 0 0 0 3px rgba(226,178,92,.25), 0 3px 6px rgba(0,0,0,.5); }
+.me.walk .face { animation: bob .24s ease-out; }
+@keyframes bob { 40% { transform: translateY(-9%); } }
+@keyframes float { 50% { transform: translate(-50%, -14%); } }
+@media (prefers-reduced-motion: no-preference) { .obj:not(.done) .mark { animation: float 1.6s ease-in-out infinite; } }
+.map-lock { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; background: rgba(120,30,25,.35); color: #fff; font-family: var(--f-display); font-size: 22px; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .me { transition: none; } .me.walk .face { animation: none; } }
 @media (max-width: 720px) { .split.explore .plan { order: 2; } }
 .explore-bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
 .explore-bar #near { flex: 1 1 200px; min-width: 0; }
@@ -1970,6 +2000,9 @@ function updateNear() {
 function placeMe() {
   const me = document.getElementById("me"); if (!me) return;
   me.style.left = (S.pos.x / EXW * 100) + "%"; me.style.top = (S.pos.y / EXH * 100) + "%";
+  me.classList.remove("walk"); void me.offsetWidth; me.classList.add("walk");
+  const lt = document.getElementById("light");
+  if (lt) { lt.style.setProperty("--lx", ((S.pos.x + .5) / EXW * 100) + "%"); lt.style.setProperty("--ly", ((S.pos.y + .5) / EXH * 100) + "%"); }
 }
 let walkTimer = null;
 function stopWalk() { clearInterval(walkTimer); walkTimer = null; }
@@ -2026,12 +2059,17 @@ function renderExplore(out, plan) {
   const c = C(), rid = S.room, r = c.rooms[rid], L = layout(rid), lk = S.locks[rid];
   const floorOf = c.floors.find(f => f.rooms.includes(rid));
   const cell = (x, y) => `left:${x / EXW * 100}%;top:${y / EXH * 100}%;width:${100 / EXW}%;height:${100 / EXH}%`;
-  const walls = `<div class="wall" style="left:0;top:0;width:100%;height:${100 / EXH}%"></div><div class="wall" style="left:0;bottom:0;width:100%;height:${100 / EXH}%"></div>
-    <div class="wall" style="left:0;top:0;width:${100 / EXW}%;height:100%"></div><div class="wall" style="right:0;top:0;width:${100 / EXW}%;height:100%"></div>`;
-  const rug = `<div class="floor-rug" style="left:${3 / EXW * 100}%;top:${2.5 / EXH * 100}%;width:${5 / EXW * 100}%;height:${3 / EXH * 100}%"></div>`;
+  const hh = hashStr(rid + c.title);
+  const floorKind = /부엌|주방|식당|욕실|기관|장비|보안|경비|공방|창고|수장고|승무원/.test(r.name) ? "tile" : /의 방|객실|선실|손님|게스트|칸|대기실|숙소/.test(r.name) ? "carpet" : "wood";
+  const walls = `<div class="wall top" style="left:0;top:0;width:100%;height:${100 / EXH}%"></div><div class="wall bottom" style="left:0;bottom:0;width:100%;height:${100 / EXH}%"></div>
+    <div class="wall side" style="left:0;top:0;width:${100 / EXW}%;height:100%"></div><div class="wall side r" style="right:0;top:0;width:${100 / EXW}%;height:100%"></div>
+    <div class="wall-deco frame" style="left:${(3 + hh % 2) / EXW * 100}%;top:${0.18 / EXH * 100}%;width:${1.1 / EXW * 100}%;height:${0.62 / EXH * 100}%"></div>
+    <div class="wall-deco sconce" style="left:${(6.4 + hh % 3 * .3) / EXW * 100}%;top:${0.28 / EXH * 100}%;width:${0.5 / EXW * 100}%;height:${0.45 / EXH * 100}%"></div>`;
+  const rugColor = ["#6b2f2f", "#2f4a5c", "#4a3b59", "#5a4a2a"][hh % 4];
+  const rug = `<div class="floor-rug" style="--rug:${rugColor};left:${3 / EXW * 100}%;top:${2.5 / EXH * 100}%;width:${5 / EXW * 100}%;height:${3 / EXH * 100}%"></div>`;
   const items = L.items.map(it => {
     const done = has(S.searched, it.spot), tam = has(S.tampered, it.spot);
-    return `<button class="obj${done ? " done" : ""}${tam && !done ? " tam" : ""}" style="${cell(it.x, it.y)}" data-obj="${it.spot}" aria-label="${esc(it.label)}" title="${esc(it.label)}">${furnSVG(it.type)}<span class="mark">${done ? "✓" : tam ? "!" : "?"}</span></button>`;
+    return `<button class="obj${done ? " done" : ""}${tam && !done ? " tam" : ""}" style="${cell(it.x, it.y)}" data-obj="${it.spot}" aria-label="${esc(it.label)}" title="${esc(it.label)}"><span class="obj-art">${furnSVG(it.type)}</span><span class="mark">${done ? "✓" : tam ? "!" : "?"}</span></button>`;
   }).join("");
   const deco = L.deco.map(d => `<div class="deco" style="${cell(d.x, d.y)}">${furnSVG(d.type)}</div>`).join("");
   const people = L.people.map(pp => {
@@ -2042,7 +2080,8 @@ function renderExplore(out, plan) {
     const name = d.stairs ? `계단 ${d.stairs}` : c.rooms[d.to].name;
     return `<button class="door ${d.side}${S.locks[d.to] ? " locked" : ""}" style="${cell(d.x, d.y)}" data-door="${d.to}" data-dx="${d.x}" data-dy="${d.y}" aria-label="${esc(name)}(으)로 가기" title="${esc(name)}"><span>${esc(name)}</span></button>`;
   }).join("");
-  const me = `<div class="me" id="me" style="${cell(S.pos.x, S.pos.y)}">${Face(pname(), 0)}</div>`;
+  const me = `<div class="me" id="me" style="${cell(S.pos.x, S.pos.y)}"><span class="shadow"></span>${Face(pname(), 0)}</div>`;
+  const light = `<div class="light" id="light" style="--lx:${(S.pos.x + .5) / EXW * 100}%;--ly:${(S.pos.y + .5) / EXH * 100}%"></div>`;
   const found = r.spots.filter(sp => has(S.searched, sp.id));
   const left = r.spots.length - found.length;
   const results = found.map(sp => `<div class="spot"><b>${esc(sp.label)}</b><p class="result">${esc(sp.text)}</p>
@@ -2052,8 +2091,8 @@ function renderExplore(out, plan) {
     <section class="panel" aria-live="polite">
       <div class="room-head"><div><span class="label">${floorOf ? floorOf.label : ""}</span><h3 style="font-size:24px">${r.name}</h3></div>
         <button class="act" data-act="listmode">목록으로 보기</button></div>
-      <div class="map" id="map" tabindex="0" role="application" aria-label="${esc(r.name)} 지도. 방향키로 움직이고 스페이스로 조사">
-        ${rug}${walls}${deco}${items}${people}${doors}${me}
+      <div class="map floor-${floorKind}" id="map" tabindex="0" role="application" aria-label="${esc(r.name)} 지도. 방향키로 움직이고 스페이스로 조사">
+        ${rug}${walls}${deco}${items}${people}${doors}${light}${me}
         ${lk ? `<div class="map-lock">잠김 · ${lk}턴</div>` : ""}
       </div>
       <div class="explore-bar"><span id="near" class="hint">${esc(nearText())}</span>
