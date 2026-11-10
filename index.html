@@ -426,6 +426,8 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .intro-cap p { margin: 0; font-size: 16px; }
 .intro-cap.narr p { color: var(--muted); font-style: italic; }
 .intro-scene .btn-row { justify-content: center; }
+.spoil-box { display: grid; gap: 14px; margin-top: 8px; padding: 18px; border: 1px solid var(--blood); border-radius: 8px; background: rgba(120,30,25,.12); }
+.spoil-box .truth p { margin: 0 0 10px; }
 .intro-sign { position: absolute; z-index: 2; left: 29.55%; top: 3.125%; width: 18.2%; height: 6.25%; display: grid; place-items: center; color: #22303c; font-weight: 800; font-size: clamp(8px, 1.6vw, 14px); letter-spacing: .1em; pointer-events: none; }
 .heart { font-family: var(--f-mono); font-size: 11px; margin-left: 6px; } .heart.open { color: #ff8aa0; } .heart.closed { color: var(--muted); }
 .talklog summary { cursor: pointer; color: var(--muted); font-size: 13.5px; }
@@ -3419,7 +3421,31 @@ function judge() {
 }
 
 function renderGameOver() {
-  const c = C(), pk = S.pick;
+  const c = C(), pk = S.pick, ans = c.answer, cul = c.suspects[ans.culprit];
+  const motive = (c.motives.find(m => m.id === ans.motive) || {}).text || "";
+  const method = (c.methods.find(m => m.id === ans.method) || {}).text || "";
+  const lies = cul.qs.filter(q => q.lie);
+  const keys = c.key.slice(0, 4).map(k => c.clues[k]).filter(Boolean);
+  const next = c.random ? null : caseById(nextCaseId());
+  const spoiler = S.spoil ? `
+    <section class="spoil-box" aria-live="polite">
+      <span class="label">범인 스포</span>
+      <div class="person-head culprit"><span class="portrait">${pixelFace(cul.name, 96, cul.role)}</span>
+        <div><span class="label">진범</span><h3 style="font-size:26px">${esc(cul.name)}</h3><span class="hint">${esc(cul.role)}</span></div></div>
+      <div class="score-rows">
+        <div class="score-row"><span>왜 그랬나 (동기)</span><b>${esc(motive)}</b></div>
+        <div class="score-row"><span>어떻게 (수법)</span><b>${esc(method)}</b></div>
+      </div>
+      ${lies.length ? `<h3>${esc(cul.name)}의 거짓말</h3>
+      <div class="truth">${lies.map(q => `<p><span class="hint">“${esc(q.q)}”</span><br>거짓말: “${esc(q.a)}”<br><b>사실은:</b> “${esc(q.lie.reply)}”</p>`).join("")}</div>` : ""}
+      ${keys.length ? `<h3>결정적 증거</h3><div class="truth">${keys.map(k => `<p><b>${esc(k.name)}</b> — ${esc(k.text)}</p>`).join("")}</div>` : ""}
+      <h3>사건의 진상</h3>
+      <div class="truth">${c.truth.map(t => `<p>${esc(t)}</p>`).join("")}</div>
+      <div class="btn-row">
+        ${c.random ? `<button class="btn" data-random="1">새 무작위 사건</button>` : `<button class="btn" data-case="${next.id}">다른 사건: ${next.title}</button>`}
+        <button class="btn ghost" data-act="files">사건 목록</button>
+      </div>
+    </section>` : "";
   app.innerHTML = `<section class="verdict gameover">
     <span class="label">${esc(pname())} ${PLAYER_RANK} · ${c.title}</span>
     <div class="intro-scene end-scene">
@@ -3429,15 +3455,24 @@ function renderGameOver() {
     <div class="grade fail">GAME OVER</div>
     <h2>범인을 놓쳤다.</h2>
     <p class="lede">${pk.culprit ? `${esc(EUN(c.suspects[pk.culprit].name))} 범인이 아니었다. ` : ""}진짜 범인은 혼란을 틈타 사라졌고, 사건은 미제로 남았다.</p>
-    <div class="btn-row">
-      ${c.random ? `<button class="btn" data-random="1">새 무작위 사건</button>` : `<button class="btn" data-case="${c.id}">다시 출동한다</button>`}
+    ${S.spoil ? "" : `<div class="btn-row">
+      <button class="btn" data-act="retry">다시 시도하기</button>
+      <button class="btn ghost" data-act="spoil">포기하고 범인 스포 보기</button>
       <button class="btn ghost" data-act="files">사건 목록</button>
     </div>
-    <details class="spoiler"><summary>그래도 진상이 궁금하다면 (스포일러)</summary>
-      <div class="truth">${c.truth.map(t => `<p>${esc(t)}</p>`).join("")}</div>
-    </details>
+    <p class="hint">다시 시도하면 같은 사건, 같은 범인으로 처음부터 다시 수사해요. 스포를 보면 진범과 그 이유를 알려 줘요.</p>`}
+    ${spoiler}
   </section>`;
   ENDING.mount(document.getElementById("end-view"), "lose");
+}
+
+/* 같은 사건(무작위 사건도 같은 범인)을 같은 난이도로 처음부터 다시 */
+function retryCase() {
+  const keep = { caseId: S.caseId, randomCase: S.randomCase, diff: S.diff };
+  const c = C();
+  toastQ.length = 0; ENDING.reset();
+  S = Object.assign(fresh(), keep, { screen: "brief", room: Object.keys(c.rooms)[0], suspect: Object.keys(c.suspects)[0], introDone: true });
+  beginCase();
 }
 
 function renderResult() {
@@ -3530,6 +3565,8 @@ app.addEventListener("click", e => {
   else if (d.random) { openRandom(); top = true; }
   else if (d.case) { openCase(d.case); top = true; }
   else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); return; }
+  else if (d.act === "retry") { retryCase(); top = true; Sound.thunder(); flash(); }
+  else if (d.act === "spoil") { S.spoil = true; }
   else if (d.act === "skip-intro") { INTRO.finish(); return; }
   else if (d.act === "replay-intro") { S.introDone = false; INTRO.reset(); top = true; }
   else if (d.act === "start") { beginCase(); top = true; Sound.thunder(); flash(); }
