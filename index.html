@@ -363,6 +363,24 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .playfield .pxview { width: min(100%, calc((100dvh - 245px) * 11 / 8)); min-width: min(100%, 320px); justify-self: center; }
 @supports not (height: 100dvh) { .playfield .pxview { width: min(100%, calc((100vh - 245px) * 11 / 8)); } }
 .playfield .pad-row { width: min(100%, 900px); justify-self: center; }
+.play-grid { display: grid; gap: 12px; }
+.play-main, .play-side { display: grid; gap: 10px; align-content: start; min-width: 0; }
+/* 넓은 화면: 지도는 왼쪽에 크게, 버튼은 오른쪽에 → 스크롤 없이 한 화면에 */
+@media (min-width: 900px) {
+  body.playing { padding-top: 10px; padding-bottom: 8px; }
+  body.playing .board { gap: 6px; padding-block: 6px; }
+  body.playing .board-top .label { display: none; }
+  body.playing .board-top h2 { font-size: 19px; }
+  body.playing .tab { padding: 6px 12px; }
+  .playfield { margin-top: 8px; gap: 8px; }
+  .play-grid { grid-template-columns: minmax(0, 1fr) clamp(260px, 24vw, 340px); align-items: start; gap: 16px; }
+  .play-main .pxview { width: min(100%, calc((100dvh - 172px) * 11 / 8)); justify-self: center; }
+  .play-side { max-height: calc(100dvh - 120px); overflow-y: auto; padding-right: 4px; }
+  .play-side .pad-row { flex-direction: column; align-items: stretch; width: 100%; }
+  .play-side .pad-act { width: 100%; }
+  .play-side .room-nav .nav-rooms { display: grid; grid-template-columns: 1fr; gap: 4px; }
+  .room-bar b { font-size: 19px; }
+}
 .room-nav { display: grid; gap: 6px; }
 .nav-floor { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .nav-floor .label { min-width: 3.5em; }
@@ -453,6 +471,9 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .dept-toggle input { width: 18px; height: 18px; accent-color: #e8b25c; }
 .act-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 #act-px.talk { background: #7fd1a0; border-color: #7fd1a0; color: #0f1a12; }
+.sit-in { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.sit-in > b { font-size: 12.5px; color: var(--muted); font-family: var(--f-mono); }
+.sit-in .act { padding: 4px 8px; font-size: 13px; }
 .px-say { position: absolute; left: 3%; right: 3%; bottom: 3%; z-index: 4; display: flex; gap: 10px; align-items: center; padding: 8px 12px; background: rgba(10,13,16,.9); border: 1px solid #7fd1a0; border-radius: 8px; }
 .px-say b { display: block; font-size: 12px; color: #7fd1a0; font-family: var(--f-mono); }
 .px-say p { margin: 0; font-size: 14px; line-height: 1.45; }
@@ -1611,7 +1632,7 @@ const turnsFor = c => {
 };
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
-  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], patrol: [], patrolNotes: {}, team: null, patrolPick: null, teamPick: null, depts: null, deptJobs: {}, sheet: false, stars: [], reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
+  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], patrol: [], patrolNotes: {}, team: null, patrolPick: null, teamPick: null, depts: null, deptJobs: {}, sheet: false, stars: [], whispers: {}, reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
   chances: 1, penalties: 0, decided: false, advice: {}, cleared: [], persona: {}, heart: {}, secrets: [], lastLine: null, dlg: null, wrongAccuse: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
   mode: "pixel", pos: null, dir: null, autopsyDone: false, autopsy: null, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
@@ -3874,9 +3895,11 @@ function renderPixel(out) {
   const roomNav = c.floors.map(f => `<div class="nav-floor"><span class="label">${f.label}</span><div class="nav-rooms">${f.rooms.map(id => roomBtn(id)).join("")}</div></div>`).join("");
   return `<div class="playfield" aria-live="polite">
     ${decisionBanner()}
+    <div class="play-grid"><div class="play-main">
     <div class="room-bar"><span class="label">${floorOf ? floorOf.label : ""}</span><b>${r.name}</b>
       <span class="hint">${left ? `조사하지 않은 곳(?) ${left}곳` : "모두 조사했다"}</span></div>
     <div class="pxview" id="pxview">${lk ? `<div class="map-lock">잠김 · ${lk}턴</div>` : ""}</div>
+    </div><div class="play-side">
     <div class="pad-row">
       <div class="dpad" aria-label="방향 버튼">
         <button class="pad up" data-pad="up" aria-label="위">▲</button><button class="pad left" data-pad="left" aria-label="왼쪽">◀</button>
@@ -3890,6 +3913,7 @@ function renderPixel(out) {
     <div class="room-nav"><span class="label">방 이동 · 이름을 누르면 바로 가요</span>${roomNav}</div>
     <p class="desc">${r.desc}</p>
     ${results ? `<details class="found-list"><summary>이 방에서 찾은 것 (${found.length})</summary><div class="spots">${results}</div></details>` : ""}
+    </div></div>
   </div>
   ${!out && S.sheet ? `<button class="sheet-back" data-act="sheet-close" aria-label="닫기" tabindex="-1"></button>
   <div class="team-sheet" role="dialog" aria-label="팀원 부르기">
@@ -4093,6 +4117,51 @@ function hanFix(sid) {
   spend();
 }
 function readBtns() { return ""; }
+/* ---------- 심문에 함께 들어온 부하들: 용의자마다 한 번씩 귓속말 (턴 소모 없음) ---------- */
+function sitIns(sid) {
+  const out = [{ slot: "seo", what: "수상한 대답" }];
+  if (inCrew("gong") && gongOn()) out.push({ slot: "gong", what: "다가갈 말투" });
+  if (inCrew("byun") && (!S.depts || deptOn("sci"))) out.push({ slot: "byun", what: "엮인 증거" });
+  const cop = (S.patrol || []).find(o => o.room === suspectRoom(sid));
+  if (cop) out.push({ slot: "cop:" + cop.id, what: "지켜본 것" });
+  return out;
+}
+const sitName = slot => slot.startsWith("cop:") ? patrolOf(slot.slice(4)).name : N[slot];
+function whisper(sid, slot) {
+  const c = C(), p = c.suspects[sid], key = sid + "|" + slot;
+  S.whispers = S.whispers || {};
+  if (S.whispers[key]) return;
+  const name = sitName(slot), r = (hashStr(key + S.fakeSeed) % 100) / 100;
+  let text = "";
+  if (slot === "seo") {
+    const asked = p.qs.filter(q => has(S.asked, q.id) && !has(S.broken, q.id));
+    if (!asked.length) { toast(`${esc(name)} — “먼저 질문부터 해 보세요. 듣고 나서 말씀드릴게요.”`); return; }
+    const lies = asked.filter(q => q.lie), truths = asked.filter(q => !q.lie);
+    const right = r < (starSlot("seo") ? 1 : .75);
+    const q = lies.length && (right || !truths.length) ? lies[0] : (truths[0] || asked[0]);
+    text = `(귓속말) 선배님, 방금 들은 것 중엔 ‘${q.q}’에 한 대답이 제일 수상해요.`;
+  } else if (slot === "gong") {
+    const right = PERSONAS[S.persona[sid]].right, wrong = TONES.map(t => t.id).filter(t => t !== right);
+    const pick = r < (starSlot("gong") ? 1 : .8) ? right : wrong[0];
+    text = `(귓속말) 이 사람은 ‘${TONES.find(t => t.id === pick).label}’ 식으로 다가가야 입을 열 겁니다. 제 감으로는요.`;
+  } else if (slot === "byun") {
+    const ev = evidenceAgainst(sid);
+    text = ev.length ? `(귓속말) 이 사람과 엮인 증거는 ‘${ev[0].name}’예요.${ev[0].asked ? " 이미 물어본 대답과 어긋나요. 들이밀어 보세요." : ` ‘${ev[0].q.q}’ 쪽을 물어보면 걸릴 거예요.`}`
+      : "(귓속말) 아직 이 사람과 엮인 증거는 못 찾았어요. 현장을 더 봐야겠어요.";
+  } else {
+    const n = (S.patrolNotes || {})[sid];
+    text = n ? `(귓속말) 제가 지켜봤는데, ${n.text}` : "(귓속말) 계속 지켜보고 있는데 아직 특별한 건 없습니다.";
+  }
+  S.whispers[key] = text;
+  S.lastLine = { sid, who: `${rankOf(name)} ${name}`, q: text, a: "“…뭘 그렇게 속닥거리세요?”", kind: "rebut-miss" };
+  Sound.ask();
+}
+function sitInRow(sid) {
+  const list = sitIns(sid), w = S.whispers || {};
+  return `<div class="sit-in"><b>함께 들어온 팀원</b>${list.map(x => { const done = w[sid + "|" + x.slot], nm = sitName(x.slot);
+    return `<button class="act ally with-face" data-whisper="${x.slot}" ${done ? "disabled" : ""}>${pixelFace(nm, 22)}${nm}<span class="cost">${done ? "들었음" : `귓속말 · ${x.what}`}</span></button>`; }).join("")}
+    <span class="hint">용의자마다 한 번씩 · 턴 안 씀</span></div>`;
+}
 function oldReadBtns(q, sid) {
   if (has(S.broken, q.id) || S.silence[sid] || S.turns <= 0 || S.decided) return "";
   const r = (S.reads || {})[q.id] || {};
@@ -4182,6 +4251,7 @@ function renderPeople(out) {
         ${S.autopsy ? `<span class="duo">${pixelFace(N.yoon, 20)}감식 소견(증거): 사인 ‘${esc(S.autopsy.cause)}’</span>` : ""}
         ${(S.patrolNotes || {})[sid] ? `<span class="duo">${pixelFace(S.patrolNotes[sid].by.split(" ")[1], 20)}순찰 메모 · ${esc(S.patrolNotes[sid].by)}: “${esc(S.patrolNotes[sid].text)}”</span>` : ""}
         ${guarded(sid) ? `<span class="duo">🛡 순찰 경찰이 지키는 중 — 방해로 입을 막을 수 없어요</span>` : ""}
+        ${sitInRow(sid)}
         <span class="duo">함께 심문: ${pixelFace(N.han, 20)}${N.han} 경위 · ${pixelFace(N.mo, 20)}${N.mo} 경사</span></div></div>
       <div class="speech">${speech}</div>
       <div class="choices">${choices}</div>
@@ -4453,6 +4523,7 @@ app.addEventListener("click", e => {
   else if (d.tone) { openHeart(S.suspect, d.tone); }
   else if (d.read) { doRead(d.read, d.q); }
   else if (d.moclear) { moClear(d.moclear); }
+  else if (d.whisper) { whisper(S.suspect, d.whisper); }
   else if (d.forensic) { callForensic(); S.sheet = false; }
   else if (d.present) { forensicPresent(d.present); }
   else if (d.hanfix) { hanFix(d.hanfix); }
