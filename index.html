@@ -710,6 +710,8 @@ body.shake main { animation: op-shake2 .4s; }
 .photo-note { margin: 0; color: var(--muted); font-size: 13px; }
 .photo-close { justify-self: end; }
 .photo-btn { margin: 6px 0; }
+.continue-box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0 4px; padding: 12px 14px; border: 1px solid var(--lamp); border-radius: 8px; background: rgba(226,178,92,.08); }
+.continue-btn { font-size: 18px; }
 .cop-card { width: min(420px, 100%); }
 .cop-head { display: flex; gap: 10px; align-items: center; } .cop-head b { display: block; font-size: 17px; }
 .cop-say { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: rgba(0,0,0,.25); }
@@ -3490,8 +3492,28 @@ function nextToast() {
 /* ===================== 렌더 ===================== */
 const soundBtn = () => `<button class="sound-btn" data-act="sound" aria-pressed="${Sound.on}">${Sound.on ? "소리 켜짐" : "소리 꺼짐"}</button>`;
 
+/* ---------- 이어하기: 사건 진행을 자동 저장 ---------- */
+const SAVE_KEY = "midnight-save-v1";
+function saveGame() {
+  try {
+    if (S.screen === "game" && S.caseId) localStorage.setItem(SAVE_KEY, JSON.stringify({ at: Date.now(), S }));
+    else if (S.screen === "result" || S.screen === "gameover") localStorage.removeItem(SAVE_KEY);
+  } catch (e) {}
+}
+function loadSave() {
+  try { const d = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); if (!d || !d.S || !d.S.caseId) return null; if (d.S.caseId !== "random" && !caseById(d.S.caseId)) return null; return d; } catch (e) { return null; }
+}
+function continueGame() {
+  const d = loadSave(); if (!d) return;
+  S = Object.assign(fresh(), d.S, { screen: "game", sheet: false, dlg: null });
+  if (S.tab === "people" && !S.suspect) S.tab = "rooms";
+  render(); window.scrollTo(0, 0);
+  toast(`<b>이어서 수사</b> — ${esc(C().title)} · 남은 ${S.turns}턴`);
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden) saveGame(); });
+window.addEventListener("pagehide", saveGame);
 function render() {
-  Sound.tension();
+  Sound.tension(); saveGame();
   if (decisionShowing && S.screen !== "game") { decisionShowing = false; hideDecisionOverlay(); }
   document.body.classList.toggle("urgent", S.screen === "game" && S.turns > 0 && (S.turns <= 6 || S.timeLeft <= 60));
   if (S.screen === "opening") return renderOpening();
@@ -3737,8 +3759,9 @@ function renderTitle() {
         <input id="player-name" name="player" maxlength="12" autocomplete="off" placeholder="이름을 지어 주세요" value="${esc(PLAYER)}">
         <div class="me-preview" id="me-preview">${mePreview()}</div>
       </form>
+      ${(() => { const sv = loadSave(); if (!sv) return ""; const c0 = sv.S.caseId === "random" ? sv.S.randomCase : caseById(sv.S.caseId); return c0 ? `<div class="continue-box"><button class="btn continue-btn" data-act="continue">▶ 이어서 하기</button><span class="hint">${esc(c0.title)} · 남은 ${sv.S.turns}턴${sv.S.timed ? ` · ${mmss(sv.S.timeLeft)}` : ""} · ${new Date(sv.at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} 저장</span></div>` : ""; })()}
       <div class="btn-row">
-        <button class="btn" data-act="enter">사건 파일 열기</button>
+        <button class="btn${loadSave() ? " ghost" : ""}" data-act="enter">${loadSave() ? "새 사건 고르기" : "사건 파일 열기"}</button>
         ${soundBtn()}
       </div>
       <h2>강력팀</h2>
@@ -5820,6 +5843,7 @@ app.addEventListener("click", e => {
   else if (d.case) { openCase(d.case); top = true; }
   else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm) mm.querySelector("img").outerHTML = pixelFace(pname(), 64, "", true); return; }
   else if (d.act === "body-photo") { openBodyPhoto(); return; }
+  else if (d.act === "continue") { continueGame(); return; }
   else if (d.act === "close-talk") { S.tab = "rooms"; S.dlg = null; top = true; }
   else if (d.act === "sheet-open") { S.sheet = true; }
   else if (d.act === "sheet-close") { S.sheet = false; }
