@@ -406,7 +406,7 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
   body.playing .tab { padding: 6px 12px; }
   .playfield { margin-top: 8px; gap: 8px; }
   .play-grid { grid-template-columns: minmax(0, 1fr) clamp(260px, 24vw, 340px); align-items: start; gap: 16px; }
-  .play-main .pxview { width: min(100%, calc((100dvh - 172px) * 11 / 8)); justify-self: center; }
+  .play-main .pxview { width: min(100%, calc((100dvh - 180px) * 11 / 8)); justify-self: center; }
   .play-side { max-height: calc(100dvh - 120px); overflow-y: auto; padding-right: 4px; }
   .play-side .pad-row { flex-direction: column; align-items: stretch; width: 100%; }
   .play-side .pad-act { width: 100%; }
@@ -506,6 +506,45 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .howto-mini { margin: 12px 0; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; }
 .howto-mini summary { cursor: pointer; font-weight: 700; }
 .howto-mini ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+/* ===== 심문 화면: 창 전체를 크게 쓰고, 페이지는 스크롤하지 않는다 ===== */
+body.talking .split { margin-top: 8px; gap: 14px; align-items: stretch; grid-template-columns: clamp(200px, 20vw, 260px) minmax(0, 1fr); }
+body.talking .people { overflow-y: auto; align-content: start; min-height: 0; padding-right: 4px; }
+body.talking .who { padding: 7px 9px; }
+body.talking .who .pxface { width: 36px; height: 36px; }
+body.talking .who-text span { font-size: 12px; }
+body.talking .panel.talk { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; padding: 16px 18px; }
+body.talking .panel.talk > * { flex: none; }
+body.talking .panel.talk .choices { flex: 1 0 auto; align-content: start; }
+
+body.talking .person-head { flex-wrap: nowrap; gap: 14px; }
+body.talking .person-head .portrait img { width: clamp(64px, 9vw, 120px); height: auto; }
+body.talking .person-head h3 { font-size: clamp(20px, 2.2vw, 30px) !important; }
+body.talking .speech { flex: none; }
+body.talking .line p { font-size: clamp(15px, 1.35vw, 19px); }
+body.talking .choice { font-size: clamp(14px, 1.15vw, 17px); padding-block: 10px; }
+@media (max-width: 720px) {
+  body.talking .split { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 6px; margin-top: 4px; }
+  body.talking .people { display: flex; overflow-x: auto; overflow-y: hidden; gap: 6px; scrollbar-width: none; padding: 0 0 2px; }
+  body.talking .people::-webkit-scrollbar { display: none; }
+  body.talking .people .side-label { display: none; }
+  body.talking .who { flex: none; padding: 4px 8px; gap: 6px; }
+  body.talking .who .pxface { width: 30px; height: 30px; }
+  body.talking .who-text > span, body.talking .who-text .heart { display: none; }
+  body.talking .who-text b { font-size: 13px; }
+  body.talking .panel.talk { padding: 10px 12px; gap: 6px; }
+  body.talking .person-head .portrait img { width: 52px; }
+  body.talking .person-head h3 { font-size: 19px !important; }
+  body.talking .person-head .hint, body.talking .person-head .duo { font-size: 11.5px; }
+  body.talking .sit-in { gap: 4px; }
+  body.talking .sit-in > b, body.talking .sit-in > .hint, body.talking .sit-in .cost { display: none; }
+  body.talking .sit-in .act { padding: 3px 6px; font-size: 12px; }
+  body.talking .person-head .hint:not(.duo), body.talking .person-head .duo, body.talking .person-head .label { display: none; }
+  body.talking .reads .read i { display: none; }
+  body.talking .line { padding: 6px 9px; }
+  body.talking .line p { font-size: 14px; line-height: 1.5; }
+  body.talking .choice { font-size: 13.5px; padding-block: 7px; }
+  body.talking .talklog { display: none; }
+}
 .sit-in { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
 .sit-in > b { font-size: 12.5px; color: var(--muted); font-family: var(--f-mono); }
 .sit-in .act { padding: 4px 8px; font-size: 13px; }
@@ -2638,9 +2677,21 @@ function render() {
       ${alertRow}
     </header>
     <main>${body}</main>`;
-  document.body.classList.toggle("playing", S.tab === "rooms");
+  const talking = S.tab === "people" && !S.decided;
+  document.body.classList.toggle("playing", S.tab === "rooms" || talking);
+  document.body.classList.toggle("talking", talking);
   if (S.tab === "rooms") PX.mount(document.getElementById("pxview")); else PX.clearKeys();
+  fitTalk();
 }
+/* 심문 화면을 창 높이에 꼭 맞춘다 (페이지 스크롤 없음, 선택지만 안에서 넘김) */
+function fitTalk() {
+  const sp = document.querySelector("body.talking .split");
+  if (!sp) return;
+  const top = sp.getBoundingClientRect().top + window.scrollY;
+  const padB = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+  sp.style.height = Math.max(300, window.innerHeight - top - padB - 4) + "px";
+}
+addEventListener("resize", () => fitTalk());
 
 function mePreview() {
   const g = playerGender(), auto = PLAYER_G === "auto";
@@ -2676,7 +2727,7 @@ function renderTitle() {
       </div>
       <h2>조작 방법</h2>
       <div class="howto">
-        <div><b><span class="k">01</span>움직이기 · 조사 · 대화</b><p>컴퓨터는 방향키나 WASD, 휴대폰은 화면을 누르거나 아래 방향 버튼으로 움직여요. 물음표(?) 물건 옆에서 스페이스나 ‘조사’ 버튼을 누르면 조사(1턴), 사람 옆에서는 같은 버튼이 ‘대화’로 바뀌어요. 용의자와 대화하면 심문, 우리 팀원과 대화하면 조사한 걸 힌트로 알려 줘요(턴 안 씀). 화면에서 물건·사람·문을 직접 눌러도 걸어가요.</p></div>
+        <div><b><span class="k">01</span>움직이기 · 조사 · 대화</b><p>컴퓨터는 방향키나 WASD, 휴대폰은 가고 싶은 곳을 화면에서 누르면 걸어가요. 물음표(?) 물건 옆에서 스페이스나 ‘조사’ 버튼을 누르면 조사(1턴), 사람 옆에서는 같은 버튼이 ‘대화’로 바뀌어요. 용의자와 대화하면 심문, 우리 팀원과 대화하면 조사한 걸 힌트로 알려 줘요(턴 안 씀). 화면에서 물건·사람·문을 직접 눌러도 걸어가요.</p></div>
         <div><b><span class="k">T</span>팀원 부르기</b><p>‘📞 팀원 부르기’ 버튼이나 T 키를 누르면 부를 수 있는 팀원 창이 올라와요. Esc나 바깥을 누르면 닫혀요. 오른쪽(휴대폰은 아래) 방 이름을 누르면 그 방으로 바로 가요.</p></div>
         <div><b><span class="k">02</span>대화</b><p>대화 창에 질문이 여러 개 떠요. 하나를 골라 물어보세요(1턴). 단서를 찾을수록 물어볼 것이 늘어나요.</p></div>
         <div><b><span class="k">03</span>모순 지적</b><p>‘모순을 지적한다’를 골라, 거짓말 같은 대답과 그 말과 맞지 않는 단서를 차례로 골라요. 맞으면 진술이 무너지고, 틀리면 1턴과 <b>10초</b>를 잃어요.</p></div>
@@ -3017,7 +3068,7 @@ function renderBrief() {
       </div>
       <details class="howto-mini" open><summary>조작 방법</summary>
         <ul>
-          <li><b>움직이기</b> — 방향키·WASD (휴대폰: 화면 누르기 또는 방향 버튼)</li>
+          <li><b>움직이기</b> — 방향키·WASD (휴대폰: 가고 싶은 곳을 화면에서 누르기)</li>
           <li><b>조사 / 대화</b> — 스페이스 또는 버튼. 물건 옆은 ‘조사’(1턴), 사람 옆은 ‘대화’</li>
           <li><b>팀원 부르기</b> — T 키 또는 ‘📞 팀원 부르기’ 버튼 · 닫기는 Esc</li>
           <li><b>방 이동</b> — 문으로 걸어가거나 방 이름을 눌러요</li>
@@ -3945,10 +3996,6 @@ function renderPixel(out) {
     <div class="pxview" id="pxview">${lk ? `<div class="map-lock">잠김 · ${lk}턴</div>` : ""}</div>
     </div><div class="play-side">
     <div class="pad-row">
-      <div class="dpad" aria-label="방향 버튼">
-        <button class="pad up" data-pad="up" aria-label="위">▲</button><button class="pad left" data-pad="left" aria-label="왼쪽">◀</button>
-        <button class="pad right" data-pad="right" aria-label="오른쪽">▶</button><button class="pad down" data-pad="down" aria-label="아래">▼</button>
-      </div>
       <div class="pad-act"><span id="near-px" class="hint"></span>
         <span class="act-btns"><button class="btn" id="act-px" data-act="interact-px">조사</button>
         ${!out ? `<button class="btn call-btn" data-act="sheet-open" aria-haspopup="dialog">📞 팀원 부르기${busyCount() ? ` <span class="badge">${busyCount()} 출동 중</span>` : ""}</button>` : ""}</span></div>
