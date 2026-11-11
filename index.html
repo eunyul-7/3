@@ -480,6 +480,9 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .intro-cap b { display: block; font-family: var(--f-mono); font-size: 12px; color: var(--lamp); }
 .intro-cap p { margin: 0; font-size: 16px; }
 .intro-cap.narr p { color: var(--muted); font-style: italic; }
+.intro-cap.phone { border-color: #e23a3a; background: rgba(40,8,8,.8); }
+.intro-cap.phone b { color: #ff7a6b; }
+.intro-cap.phone p { font-style: italic; }
 .intro-scene .btn-row { justify-content: center; }
 .team-slot { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 12px; margin: 10px 0; }
 .team-slot legend { padding: 0 6px; font-weight: 700; }
@@ -1742,6 +1745,7 @@ function generateCase() {
   const secrets = inn.map(p => `${p.name}의 ${p.motive.docName}`).join(", ");
   return {
     id: "random", no: "??", random: true, title: `${st.title} 사건`, where: st.where,
+    finder: (inn.find(p => p !== liar) || inn[0]).id, victimLabel: `${st.victimRole}님이`,
     tag: `무작위 사건 · ${st.title} · ${hm(T + 45)} 접수`,
     lede: `${st.intro}, ${st.victimRole} ${v}(${vAge})${I("" + v).slice(v.length)} ${crime}에서 숨진 채 발견되었다.`,
     brief: st.brief,
@@ -1909,7 +1913,7 @@ const PARTNERS = [
   { id: "seo", get name() { return N.seo; }, title: "순경", rank: "순경", skill: "현장 수색",
     report: (room, list) => list ? `“선배님! ${room} 싹 다 뒤져 봤어요. ${list}!”` : `“${room}은 이미 다 조사돼 있던데요?”` },
 ];
-const partner = id => PARTNERS.find(x => x.id === id);
+const partner = id => PARTNERS.find(x => x.id === id) || (() => { const r = ROSTER.find(x => x.slot === id); return r ? { id, name: N[id], title: r.label.replace(/장$/, "") + " " + r.rank, rank: r.rank } : undefined; })();
 
 /* 심문 담당 수사팀: 모은재(부하)는 헷갈리는 대답을 치우고, 한서진(상관)은 놓친 걸 바로잡는다 */
 const REBUTTERS = [
@@ -2442,7 +2446,9 @@ function callForensic() {
   S.missions.push({ pid: "yoon", room, due: S.actions + ad, only: "-", role: "autopsy" });
   S.missions.push({ pid: "byun", room, due: S.actions + ad, only: "-", role: "autopsy", quiet: true });
   PX.helperEnter(S.missions[S.missions.length - 2]); PX.helperEnter(S.missions[S.missions.length - 1]);
-  toast(`<b>과학수사대</b> — “${esc(C().rooms[room].name)} 시신, 저희가 감식하겠습니다. ${MISSION_DELAY}턴 뒤에 사인을 알려 드리죠.”`);
+  const withDrug = S.depts && deptOn("drug") && !(S.deptJobs || {}).drug;   /* 마약팀도 데려왔으면 같이 들어와 약물 검사 */
+  if (withDrug) { S.deptJobs = S.deptJobs || {}; S.deptJobs.drug = { due: S.actions + ad, done: false, joint: true }; drugWalkIn(room, S.actions + ad); }
+  toast(`<b>과학수사대${withDrug ? " + 마약팀" : ""}</b> — “${esc(C().rooms[room].name)} 시신, 저희가 ${withDrug ? "같이 " : ""}감식하겠습니다. ${ad}턴 뒤에 ${withDrug ? "사인과 약물 반응을" : "사인을"} 알려 드리죠.”`);
   Sound.door();
 }
 /* 과학수사대 사건 정리: 찾은 증거를 사람별로 묶는다 (그 사람의 말과 어긋나는 증거) */
@@ -3049,7 +3055,7 @@ function renderFiles() {
 
 /* ===================== 시작 장면: 경찰서에서 전화를 받고 출동 ===================== */
 const INTRO = (() => {
-  const TS = 16, W = 176, H = 128, END = 22;
+  const TS = 16, W = 176, H = 128, END = 31.5, GO = 25.4, ANN = 17;   /* GO: 출동, ANN: 팀에 알림 */
   let cv = null, g = null, raf = 0, t0 = 0, capKey = "", rang = [], bgc = null;
   const FURN = [["desk", 2, 3], ["desk", 4, 3], ["desk", 7, 3], ["terminal", 9, 3], ["board", 6, 1], ["plant", 0, 2], ["plant", 10, 2], ["box", 10, 6], ["box", 0, 6], ["window", 2, 1], ["window", 8, 1]];
   const cast = () => crew([
@@ -3071,15 +3077,34 @@ const INTRO = (() => {
     return `${part} ${h12}시${mi ? ` ${mi}분` : ""}`;
   };
   const place = () => C().title.replace(/ 사건$/, ""), where = () => (C().where || "").split(" · ")[0];
-  const beats = () => [
-    { t: 0, who: "", text: `${callTime()}. 강력팀 사무실.` },
-    { t: 2.4, who: "", text: "따르릉— 따르릉—" },
-    { t: 4.6, who: N.seo, text: `네, 강력팀 ${N.seo} 순경입니다. …네? 사람이 죽었다고요? 위치가 어디죠?` },
-    { t: 8, who: N.seo, text: `선배님들! ${where()} ‘${place()}’에서 살인 사건 신고입니다!` },
-    { t: 11, who: leadName(), text: `가자. ${pname()} 형사, 이번 사건은 자네가 맡게.` },
-    { t: 13.6, who: inCrew("han") ? N.han : null, text: "용의자 심문은 저희 수사팀 둘이 같이 들어가죠." },
-    { t: 16, who: "", text: S.depts ? "부서별로 모인 강력팀, 출동!" : "강력팀, 출동!" },
-  ].filter(b => b.who !== null);
+  /* 신고자: 그 사건에서 시신을 처음 발견한 사람 */
+  const FINDER = {
+    cheongram: { sid: "mansu", victim: "회장님이" }, theater: { sid: "sena", victim: "하린 언니가" },
+    train: { sid: "yuna", victim: "손님 한 분이" }, museum: { sid: "seungcheol", victim: "관장님이" },
+  };
+  const caller = () => {
+    const c = C(), f = c.random ? { sid: c.finder, victim: c.victimLabel } : FINDER[c.id];
+    const p = f && c.suspects[f.sid];
+    if (!p) return null;
+    return { name: p.name, role: p.role, job: p.role.split(" · ")[0], victim: f.victim, room: c.rooms[crimeRoomId()].name };
+  };
+  const beats = () => {
+    const k = caller();
+    return [
+      { t: 0, who: "", text: `${callTime()}. 강력팀 사무실.` },
+      { t: 2.4, who: "", text: "따르릉— 따르릉—" },
+      { t: 4.6, who: N.seo, text: `네, 강력팀 ${N.seo} 순경입니다.` },
+      k ? { t: 6.2, who: k.name, role: k.role, tag: "📞 신고자 (전화 속 목소리)", text: `(숨을 몰아쉬며) 여, 여보세요…! 여기 ${where()} ‘${place()}’인데요… ${k.room}에서 ${k.victim} 쓰러져 있어요… 숨을, 숨을 안 쉬어요…!` }
+        : { t: 6.2, who: "", text: "(수화기 너머 다급한 목소리) 사람이… 사람이 쓰러져 있어요…!" },
+      { t: 10.4, who: N.seo, text: "진정하세요. 지금 바로 갑니다. 신고하시는 분 성함이 어떻게 되세요?" },
+      k ? { t: 12.6, who: k.name, role: k.role, tag: "📞 신고자 (전화 속 목소리)", text: `${k.name}… ${jo(k.job, "이에요", "예요")}. 제가… 제가 처음 봤어요…` } : null,
+      { t: 14.6, who: N.seo, text: "아무것도 만지지 마시고, 아무도 들여보내지 마세요. 그 자리에 계세요!" },
+      { t: 17, who: N.seo, text: `(수화기를 내려놓으며) 선배님들! ${where()} ‘${place()}’에서 살인 사건 신고입니다!${k ? ` 신고자는 ${k.job} ${k.name} 씨예요.` : ""}` },
+      { t: 20.4, who: leadName(), text: `가자. ${pname()} 형사, 이번 사건은 자네가 맡게. 처음 본 사람 말부터 들어 봐.` },
+      { t: 23, who: inCrew("han") ? N.han : null, text: "용의자 심문은 저희 수사팀 둘이 같이 들어가죠." },
+      { t: 25.4, who: "", text: S.depts ? "부서별로 모인 강력팀, 출동!" : "강력팀, 출동!" },
+    ].filter(b => b && b.who !== null);
+  };
   function bg() {
     if (bgc) return bgc;
     bgc = pxCanvas(W, H); const b = bgc.getContext("2d");
@@ -3108,20 +3133,20 @@ const INTRO = (() => {
     for (const [ty, x, y] of FURN) { const f = furnPixel(ty); if (f.ready) g.drawImage(f.cv, x * TS, y * TS); }
     /* 서하루 책상 위 전화기 */
     const ringing = t >= 2.4 && t < 4.6, shake = ringing ? (Math.floor(t * 20) % 2 ? 1 : -1) : 0;
-    if (t < 4.6) { g.fillStyle = "#b8322b"; g.fillRect(4 * TS + 9 + shake, 3 * TS + 3, 6, 4); g.fillStyle = "#2a1f1a"; g.fillRect(4 * TS + 9 + shake, 3 * TS + 2, 6, 1); }
+    if (t < 4.6 || t >= ANN) { g.fillStyle = "#b8322b"; g.fillRect(4 * TS + 9 + shake, 3 * TS + 3, 6, 4); g.fillStyle = "#2a1f1a"; g.fillRect(4 * TS + 9 + shake, 3 * TS + 2, 6, 1); }
     if (ringing) { g.fillStyle = "#ffd36b"; g.fillRect(4 * TS + 11, 3 * TS - 9, 2, 6); g.fillRect(4 * TS + 11, 3 * TS - 2, 2, 2); }
-    const ppl = cast(), seo = ppl[0], out = t >= 16;
+    const ppl = cast(), seo = ppl[0], out = t >= GO;
     const ents = ppl.map((p, i) => {
       let x = p.x, y = p.y, dir = p.dir, moving = false, dy = 0;
       if (out) {
-        const st = 16 + i * 0.3, w = walkPos(p, Math.max(0, t - st) * 4);
+        const st = GO + i * 0.3, w = walkPos(p, Math.max(0, t - st) * 4);
         if (t >= st) ({ x, y, dir, moving } = w);
         else dir = "down";
-      } else if (t >= 8 && p.id !== "seo") dir = face(p, seo);
-      else if (t >= 4.6 && p.id === "seo") dir = t >= 8 ? "down" : "up";
+      } else if (t >= ANN && p.id !== "seo") dir = face(p, seo);
+      else if (t >= 4.6 && p.id === "seo") dir = t >= ANN ? "down" : "up";
       const talking = beats().filter(b => b.t <= t).pop();
       if (talking && talking.who === p.name && !out) dy = Math.floor(t * 6) % 2 ? -1 : 0;
-      if (p.player && !out && t >= 11 && t < 13.6) dy = Math.floor(t * 6) % 2 ? -1 : 0;
+      if (p.player && !out && t >= 20.4 && t < 23) dy = Math.floor(t * 6) % 2 ? -1 : 0;
       return { p, x, y, dir, moving, dy };
     }).filter(e => e.y < 9.2).sort((a, b) => a.y - b.y);
     for (const e of ents) {
@@ -3129,7 +3154,9 @@ const INTRO = (() => {
       g.drawImage(sp[e.dir][f], Math.round(e.x * TS), Math.round(e.y * TS + TS - 20 + e.dy));
     }
     /* 서하루가 전화를 받는 동안 수화기 */
-    if (t >= 4.6 && t < 8) { g.fillStyle = "#b8322b"; g.fillRect(4 * TS + 12, 4 * TS - 3, 3, 6); }
+    if (t >= 4.6 && t < ANN) { g.fillStyle = "#b8322b"; g.fillRect(4 * TS + 12, 4 * TS - 3, 3, 6); }
+    /* 통화 중: 수화기에서 새어 나오는 목소리 표시 */
+    if (t >= 6.2 && t < 14.6 && Math.floor(t * 3) % 2) { g.fillStyle = "#ffd36b"; g.fillRect(4 * TS + 16, 4 * TS - 8, 2, 2); g.fillRect(4 * TS + 19, 4 * TS - 10, 2, 2); g.fillRect(4 * TS + 22, 4 * TS - 12, 2, 2); }
     /* 출동할 때 경광등 빛 */
     if (out) { g.fillStyle = Math.floor(t * 4) % 2 ? "rgba(220,40,40,.16)" : "rgba(40,90,230,.16)"; g.fillRect(0, 0, W, H); }
   }
@@ -3139,10 +3166,11 @@ const INTRO = (() => {
     capKey = b.t + "|" + el.isConnected;
     const isMe = b.who === pname();
     el.className = "intro-cap" + (b.who ? "" : " narr");
-    el.innerHTML = b.who ? `${pixelFace(b.who, 40, "", isMe)}<div><b>${esc(b.who)}${isMe ? " " + PLAYER_RANK : rankOf(b.who) ? " " + rankOf(b.who) : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
+    el.className = "intro-cap" + (b.who ? "" : " narr") + (b.tag ? " phone" : "");
+    el.innerHTML = b.who ? `${pixelFace(b.who, 40, b.role || "", isMe)}<div><b>${b.tag ? `${esc(b.tag)} · ${esc(b.who)}` : `${esc(b.who)}${isMe ? " " + PLAYER_RANK : rankOf(b.who) ? " " + rankOf(b.who) : ""}`}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
   }
   function sounds(t) {
-    for (const [at, fn] of [[2.4, "ring"], [3.5, "ring"], [8, "thunder"], [16, "siren"]]) {
+    for (const [at, fn] of [[2.4, "ring"], [3.5, "ring"], [ANN, "thunder"], [GO, "siren"]]) {
       if (t >= at && !rang.includes(at)) { rang.push(at); if (Sound[fn]) Sound[fn](); }
     }
   }
@@ -4103,7 +4131,7 @@ const PX = (() => {
     if (!labels) return;
     const L = layout(S.room), list = [];
     for (const n of npcs) list.push([n.p.id, n.fx + .5, n.fy - .2, `${n.p.name}${S.silence[n.p.id] ? " · 침묵" : ""}`, "nm" + (S.silence[n.p.id] ? " silent" : "")]);
-    for (const h of Object.values(helpers)) if (h.room === S.room) list.push(["h" + h.pid, h.fx + .5, h.fy - .2, `${h.p.name} · ${h.state === "out" ? "보고 완료!" : roleOf(h.pid) === "clear" ? "치우는 중…" : "바로잡는 중…"}`, "nm ally" + (h.state === "out" ? " done" : "")]);
+    for (const h of Object.values(helpers)) if (h.room === S.room) list.push(["h" + h.pid, h.fx + .5, h.fy - .2, `${h.p.name} · ${h.state === "out" ? "보고 완료!" : (S.missions.find(m => m.pid === h.pid) || {}).role === "autopsy" ? "감식 중…" : roleOf(h.pid) === "clear" ? "치우는 중…" : "바로잡는 중…"}`, "nm ally" + (h.state === "out" ? " done" : "")]);
     for (const it of L.items) if (has(S.marked || [], it.spot) && !has(S.searched, it.spot)) list.push(["mk" + it.spot, it.x + .5, it.y - .75, "놓친 곳!", "nm silent"]);
     for (const c of cops) list.push(["cop" + c.id, c.fx + .5, c.fy - .2, `${patrolOf(c.id).name} · ${c.leaving ? "이동 중" : "순찰"}`, "nm ally"]);
     if (buddy.on) list.push(["buddy", buddy.fx + .5, buddy.fy - .2, "" + N.seo, "nm ally"]);
@@ -4308,9 +4336,18 @@ const DEPT_JOB = { digital: "dig", fin: "fin", drug: "drug", traffic: "tr", inte
 const DEPT_LEAD = { digital: "digL", fin: "finL", drug: "drugL", traffic: "trL", intel: "intL", sit: "sitL" };
 const deptName = id => { const d = DEPTS.find(x => x.id === id); return d ? `${d.div} ${d.name}` : ""; };
 const deptWho = id => `${N[DEPT_LEAD[id]]}·${N[DEPT_JOB[id]]}`;
+/* 마약팀 두 사람이 현장(시신 쪽)으로 걸어 들어온다 */
+function drugWalkIn(room, due) {
+  for (const pid of ["drugL", "drug"]) {
+    if (S.missions.some(m => m.pid === pid)) continue;
+    S.missions.push({ pid, room, due, only: "-", role: "autopsy", quiet: true });
+    PX.helperEnter(S.missions[S.missions.length - 1]);
+  }
+}
 function callDept(id) {
   S.deptJobs = S.deptJobs || {};
   if (!deptOn(id) || S.deptJobs[id] || S.turns <= 0 || S.decided) return;
+  if (id === "drug" && deptOn("sci") && !S.autopsyDone && !S.missions.some(m => m.role === "autopsy")) { callForensic(); return; }   /* 과학수사팀과 함께 움직인다 */
   if (id === "sit") {   /* 상황팀은 바로 */
     S.deptJobs[id] = { due: S.actions, done: true };
     S.turns += 3; S.maxTurns = Math.max(S.maxTurns, S.turns); S.timeLeft += 60; S.timeMax = Math.max(S.timeMax, S.timeLeft);
@@ -4319,6 +4356,7 @@ function callDept(id) {
     toast(`<b>${esc(deptName(id))}</b> — ${esc(msg)}`); Sound.help(); return;
   }
   S.deptJobs[id] = { due: S.actions + (starSlot(DEPT_JOB[id]) || starSlot(DEPT_LEAD[id]) ? 1 : 2), done: false };   /* ⭐ 인재가 있으면 1턴 빨리 */
+  if (id === "drug") drugWalkIn(crimeRoomId(), S.deptJobs[id].due);
   const r = ROSTER.find(x => x.slot === DEPT_JOB[id]);
   toast(`<b>${esc(deptName(id))}</b> — ${esc(deptWho(id))}: “맡겨 주세요. 2턴 뒤에 보고하겠습니다.”`); Sound.door();
 }
@@ -4390,7 +4428,8 @@ function renderPatrol() {
 function renderForensic() {
   if (!deptOn("sci")) return "";
   const busy = S.missions.some(m => m.role === "autopsy");
-  const body = `${pixelFace(N.yoon, 24)}${pixelFace(N.byun, 24)}과학수사대 ${N.yoon}·${N.byun}`;
+  const joint = S.depts && deptOn("drug") && !(S.deptJobs || {}).drug;
+  const body = `${pixelFace(N.yoon, 24)}${pixelFace(N.byun, 24)}${joint ? pixelFace(N.drugL, 24) + pixelFace(N.drug, 24) : ""}과학수사대 ${N.yoon}·${N.byun}${joint ? ` + 마약팀 ${N.drugL}·${N.drug}` : ""}`;
   if (S.autopsy) return `<div class="dispatch"><b>과학수사대 감식 소견</b><p class="hint">사인: <b>${esc(S.autopsy.cause)}</b> — 증거도 사람별로 정리했어요(수사 수첩). 심문 때 ‘과학수사대가 정리한 증거를 내민다’를 고르면 대신 들이밀어 줘요.</p></div>`;
   return `<div class="dispatch"><b>과학수사대</b>
     <p class="hint long">시신을 감식해 사인(죽은 원인)을 밝히고, 찾은 증거를 사람별로 정리해 줘요. 그 뒤 심문할 때 과학수사대가 증거를 직접 내밀어요. 턴은 안 줄어요.</p>
