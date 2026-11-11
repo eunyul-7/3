@@ -712,6 +712,11 @@ body.shake main { animation: op-shake2 .4s; }
 .photo-btn { margin: 6px 0; }
 .continue-box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0 4px; padding: 12px 14px; border: 1px solid var(--lamp); border-radius: 8px; background: rgba(226,178,92,.08); }
 .continue-btn { font-size: 18px; }
+.mix-btn { margin-left: 4px; padding-inline: 10px; }
+.mix-card { width: min(380px, 100%); }
+.mix-row { display: grid; grid-template-columns: 1fr 120px 44px; align-items: center; gap: 10px; }
+.mix-row b { display: block; } .mix-row small { color: var(--muted); font-size: 12px; }
+.mix-row input { width: 100%; accent-color: var(--lamp); } .mix-row output { font-family: var(--f-mono, monospace); font-size: 13px; text-align: right; }
 .tut-bar { position: fixed; left: 12px; bottom: 12px; z-index: 60; width: min(440px, calc(100vw - 24px)); display: flex; gap: 10px; align-items: center; padding: 8px 12px; border: 1px solid #3fae6a; border-radius: 8px; background: rgba(14,32,22,.94); box-shadow: 0 8px 24px rgba(0,0,0,.5); animation: ph-in .3s both; }
 .tut-bar b { display: block; font-size: 12px; color: #7fd8a0; } .tut-bar p { margin: 2px 0 0; font-size: 14px; line-height: 1.45; }
 .tut-bar .tut-skip { margin-left: auto; flex: none; font-size: 12px; padding: 4px 8px; }
@@ -3251,13 +3256,19 @@ function accuseScene(done) {
 
 /* ---------- 효과음: 파일 없이 Web Audio로 합성 ---------- */
 const Sound = (() => {
-  let ctx = null, master = null, amb = null, on = true, beatTimer = null, bab = null, voiceUnlocked = false;
+  let ctx = null, master = null, amb = null, on = true, beatTimer = null, bab = null, voiceUnlocked = false, fxBus = null, musicBus = null, voiceBus = null;
+  /* 소리 설정: 목소리 / 음악 / 효과음 크기 (0~1) */
+  let mix = { voice: 1, music: 1, fx: 1 };
+  try { mix = Object.assign(mix, JSON.parse(localStorage.getItem("midnight-mix") || "{}")); } catch (e) {}
   try { on = localStorage.getItem("midnight-sound") !== "off"; } catch {}
   const now = () => ctx.currentTime;
   function init() {
     if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
     ctx = new AC(); master = ctx.createGain(); master.gain.value = on ? 0.9 : 0; master.connect(ctx.destination);
+    fxBus = ctx.createGain(); musicBus = ctx.createGain(); voiceBus = ctx.createGain();
+    fxBus.gain.value = mix.fx; musicBus.gain.value = mix.music; voiceBus.gain.value = mix.voice * 1.6;
+    fxBus.connect(master); musicBus.connect(master); voiceBus.connect(master);
     ambient(); heartbeatLoop();
   }
   function noiseBuf(sec) {
@@ -3269,12 +3280,12 @@ const Sound = (() => {
   function tone(freq, type, t, a, peak, dec, glideTo) {
     const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t);
     if (glideTo) o.frequency.exponentialRampToValueAtTime(glideTo, t + a + dec);
-    env(g, t, a, peak, dec); o.connect(g).connect(master); o.start(t); o.stop(t + a + dec + 0.05);
+    env(g, t, a, peak, dec); o.connect(g).connect(fxBus); o.start(t); o.stop(t + a + dec + 0.05);
   }
   function noise(t, dur, peak, ftype, freq, q) {
     const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
     s.buffer = noiseBuf(dur + 0.1); f.type = ftype; f.frequency.value = freq; f.Q.value = q || 1;
-    env(g, t, 0.005, peak, dur); s.connect(f).connect(g).connect(master); s.start(t); s.stop(t + dur + 0.1);
+    env(g, t, 0.005, peak, dur); s.connect(f).connect(g).connect(fxBus); s.start(t); s.stop(t + dur + 0.1);
   }
   /* ---------- 오프닝 배경음악: 느리고 긴장감 있는 단조 루프 (음악 파일 없이 합성) ----------
      Am - F - Dm - E 진행, 72bpm. 화음 패드 + 심장 박동 같은 베이스 + 외로운 멜로디 + 잔향 */
@@ -3303,7 +3314,7 @@ const Sound = (() => {
   }
   function musicStart() {
     init(); if (!ctx || mus) return;
-    const bus = ctx.createGain(); bus.gain.setValueAtTime(0.0001, now()); bus.gain.exponentialRampToValueAtTime(0.9, now() + 2.5); bus.connect(master);
+    const bus = ctx.createGain(); bus.gain.setValueAtTime(0.0001, now()); bus.gain.exponentialRampToValueAtTime(0.9, now() + 2.5); bus.connect(musicBus);
     const dl = ctx.createDelay(1.5), fb = ctx.createGain(), wetOut = ctx.createGain(), lp = ctx.createBiquadFilter();
     dl.delayTime.value = EIGHTH * 3; fb.gain.value = 0.38; wetOut.gain.value = 0.45; lp.type = "lowpass"; lp.frequency.value = 2600;
     const wet = ctx.createGain(), dry = ctx.createGain(), pad = ctx.createBiquadFilter();
@@ -3323,13 +3334,13 @@ const Sound = (() => {
     const rain = ctx.createBufferSource(); rain.buffer = noiseBuf(3); rain.loop = true;
     const rf = ctx.createBiquadFilter(); rf.type = "bandpass"; rf.frequency.value = 2400; rf.Q.value = 0.4;
     const rg = ctx.createGain(); rg.gain.value = 0.035;
-    rain.connect(rf).connect(rg).connect(master); rain.start();
+    rain.connect(rf).connect(rg).connect(fxBus); rain.start();
     const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 180; lp.Q.value = 6;
     const dg = ctx.createGain(); dg.gain.value = 0.0;
     [55, 55.6, 82.4].forEach(f => { const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = f; o.connect(lp); o.start(); });
     const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 0.08; lg.gain.value = 60;
     lfo.connect(lg).connect(lp.frequency); lfo.start();
-    lp.connect(dg).connect(master);
+    lp.connect(dg).connect(fxBus);
     amb = { dg, lp };
   }
   function tension() {
@@ -3351,6 +3362,13 @@ const Sound = (() => {
   }
   const api = {
     get on() { return on; },
+    get mix() { return { ...mix }; },
+    setMix(k, v) {
+      mix[k] = Math.max(0, Math.min(1, +v)); try { localStorage.setItem("midnight-mix", JSON.stringify(mix)); } catch (e) {}
+      if (!ctx) return; const b = k === "fx" ? fxBus : k === "music" ? musicBus : voiceBus;
+      b.gain.setTargetAtTime(k === "voice" ? mix[k] * 1.6 : mix[k], now(), 0.05);
+      if (k === "voice" && mix.voice === 0) api.hush();
+    },
     init,
     toggle() {
       on = !on; try { localStorage.setItem("midnight-sound", on ? "on" : "off"); } catch {}
@@ -3364,7 +3382,7 @@ const Sound = (() => {
       o.type = "triangle"; f.type = "lowpass"; f.frequency.value = 1600;
       for (let i = 0; i < 8; i++) { o.frequency.setValueAtTime(620, t + i * 0.5); o.frequency.linearRampToValueAtTime(840, t + i * 0.5 + 0.25); }
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.07, t + 1.6); g.gain.setValueAtTime(0.07, t + 2.4); g.gain.exponentialRampToValueAtTime(0.0001, t + 4);
-      o.connect(f).connect(g).connect(master); o.start(t); o.stop(t + 4.1);
+      o.connect(f).connect(g).connect(fxBus); o.start(t); o.stop(t + 4.1);
     },
     step() { if (ctx) noise(now(), 0.09, 0.25, "highpass", 3000); },
     ask() { if (ctx) tone(196, "triangle", now(), 0.01, 0.08, 0.25); },
@@ -3380,12 +3398,12 @@ const Sound = (() => {
     /* 전화 속 목소리: 브라우저 음성 합성(한국어)으로 읽는다. ( ) 속 지문은 읽지 않는다 */
     voice(text, female = true, onend, onstart) {
       try {
-        if (!on || !window.speechSynthesis || !window.SpeechSynthesisUtterance) { if (onend) onend(); return false; }
+        if (!on || !mix.voice || !window.speechSynthesis || !window.SpeechSynthesisUtterance) { if (onend) onend(); return false; }
         const say = String(text).replace(/\([^)]*\)/g, " ").replace(/[“”"‘’]/g, "").replace(/…+/g, "… ").trim();
         speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(say); u.lang = "ko-KR";
         const vs = speechSynthesis.getVoices().filter(v => /^ko/i.test(v.lang)); if (vs.length) u.voice = vs.find(v => female ? /female|여|Yuna|Heami|SunHi|Sora/i.test(v.name) : /male|남|InJoon|Minsu/i.test(v.name)) || vs[0];
-        u.rate = 1.12; u.pitch = female ? 1.35 : 0.8; u.volume = 1;
+        u.rate = 1.12; u.pitch = female ? 1.35 : 0.8; u.volume = mix.voice;
         if (onend) u.onend = onend; if (onstart) u.onstart = onstart;
         speechSynthesis.speak(u); return true;
       } catch (e) { if (onend) onend(); return false; }
@@ -3393,11 +3411,11 @@ const Sound = (() => {
     hush() { try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} if (bab) { try { bab.gain.setTargetAtTime(0, now(), 0.02); } catch (e) {} bab = null; } },
     /* 픽셀 게임식 목소리: 글자마다 짧은 '삐릭' 소리. 사람마다 높낮이가 다르다 (어떤 기기에서도 들린다) */
     babble(text, base = 300, phone = false) {
-      if (!ctx || !on) return 0;
+      if (!ctx || !on || !mix.voice) return 0;
       if (bab) { try { bab.gain.setTargetAtTime(0, now(), 0.02); } catch (e) {} }
       const out = ctx.createGain(); out.gain.value = 1; bab = out;
       const f = ctx.createBiquadFilter(); f.type = phone ? "bandpass" : "lowpass"; f.frequency.value = phone ? 1300 : 2600; f.Q.value = phone ? 1.6 : 0.7;
-      out.connect(f).connect(master);
+      out.connect(f).connect(voiceBus);
       const say = String(text).replace(/\([^)]*\)/g, "").replace(/[“”"‘’]/g, "").slice(0, 70), t0 = now() + 0.03;
       let t = t0;
       for (const ch of say) {
@@ -3437,7 +3455,7 @@ const Sound = (() => {
       o.type = "sawtooth"; o.frequency.setValueAtTime(150, t); o.frequency.linearRampToValueAtTime(92, t + .55);
       f.type = "bandpass"; f.frequency.value = 620; f.Q.value = 5;
       g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.07, t + .06); g.gain.exponentialRampToValueAtTime(.0001, t + .6);
-      o.connect(f).connect(g).connect(master); o.start(t); o.stop(t + .65); noise(t + .55, .16, .28, "lowpass", 280);
+      o.connect(f).connect(g).connect(fxBus); o.start(t); o.stop(t + .65); noise(t + .55, .16, .28, "lowpass", 280);
     },
     foot() { if (ctx) { const t = now(); tone(95 + Math.random() * 20, "sine", t, 0.004, 0.07, 0.07, 55); noise(t, 0.04, 0.03, "lowpass", 700); } },
     help() { if (!ctx) return; const t = now(); [392, 494, 587].forEach((f, i) => tone(f, "sine", t + i * 0.09, 0.01, 0.12, 0.9)); },
@@ -3452,7 +3470,7 @@ const Sound = (() => {
       o.type = "triangle";
       for (let i = 0; i < 6; i++) { o.frequency.setValueAtTime(660, t + i * 0.45); o.frequency.linearRampToValueAtTime(880, t + i * 0.45 + 0.22); }
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.1); g.gain.setValueAtTime(0.12, t + 2.4); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.8);
-      o.connect(g).connect(master); o.start(t); o.stop(t + 2.9);
+      o.connect(g).connect(fxBus); o.start(t); o.stop(t + 2.9);
     },
     verdict(good) {
       if (!ctx) return; const t = now();
@@ -3494,7 +3512,27 @@ function nextToast() {
 }
 
 /* ===================== 렌더 ===================== */
-const soundBtn = () => `<button class="sound-btn" data-act="sound" aria-pressed="${Sound.on}">${Sound.on ? "소리 켜짐" : "소리 꺼짐"}</button>`;
+const soundBtn = () => `<button class="sound-btn" data-act="sound" aria-pressed="${Sound.on}">${Sound.on ? "소리 켜짐" : "소리 꺼짐"}</button><button class="sound-btn mix-btn" data-act="mix" aria-label="소리 설정" title="소리 설정">🎚</button>`;
+/* 소리 설정 창: 목소리 · 음악 · 효과음 */
+function openMix() {
+  if (document.querySelector(".mix-ov")) return;
+  const m = Sound.mix, row = (k, label, note) => `<label class="mix-row"><span><b>${label}</b><small>${note}</small></span>
+    <input type="range" min="0" max="100" step="5" value="${Math.round(m[k] * 100)}" data-mix="${k}" aria-label="${label} 크기"><output>${m[k] ? Math.round(m[k] * 100) + "%" : "끔"}</output></label>`;
+  const ov = document.createElement("div"); ov.className = "photo-ov mix-ov";
+  ov.innerHTML = `<div class="photo-card mix-card" role="dialog" aria-label="소리 설정"><h3 style="margin:0">🎚 소리 설정</h3>
+    ${row("voice", "목소리", "인물 대사·신고 전화")}${row("music", "배경음악", "오프닝 음악")}${row("fx", "효과음", "천둥·사이렌·발소리·전화벨")}
+    <p class="hint" style="margin:0">맨 왼쪽으로 밀면 그 소리만 꺼져요. 전체 소리는 ‘소리 켜짐/꺼짐’ 버튼으로 켜고 꺼요.</p>
+    <div class="btn-row" style="margin:0"><button class="btn ghost" data-mixtest="1">들어 보기</button><button class="btn photo-close">닫기 ✕</button></div></div>`;
+  document.body.appendChild(ov);
+  const close = () => { ov.remove(); document.removeEventListener("keydown", onKey, true); };
+  const onKey = e => { if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); close(); } };
+  document.addEventListener("keydown", onKey, true);
+  ov.addEventListener("input", e => { const r = e.target.closest("[data-mix]"); if (!r) return; Sound.setMix(r.dataset.mix, r.value / 100); r.nextElementSibling.textContent = +r.value ? r.value + "%" : "끔"; });
+  ov.addEventListener("click", e => {
+    if (e.target.closest("[data-mixtest]")) { Sound.init(); Sound.babble("안녕하세요 선배님, 소리 잘 들리세요?", voiceOf(N.seo, "순경").base); Sound.clue(); return; }
+    if (e.target === ov || e.target.closest(".photo-close")) close();
+  });
+}
 
 /* ---------- 첫 판 길잡이: 처음 하는 사람에게 서하루가 한 단계씩 알려 준다 ---------- */
 const TUT_KEY = "midnight-tutorial-done";
@@ -5872,6 +5910,7 @@ app.addEventListener("click", e => {
   else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm) mm.querySelector("img").outerHTML = pixelFace(pname(), 64, "", true); return; }
   else if (d.act === "body-photo") { openBodyPhoto(); return; }
   else if (d.act === "continue") { continueGame(); return; }
+  else if (d.act === "mix") { Sound.init(); openMix(); return; }
   else if (d.act === "tut-skip") { try { localStorage.setItem(TUT_KEY, "1"); } catch (e) {} render(); return; }
   else if (d.act === "close-talk") { S.tab = "rooms"; S.dlg = null; top = true; }
   else if (d.act === "sheet-open") { S.sheet = true; }
