@@ -712,6 +712,15 @@ body.shake main { animation: op-shake2 .4s; }
 .photo-btn { margin: 6px 0; }
 .continue-box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0 4px; padding: 12px 14px; border: 1px solid var(--lamp); border-radius: 8px; background: rgba(226,178,92,.08); }
 .continue-btn { font-size: 18px; }
+.continue-box { flex-direction: column; align-items: flex-start; }
+.cb-title { font-size: 17px; color: var(--lamp); }
+.newgame-confirm, .pz-confirm { display: grid; gap: 8px; padding: 10px; border: 1px solid #e06a5a; border-radius: 8px; background: rgba(224,106,90,.08); }
+.newgame-confirm[hidden], .pz-confirm[hidden] { display: none; }
+.pause-card { width: min(360px, 100%); }
+.pause-card > .btn { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.pause-card .btn small { font-size: 11.5px; font-weight: 400; opacity: .8; }
+.btn.danger { border-color: #e06a5a; color: #e06a5a; } .btn.danger:not(.ghost) { background: #e06a5a; color: #fff; }
+.tab.pause-btn { color: var(--lamp); }
 .rec-tag { display: block; width: 100%; font-size: 11.5px; font-weight: 700; color: #1b2a12; background: #9bdc6a; border-radius: 4px; padding: 2px 6px; margin-bottom: 4px; text-align: left; }
 .act.rec { border-color: #9bdc6a !important; box-shadow: 0 0 0 2px rgba(155,220,106,.35); flex-wrap: wrap; }
 .rec-badge { background: #9bdc6a !important; color: #1b2a12 !important; }
@@ -3028,7 +3037,7 @@ function hideDecisionOverlay() { const o = document.getElementById("decision"); 
 
 /* ---------- 시간 제한: 실제 초가 흐른다 ---------- */
 setInterval(() => {
-  if (S.screen !== "game" || !S.timed || S.turns <= 0 || document.hidden) return;
+  if (S.screen !== "game" || !S.timed || S.turns <= 0 || document.hidden || S.paused) return;
   S.timeLeft = Math.max(0, S.timeLeft - 1);
   if (S.timeLeft === 0) { decisionTime("시간이 다 됐다"); render(); return; }
   if (S.timeLeft <= 30) Sound.tick();
@@ -3665,6 +3674,7 @@ document.body.classList.toggle("lowfx", LOWFX);
 const SAVE_KEY = "midnight-save-v1";
 function saveGame() {
   try {
+    if (SKIP_SAVE) return;
     if (S.screen === "game" && S.caseId) localStorage.setItem(SAVE_KEY, JSON.stringify({ at: Date.now(), S }));
     else if (S.screen === "result" || S.screen === "gameover") localStorage.removeItem(SAVE_KEY);
   } catch (e) {}
@@ -3672,9 +3682,39 @@ function saveGame() {
 function loadSave() {
   try { const d = JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); if (!d || !d.S || !d.S.caseId) return null; if (d.S.caseId !== "random" && !caseById(d.S.caseId)) return null; return d; } catch (e) { return null; }
 }
+/* ---------- ⏸ 중지: 계속하기 / 저장하고 나가기 / 저장하지 않고 나가기 ---------- */
+function openPause() {
+  if (document.querySelector(".pause-ov") || S.screen !== "game") return;
+  S.paused = true; Sound.hush();
+  const c = C(), ov = document.createElement("div"); ov.className = "photo-ov pause-ov";
+  ov.innerHTML = `<div class="photo-card pause-card" role="dialog" aria-label="게임 중지">
+    <h3 style="margin:0">⏸ 수사 중지</h3>
+    <p class="hint" style="margin:0">${esc(c.title)} · 남은 ${S.turns}턴${S.timed ? ` · ${mmss(S.timeLeft)}` : ""} · 단서 ${S.found.length}개<br>멈춘 동안에는 시간이 흐르지 않아요.</p>
+    <button class="btn" data-pz="resume">▶ 계속하기</button>
+    <button class="btn ghost" data-pz="save">💾 저장하고 나가기 <small>다음에 ‘이어하기’로 계속</small></button>
+    <button class="btn ghost danger" data-pz="nosave">🗑 저장하지 않고 나가기 <small>지금까지 한 수사는 사라져요</small></button>
+    <div class="pz-confirm" hidden><p style="margin:0">정말 저장하지 않고 나갈까요? 이 사건의 진행이 모두 지워져요.</p>
+      <div class="btn-row" style="margin:0"><button class="btn danger" data-pz="nosave-yes">네, 지우고 나가기</button><button class="btn ghost" data-pz="nosave-no">아니요</button></div></div>
+  </div>`;
+  document.body.appendChild(ov);
+  const close = () => { ov.remove(); document.removeEventListener("keydown", onKey, true); S.paused = false; };
+  const onKey = e => { if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); close(); render(); } };
+  document.addEventListener("keydown", onKey, true);
+  const leave = () => { close(); S = fresh(); S.screen = "title"; render(); window.scrollTo(0, 0); };
+  ov.addEventListener("click", e => {
+    const b = e.target.closest("[data-pz]"); if (!b) { if (e.target === ov) { close(); render(); } return; }
+    const k = b.dataset.pz;
+    if (k === "resume") { close(); render(); }
+    else if (k === "save") { S.paused = false; saveGame(); leave(); toast("<b>저장했어요</b> — 첫 화면의 ‘이어하기’로 계속할 수 있어요."); }
+    else if (k === "nosave") ov.querySelector(".pz-confirm").hidden = false;
+    else if (k === "nosave-no") ov.querySelector(".pz-confirm").hidden = true;
+    else if (k === "nosave-yes") { try { localStorage.removeItem(SAVE_KEY); } catch (err) {} SKIP_SAVE = true; leave(); SKIP_SAVE = false; }
+  });
+}
+let SKIP_SAVE = false;
 function continueGame() {
   const d = loadSave(); if (!d) return;
-  S = Object.assign(fresh(), d.S, { screen: "game", sheet: false, dlg: null });
+  S = Object.assign(fresh(), d.S, { screen: "game", sheet: false, dlg: null, paused: false });
   if (S.tab === "people" && !S.suspect) S.tab = "rooms";
   render(); window.scrollTo(0, 0);
   toast(`<b>이어서 수사</b> — ${esc(C().title)} · 남은 ${S.turns}턴`);
@@ -3717,7 +3757,7 @@ function render() {
           <span class="diff-chip">${DIFF[S.diff].label}${S.chances > 1 ? ` · 지목 기회 ${S.chances}` : ""}</span>
         </div>
       </div>
-      <nav class="tabs" role="tablist">${tabs}<button class="tab quit" data-act="files" ${interro ? "disabled" : ""}>사건 목록</button>${soundBtn()}</nav>
+      <nav class="tabs" role="tablist">${tabs}<button class="tab quit pause-btn" data-act="pause" ${interro ? "disabled" : ""}>⏸ 중지</button>${soundBtn()}</nav>
       ${alertRow}
       ${tutorialBar()}
     </header>
@@ -3925,14 +3965,17 @@ function renderTitle() {
       <span class="label">픽셀 추리 게임 · 사건 ${CASES.length}개 + 무작위 사건</span>
       <h1>한밤의<br><span>사건 파일</span></h1>
       <p class="lede">비 오는 밤, 살인 사건 신고가 들어왔다. 강력팀이 출동한다. 정해진 시간 안에, 거짓말 속에서 범인을 골라내야 한다.</p>
+      ${(() => { const sv = loadSave(); if (!sv) return ""; const c0 = sv.S.caseId === "random" ? sv.S.randomCase : caseById(sv.S.caseId); return c0 ? `<div class="continue-box"><b class="cb-title">📂 저장된 수사가 있어요</b>
+        <span class="hint">${esc(c0.title)} · 남은 ${sv.S.turns}턴${sv.S.timed ? ` · ${mmss(sv.S.timeLeft)}` : ""} · 단서 ${(sv.S.found || []).length}개 · ${new Date(sv.at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} 저장</span>
+        <div class="btn-row" style="margin:0"><button class="btn continue-btn" data-act="continue">▶ 이어하기</button><button class="btn ghost" data-act="newgame">🆕 새로하기</button></div>
+        <div class="newgame-confirm" hidden><p style="margin:0">새로 하면 저장된 수사는 지워져요. 괜찮을까요?</p><div class="btn-row" style="margin:0"><button class="btn danger" data-act="newgame-yes">네, 새로 할게요</button><button class="btn ghost" data-act="newgame-no">아니요</button></div></div></div>` : ""; })()}
       <form class="name-form" id="name-form">
         <label for="player-name">형사 이름</label>
         <input id="player-name" name="player" maxlength="12" autocomplete="off" placeholder="이름을 지어 주세요" value="${esc(PLAYER)}">
         <div class="me-preview" id="me-preview">${mePreview()}</div>
       </form>
-      ${(() => { const sv = loadSave(); if (!sv) return ""; const c0 = sv.S.caseId === "random" ? sv.S.randomCase : caseById(sv.S.caseId); return c0 ? `<div class="continue-box"><button class="btn continue-btn" data-act="continue">▶ 이어서 하기</button><span class="hint">${esc(c0.title)} · 남은 ${sv.S.turns}턴${sv.S.timed ? ` · ${mmss(sv.S.timeLeft)}` : ""} · ${new Date(sv.at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} 저장</span></div>` : ""; })()}
       <div class="btn-row">
-        <button class="btn${loadSave() ? " ghost" : ""}" data-act="enter">${loadSave() ? "새 사건 고르기" : "사건 파일 열기"}</button>
+        ${loadSave() ? "" : `<button class="btn" data-act="enter">사건 파일 열기</button>`}
         ${soundBtn()}
       </div>
       <h2>강력팀</h2>
@@ -5999,6 +6042,7 @@ document.addEventListener("keydown", e => {
   const tag = (document.activeElement && document.activeElement.tagName) || "";
   if (/INPUT|SELECT|TEXTAREA/.test(tag)) return;
   if (/BUTTON/.test(tag) && /^( |enter)$/i.test(e.key)) return;   /* 버튼에 초점이 있으면 그 버튼을 누르게 둔다 */
+  if (S.paused) return;
   PX.key(e, true);
 });
 /* 콜드 오픈(112 신고 장면)은 누르면 건너뛴다 */
@@ -6052,6 +6096,10 @@ app.addEventListener("click", e => {
   else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm) mm.querySelector("img").outerHTML = pixelFace(pname(), 64, "", true); return; }
   else if (d.act === "body-photo") { openBodyPhoto(); return; }
   else if (d.act === "continue") { continueGame(); return; }
+  else if (d.act === "pause") { openPause(); return; }
+  else if (d.act === "newgame") { const bx = document.querySelector(".newgame-confirm"); if (bx) bx.hidden = false; return; }
+  else if (d.act === "newgame-yes") { try { localStorage.removeItem(SAVE_KEY); } catch (err) {} S = fresh(); S.screen = "files"; render(); window.scrollTo(0, 0); return; }
+  else if (d.act === "newgame-no") { const bx = document.querySelector(".newgame-confirm"); if (bx) bx.hidden = true; return; }
   else if (d.act === "casebook") { S.screen = "log"; render(); window.scrollTo(0, 0); return; }
   else if (d.act === "mix") { Sound.init(); openMix(); return; }
   else if (d.act === "tut-skip") { try { localStorage.setItem(TUT_KEY, "1"); } catch (e) {} render(); return; }
