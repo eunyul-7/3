@@ -733,7 +733,8 @@ body.lowfx .stage.talk .stage-sprite, body.lowfx .co-wave i, body.lowfx .police-
 .mix-row input { width: 100%; accent-color: var(--lamp); } .mix-row output { font-family: var(--f-mono, monospace); font-size: 13px; text-align: right; }
 .tut-bar { position: fixed; left: 12px; bottom: 12px; z-index: 60; width: min(440px, calc(100vw - 24px)); display: flex; gap: 10px; align-items: center; padding: 8px 12px; border: 1px solid #3fae6a; border-radius: 8px; background: rgba(14,32,22,.94); box-shadow: 0 8px 24px rgba(0,0,0,.5); animation: ph-in .3s both; }
 .tut-bar b { display: block; font-size: 12px; color: #7fd8a0; } .tut-bar p { margin: 2px 0 0; font-size: 14px; line-height: 1.45; }
-.tut-bar .tut-skip { margin-left: auto; flex: none; font-size: 12px; padding: 4px 8px; }
+.tut-bar .tut-skip { margin-left: auto; flex: none; font-size: 12px; padding: 4px 8px; pointer-events: auto; }
+.tut-bar { pointer-events: none; opacity: .96; }   /* 아래 버튼을 가리지 않게: 길잡이 끄기 버튼만 눌린다 */
 @media (max-width: 600px) { .tut-bar { bottom: 6px; left: 6px; width: calc(100vw - 12px); padding: 6px 8px; } .tut-bar p { font-size: 12px; } .tut-bar .pxface { display: none; } }
 .cop-card { width: min(420px, 100%); }
 .cop-head { display: flex; gap: 10px; align-items: center; } .cop-head b { display: block; font-size: 17px; }
@@ -3117,9 +3118,17 @@ function copDept(who) {
   if (SLOT_DEPT[who]) return SLOT_DEPT[who];
   const d = DEPTS.find(d => d.slots.includes(who)); return d ? d.id : "crime";
 }
+/* 고정 사건 4개는 단서마다 분야를 직접 정해 둔다 */
+const FIXED_DEPTS = {
+  cheongram: { body: ["sci", "drug"], cup: ["sci", "drug"], letter: ["prof"], diary: ["prof"], teapot: ["sci", "drug"], silver: ["crime"], chess: ["crime"], memo: ["prof", "fin"], ledger: ["crime", "patrol"], stash: ["crime"], bag: ["drug", "sci"], record: ["drug", "prof"], contract: ["fin"], cap: ["drug", "sci"], windows: ["crime", "guard"] },
+  theater: { body: ["sci", "drug"], vanity: ["sci"], phone: ["digital"], letter: ["prof"], rigging: ["crime"], crewlog: ["crime", "patrol"], console: ["digital"], photo: ["prof"], sandbag: ["sci", "crime"], cash: ["fin"], cctv: ["digital"], contract: ["fin", "prof"] },
+  train: { body: ["sci", "drug"], chain: ["sci", "crime"], confession: ["prof"], cups: ["sci", "crime"], strap: ["sci"], fishing: ["sci", "crime"], camera: ["crime", "sci"], appraisal: ["fin"], sketch: ["prof", "crime"], receipt: ["fin"], patrol: ["crime", "patrol"], masterkey: ["digital"] },
+  museum: { body: ["sci", "drug"], storageLog: ["digital"], box: ["crime"], fake: ["sci", "crime"], vitrine: ["crime", "guard"], cctv: ["digital"], log: ["crime", "patrol"], order: ["fin", "digital"], catalog: ["fin", "intel"], mail: ["digital"], weapon: ["sci"], gloves: ["sci"] },
+};
 /* 단서의 분야: 이 부서들에 물으면 정답 */
 function clueDepts(id) {
   const c = C(), k = c.clues[id], t = k.name + " " + k.text, out = new Set();
+  const fx = (FIXED_DEPTS[c.id] || {})[id]; if (fx) return new Set(fx);
   if (id === "body" || id === "weapon" || /^trait_/.test(id) || /흉기|핏자국|피가|자국|지문|섬유|흔적|상처|시신|얼룩|가루/.test(t)) out.add("sci");
   if (id === "body" || /독약|독극물|독을|독살|약병|약물|약품|수면제|주사|디곡신|아몬드|알약/.test(t)) out.add("drug");
   if (/CCTV|카드|기록|로그|통화|문자|단말기|센서|캡처|녹음|블랙박스|메일/.test(t) || id === "witness") out.add("digital");
@@ -3132,15 +3141,15 @@ function clueDepts(id) {
 }
 /* 이 단서가 진짜로 가리키는 것 */
 function clueTruth(id) {
-  const c = C(), k = c.clues[id];
-  for (const [sid, p] of Object.entries(c.suspects)) for (const q of p.qs) if (q.lie && q.lie.clues.includes(id))
-    return { sid, text: `${p.name} 씨가 ‘${q.a.length > 34 ? q.a.slice(0, 34) + "…" : q.a}’라고 했죠? 이 ‘${k.name}’랑은 안 맞아요. 그 말은 거짓일 가능성이 높아요.` };
+  const c = C(), k = c.clues[id], q1 = `‘${k.name}’`, rang = jo(k.name, "이랑", "랑").slice(k.name.length), eun = jo(k.name, "은", "는").slice(k.name.length);
   if (id === "body") { const m = (c.methods.find(x => x.id === c.answer.method) || {}).text; if (m) return { sid: null, text: `시신 상태로 보면 수법은 ‘${m}’ 쪽이에요. 범인 지목 때 수법은 이걸로 고르세요.` }; }
   if (id === "weapon") return { sid: null, text: `이 ‘${k.name}’에 남은 흔적을 잘 보세요. 같은 흔적이 묻은 소지품을 가진 사람이 진짜 주인이에요. 숨겨진 방의 주인은 누명일 수도 있고요.` };
+  for (const [sid, p] of Object.entries(c.suspects)) for (const q of p.qs) if (q.lie && q.lie.clues.includes(id))
+    return { sid, text: `${p.name} 씨가 ‘${q.a.length > 34 ? q.a.slice(0, 34) + "…" : q.a}’라고 했죠? 이 ${q1}${rang}은 안 맞아요. 그 말은 거짓일 가능성이 높아요.` };
   const owner = Object.entries(c.suspects).find(([sid]) => k.room === sid || (c.rooms[k.room] && c.rooms[k.room].name.includes(c.suspects[sid].name)));
   if (/^trait_/.test(id) && owner) return { sid: owner[0], text: `이건 ${owner[1].name} 씨 물건이에요. 현장에 남은 흔적과 같은지 꼭 비교해 보세요.` };
   if (/^motive_/.test(id) && owner) return { sid: owner[0], text: `${owner[1].name} 씨에게 피해자와 얽힌 사정이 있었다는 서류예요. 진짜 동기인지는 심문으로 확인해야 해요.` };
-  return { sid: null, text: c.key.includes(id) ? `이 ‘${k.name}’, 사건의 핵심 같아요. 이걸 중심으로 진술들을 맞춰 보세요.` : `이 ‘${k.name}’는 사건과 직접 상관은 적어 보여요. 너무 매달리지 마세요.` };
+  return { sid: null, text: c.key.includes(id) ? `이 ${q1}, 사건의 핵심 같아요. 이걸 중심으로 진술들을 맞춰 보세요.` : `이 ${q1}${eun} 사건과 직접 상관은 적어 보여요. 너무 매달리지 마세요.` };
 }
 /* 마약팀이 알려 주는 약물 정보: 무슨 약인지, 몸에 어떻게 해로운지 */
 function drugInfo() {
@@ -3640,7 +3649,7 @@ function tutStep() {
 }
 let tutSaid = -1;
 function tutorialBar() {
-  const i = tutStep(); if (i < 0) return "";
+  const i = tutStep(); if (i < 0 || S.tab === "accuse") return "";
   const text = TUT[i].text();
   if (tutSaid !== i) { tutSaid = i; setTimeout(() => Sound.babble(text, voiceOf(N.seo, "순경").base), 400); }
   return `<div class="tut-bar" role="note">${pixelFace(N.seo, 36, "순경")}<div><b>길잡이 ${i + 1}/${TUT.length} · ${esc(N.seo)} 순경</b><p>${esc(text)}</p></div><button class="btn ghost tut-skip" data-act="tut-skip">길잡이 끄기</button></div>`;
