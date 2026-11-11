@@ -442,6 +442,12 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .pick input:focus-visible + span { outline: 2px solid var(--lamp); }
 .pick input:disabled + span { opacity: .45; cursor: not-allowed; }
 .div-head { margin: 18px 0 4px; font-size: 15px; color: var(--lamp); letter-spacing: .08em; }
+.case-tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0; padding: 10px 12px; border: 1px dashed var(--lamp); border-radius: 8px; }
+.case-tags .hint { flex-basis: 100%; margin: 4px 0 0; }
+.ctag { font-size: 13px; padding: 2px 10px; border-radius: 999px; background: rgba(232,178,92,.15); color: var(--lamp); }
+.star { font-style: normal; font-size: 11.5px; color: #ffd36b; }
+.pick.talent > span { border-color: rgba(255,211,107,.6); }
+.dept.rec legend { color: #ffd36b; }
 .dept { opacity: .8; } .dept.on { opacity: 1; border-color: var(--lamp); }
 .dept-toggle { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; font-size: 16px; }
 .dept-toggle input { width: 18px; height: 18px; accent-color: #e8b25c; }
@@ -1601,7 +1607,7 @@ const turnsFor = c => {
 };
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
-  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], patrol: [], patrolNotes: {}, team: null, patrolPick: null, teamPick: null, depts: null, deptJobs: {}, sheet: false, reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
+  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], patrol: [], patrolNotes: {}, team: null, patrolPick: null, teamPick: null, depts: null, deptJobs: {}, sheet: false, stars: [], reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
   chances: 1, penalties: 0, decided: false, advice: {}, cleared: [], persona: {}, heart: {}, secrets: [], lastLine: null, dlg: null, wrongAccuse: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
   mode: "pixel", pos: null, dir: null, autopsyDone: false, autopsy: null, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
@@ -1659,6 +1665,32 @@ const ROSTER = [
   { slot: "patL", label: "순찰팀장", rank: "경위", job: "순찰 메모가 더 정확해져요 (4번 중 3번 → 10번 중 9번)", people: [
     ["주강우", "m", "골목골목을 꿰는 순찰팀장"], ["성미래", "f", "한 번 본 얼굴은 안 잊는 팀장"]] },
 ];
+/* ---------- 인재 표시: 사건의 특징과 사람의 강점이 맞으면 ⭐ ----------
+   고른 ⭐ 인재가 있는 팀은 보고가 1턴 빨라지거나 더 정확해진다 */
+const CASE_TAG = { poison: "약물 사건", violent: "몸싸움 흔적", cctv: "CCTV·기록", money: "돈 문제", secret: "숨은 관계", liar: "거짓말이 많음", storm: "궂은 날씨" };
+const TALENT = {
+  김태린: ["violent"], 정한결: ["storm"], 박우진: ["money"], 서하루: ["secret"],
+  강무열: ["storm"], 백인경: ["secret"], 조석훈: ["money"], 공태하: ["violent"], 우강산: ["storm"], 안소라: ["secret"],
+  윤도경: ["violent"], 염세라: ["poison"], 차민규: ["violent"], 변주원: ["violent"], 소하은: ["money"], 피준호: ["poison"],
+  한서진: ["secret"], 서문혁: ["money"], 하경미: ["poison"], 모은재: ["money"], 남윤성: ["violent"], 류다올: ["secret"],
+  구현석: ["secret"], 도아라: ["money"], 이로운: ["secret"], 은하솔: ["money"], 봉준혁: ["violent"],
+  엄태식: ["money"], 강혜원: ["money"], 설지호: ["money"], 금나래: ["money"], 양태건: ["secret"],
+  마석진: ["poison"], 연수경: ["poison"], 방태율: ["poison"], 설아린: ["poison"],
+  길주원: ["storm"], 국선영: ["storm"], 임도진: ["violent"], 반하린: ["storm"], 왕지석: ["secret"], 손예담: ["secret"], 감도윤: ["secret"], 추은솔: ["money"],
+  곽정민: ["storm"], 태수연: ["storm"], 봉하람: ["poison"], 육서윤: ["secret"], 범태호: ["violent"], 진미라: ["storm"], 여강민: ["violent"], 담소윤: ["storm"],
+  주강우: ["storm"], 성미래: ["secret"], 도현수: ["violent"], 나예림: ["secret"], 권하준: ["storm"], 오지민: ["money"], 신재호: ["storm"], 함소연: ["secret"], 육지훈: ["violent"], 방수아: ["poison"],
+};
+const DEPT_TAG = { drug: "poison", sci: "violent", digital: "secret", fin: "money", intel: "secret", traffic: "storm", guard: "storm" };
+function caseTags(c = C()) {
+  const t = new Set(), m = (c.methods.find(x => x.id === c.answer.method) || {}).text || "", mo = (c.motives.find(x => x.id === c.answer.motive) || {}).text || "";
+  t.add(/독|약물|수면제|주사/.test(m) ? "poison" : "violent");
+  if (/빚|유산|횡령|보험|기밀|돈/.test(mo)) t.add("money"); else t.add("secret");
+  if (/폭우|폭풍|눈보라|폭설|태풍|천둥|장마|해무|안개|첫눈/.test((c.where || "") + (c.lede || ""))) t.add("storm");
+  return t;
+}
+const talentOf = (name, tags) => (TALENT[name] || []).filter(x => tags.has(x));
+/* 이번 판에 고른 사람 중 ⭐ 인재가 있는 자리 */
+const starSlot = slot => !!S.depts && (S.stars || []).includes(slot);
 /* 경찰서 부서: 무작위 사건마다 데려갈 부서를 고른다. 동행 파트너(형사)는 늘 함께 */
 const DEPTS = [
   { id: "crime", div: "형사과", name: "강력팀", slots: ["kang", "gong"], desc: "팀장(경감)은 놓친 걸 바로잡고 잠긴 문을 열고, 형사(순경)는 가짜 물건을 치우고 용의자에게 겁을 줘요." },
@@ -2001,6 +2033,7 @@ function confirmTeam() {
   const tp = S.teamPick, need = DEPT_N[S.diff] || 4;
   if (!tp || tp.depts.length !== need || (tp.depts.includes("patrol") && !tp.patrol.length)) return;
   S.team = { ...tp.team }; S.patrolPick = tp.patrol.slice(); S.depts = tp.depts.slice();
+  const tags = caseTags(); S.stars = Object.keys(S.team).filter(slot => talentOf(S.team[slot], tags).length);
   try { localStorage.setItem("midnight-last-team", JSON.stringify({ team: tp.team, patrol: tp.patrol, depts: tp.depts })); } catch {}
   S.screen = "brief"; S.introDone = false; INTRO.reset();
 }
@@ -2012,18 +2045,23 @@ function renderTeam() {
     for (const id of order) if (tp.depts.length < need && !tp.depts.includes(id)) tp.depts.push(id);
     tp.fit = true;
   }
-  const people = slot => { const r = ROSTER.find(x => x.slot === slot); return `<div class="pick-row">${r.people.map(([n, g, note]) => `<label class="pick"><input type="radio" name="team-${slot}" value="${n}" ${tp.team[slot] === n ? "checked" : ""}>
-      <span>${pixelFace(n, 44)}<b>${n}</b><small>${r.label} · ${r.rank}</small><small class="hint">${note}</small></span></label>`).join("")}</div>`; };
+  const tags = caseTags(c);
+  const star = n => { const t = talentOf(n, tags); return t.length ? `<em class="star" title="이 사건에 유용">⭐ ${t.map(x => CASE_TAG[x]).join("·")}에 강함</em>` : ""; };
+  const people = slot => { const r = ROSTER.find(x => x.slot === slot); return `<div class="pick-row">${r.people.map(([n, g, note]) => `<label class="pick${talentOf(n, tags).length ? " talent" : ""}"><input type="radio" name="team-${slot}" value="${n}" ${tp.team[slot] === n ? "checked" : ""}>
+      <span>${pixelFace(n, 44)}<b>${n}</b><small>${r.label} · ${r.rank}</small>${star(n)}<small class="hint">${note}</small></span></label>`).join("")}</div>`; };
   const patrolPick = `<p class="hint">순찰 대원 (6명까지, 고른 순서대로 ${DIFF[S.diff].label}에선 ${pd}명이 나가요)</p><div class="pick-row">${PATROL_ALL.map(x => { const i = tp.patrol.indexOf(x.id); return `<label class="pick"><input type="checkbox" name="team-patrol" value="${x.id}" ${i >= 0 ? "checked" : ""} ${i < 0 && tp.patrol.length >= 6 ? "disabled" : ""}>
-      <span>${pixelFace(x.name, 44)}<b>${x.name}</b><small>${x.title}${i >= 0 ? ` · ${i + 1}번째` : ""}</small></span></label>`; }).join("")}</div>`;
+      <span>${pixelFace(x.name, 44)}<b>${x.name}</b><small>${x.title}${i >= 0 ? ` · ${i + 1}번째` : ""}</small>${star(x.name)}</span></label>`; }).join("")}</div>`;
   const depts = DEPTS.map((d, i) => { const on = tp.depts.includes(d.id), full = !on && tp.depts.length >= need;
     const head = !i || DEPTS[i - 1].div !== d.div ? `<h3 class="div-head">${d.div}</h3>` : "";
-    return head + `<fieldset class="team-slot dept${on ? " on" : ""}"><legend><label class="dept-toggle"><input type="checkbox" name="team-dept" value="${d.id}" ${on ? "checked" : ""} ${full ? "disabled" : ""}> ${d.name}</label></legend>
+    const rec = DEPT_TAG[d.id] && tags.has(DEPT_TAG[d.id]);
+    return head + `<fieldset class="team-slot dept${on ? " on" : ""}${rec ? " rec" : ""}"><legend><label class="dept-toggle"><input type="checkbox" name="team-dept" value="${d.id}" ${on ? "checked" : ""} ${full ? "disabled" : ""}> ${d.name}</label>${rec ? ` <em class="star">⭐ 이 사건 추천 · ${CASE_TAG[DEPT_TAG[d.id]]}</em>` : ""}</legend>
       <p class="hint">${d.desc}</p>${on ? (d.slots || []).map(people).join("") + (d.patrol ? patrolPick : "") : ""}</fieldset>`; }).join("");
   app.innerHTML = `<section class="intro team-pick">
     <span class="label">${c.tag}</span>
     <h1>팀 꾸리기</h1>
     <p class="lede">${esc(pname())} ${PLAYER_RANK}, 이번 사건은 <b>${esc(c.title)}</b>이다. 경찰서(형사과 · 수사과 · 생활안전과 · 교통과 · 정보과 · 경비과 · 112상황실)의 ${DEPTS.length}개 팀 중 <b>${need}개</b>를 골라 데려가고, 부서마다 함께할 사람을 뽑자. (${DIFF[S.diff].label} 난이도 · 쉬움 5 · 보통 7 · 어려움 9개)</p>
+    <div class="case-tags"><b>이 사건의 특징</b>${[...tags].map(x => `<span class="ctag">${CASE_TAG[x]}</span>`).join("")}
+      <p class="hint">⭐ 표시는 이 사건에 맞는 강점을 가진 사람·팀이에요. ⭐ 인재를 데려가면 그 팀의 보고가 1턴 빨라지거나 판단이 더 정확해져요.</p></div>
     <fieldset class="team-slot on"><legend>형사과 동행 파트너 <span class="hint">· 늘 함께해요</span></legend><p class="hint">내 뒤를 따라다니며 방의 가짜 물건을 치워요.</p>${people("seo")}</fieldset>
     <p class="hint"><b>부서 ${tp.depts.length} / ${need}</b> 골랐어요.</p>
     ${depts}
@@ -2070,7 +2108,7 @@ function patrolWatch(quiet) {
   for (const o of S.patrol || []) for (const pp of roomPeople(o.room)) {
     if (pp.kind !== "s" || S.patrolNotes[pp.id]) continue;
     const p = c.suspects[pp.id], lies = p.qs.filter(q => q.lie), truths = p.qs.filter(q => !q.lie);
-    const q = lies.length && (Math.random() < (S.depts ? .9 : .75) || !truths.length) ? RND.pick(lies) : RND.pick(truths.length ? truths : p.qs);   /* 순찰팀장이 함께면 더 정확 */
+    const q = lies.length && (Math.random() < (starSlot("patL") ? 1 : S.depts ? .9 : .75) || !truths.length) ? RND.pick(lies) : RND.pick(truths.length ? truths : p.qs);   /* 순찰팀장이 함께면 더 정확 */
     const who = patrolOf(o.id);
     S.patrolNotes[pp.id] = { by: `${who.title} ${who.name}`, qid: q.id, text: `‘${q.q}’ 얘기만 나오면 눈을 피하고 말이 빨라지던데요.` };
     if (!quiet) toast(`<b>순찰 메모</b> — ${esc(who.name)}: “${esc(p.name)} 씨, ${esc(S.patrolNotes[pp.id].text)}”`);
@@ -2181,7 +2219,12 @@ function canDispatch(pid) {
 }
 function dispatch(pid) {
   if (!canDispatch(pid)) return;
-  const role = roleOf(pid), delay = role === "clear" ? 1 : MISSION_DELAY;
+  const role = roleOf(pid), delay = Math.max(1, (role === "clear" ? 1 : MISSION_DELAY) - (starSlot(pid) ? 1 : 0));
+  if (role === "clear" && starSlot(pid)) {   /* ⭐ 인재 부하는 그 자리에서 바로 치운다 */
+    const said = juniorClear({ room: S.room }), x = partner(pid);
+    S.events.push({ bad: false, msg: `${pfull(x)} ⭐ — “${said}”` });
+    toast(`<b>${esc(pfull(x))} ⭐</b> — “${esc(said)}”`); Sound.help(); return;
+  }
   S.dispatched.push(pid);
   S.missions.push({ pid, room: S.room, due: S.actions + delay, only: "-", role });
   PX.helperEnter(S.missions[S.missions.length - 1]);
@@ -2221,8 +2264,9 @@ const autopsyCause = () => { const c = C(); return (c.methods.find(m => m.id ===
 function callForensic() {
   if (S.autopsyDone || S.turns <= 0 || S.decided || S.missions.some(m => m.role === "autopsy")) return;
   const room = crimeRoomId();
-  S.missions.push({ pid: "yoon", room, due: S.actions + MISSION_DELAY, only: "-", role: "autopsy" });
-  S.missions.push({ pid: "byun", room, due: S.actions + MISSION_DELAY, only: "-", role: "autopsy", quiet: true });
+  const ad = starSlot("yoon") || starSlot("byun") ? 1 : MISSION_DELAY;   /* ⭐ 인재가 있으면 1턴 빨리 */
+  S.missions.push({ pid: "yoon", room, due: S.actions + ad, only: "-", role: "autopsy" });
+  S.missions.push({ pid: "byun", room, due: S.actions + ad, only: "-", role: "autopsy", quiet: true });
   PX.helperEnter(S.missions[S.missions.length - 2]); PX.helperEnter(S.missions[S.missions.length - 1]);
   toast(`<b>과학수사대</b> — “${esc(C().rooms[room].name)} 시신, 저희가 감식하겠습니다. ${MISSION_DELAY}턴 뒤에 사인을 알려 드리죠.”`);
   Sound.door();
@@ -3828,7 +3872,7 @@ function callDept(id) {
     S.events.push({ bad: false, msg: `${deptName(id)} ${deptWho(id)} — ${msg}` });
     toast(`<b>${esc(deptName(id))}</b> — ${esc(msg)}`); Sound.help(); return;
   }
-  S.deptJobs[id] = { due: S.actions + 2, done: false };
+  S.deptJobs[id] = { due: S.actions + (starSlot(DEPT_JOB[id]) || starSlot(DEPT_LEAD[id]) ? 1 : 2), done: false };   /* ⭐ 인재가 있으면 1턴 빨리 */
   const r = ROSTER.find(x => x.slot === DEPT_JOB[id]);
   toast(`<b>${esc(deptName(id))}</b> — ${esc(deptWho(id))}: “맡겨 주세요. 2턴 뒤에 보고하겠습니다.”`); Sound.door();
 }
@@ -3959,7 +4003,7 @@ function moClear(sid) {
   if (!rebutLeft("psy") || S.turns <= 0 || S.decided || S.silence[sid]) return;
   S.clearedQ = S.clearedQ || [];
   const cov = evidenceCover(), cand = p.qs.filter(q => has(S.asked, q.id) && !has(S.broken, q.id) && !q.lie && !profCleared(q.id));
-  const got = cand.filter(q => (hashStr([q.id, "mo", S.found.length, S.fakeSeed].join("|")) % 1000) / 1000 < .45 + .55 * cov);
+  const got = cand.filter(q => (hashStr([q.id, "mo", S.found.length, S.fakeSeed].join("|")) % 1000) / 1000 < .45 + .55 * cov + (starSlot("mo") ? .2 : 0));
   got.forEach(q => S.clearedQ.push(q.id));
   S.rebuts.push("psy");
   const left = p.qs.filter(q => has(S.asked, q.id) && !has(S.broken, q.id) && !profCleared(q.id)).length;
@@ -4213,7 +4257,7 @@ function renderGameOver() {
 
 /* 같은 사건(무작위 사건도 같은 범인)을 같은 난이도로 처음부터 다시 */
 function retryCase() {
-  const keep = { caseId: S.caseId, randomCase: S.randomCase, diff: S.diff, team: S.team, patrolPick: S.patrolPick, depts: S.depts };
+  const keep = { caseId: S.caseId, randomCase: S.randomCase, diff: S.diff, team: S.team, patrolPick: S.patrolPick, depts: S.depts, stars: S.stars };
   const c = C();
   toastQ.length = 0; ENDING.reset();
   S = Object.assign(fresh(), keep, { screen: "brief", room: Object.keys(c.rooms)[0], suspect: Object.keys(c.suspects)[0], introDone: true });
