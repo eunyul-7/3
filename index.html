@@ -471,6 +471,9 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .dept-toggle input { width: 18px; height: 18px; accent-color: #e8b25c; }
 .act-btns { display: flex; gap: 8px; flex-wrap: wrap; }
 #act-px.talk { background: #7fd1a0; border-color: #7fd1a0; color: #0f1a12; }
+.howto-mini { margin: 12px 0; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; }
+.howto-mini summary { cursor: pointer; font-weight: 700; }
+.howto-mini ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
 .sit-in { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
 .sit-in > b { font-size: 12.5px; color: var(--muted); font-family: var(--f-mono); }
 .sit-in .act { padding: 4px 8px; font-size: 13px; }
@@ -2641,7 +2644,8 @@ function renderTitle() {
       </div>
       <h2>조작 방법</h2>
       <div class="howto">
-        <div><b><span class="k">01</span>현장 조사</b><p>픽셀 화면에서 주인공을 움직여요. 컴퓨터는 방향키·WASD, 휴대폰은 바닥을 누르거나 화면 아래 방향 버튼을 써요. 물음표(?)가 붙은 물건을 누르면 걸어가서 조사해요(1턴). 사람을 누르면 대화, 문으로 나가면 옆 방이에요.</p></div>
+        <div><b><span class="k">01</span>움직이기 · 조사 · 대화</b><p>컴퓨터는 방향키나 WASD, 휴대폰은 화면을 누르거나 아래 방향 버튼으로 움직여요. 물음표(?) 물건 옆에서 스페이스나 ‘조사’ 버튼을 누르면 조사(1턴), 사람 옆에서는 같은 버튼이 ‘대화’로 바뀌어요. 용의자와 대화하면 심문, 우리 팀원과 대화하면 조사한 걸 힌트로 알려 줘요(턴 안 씀). 화면에서 물건·사람·문을 직접 눌러도 걸어가요.</p></div>
+        <div><b><span class="k">T</span>팀원 부르기</b><p>‘📞 팀원 부르기’ 버튼이나 T 키를 누르면 부를 수 있는 팀원 창이 올라와요. Esc나 바깥을 누르면 닫혀요. 오른쪽(휴대폰은 아래) 방 이름을 누르면 그 방으로 바로 가요.</p></div>
         <div><b><span class="k">02</span>대화</b><p>대화 창에 질문이 여러 개 떠요. 하나를 골라 물어보세요(1턴). 단서를 찾을수록 물어볼 것이 늘어나요.</p></div>
         <div><b><span class="k">03</span>모순 지적</b><p>‘모순을 지적한다’를 골라, 거짓말 같은 대답과 그 말과 맞지 않는 단서를 차례로 골라요. 맞으면 진술이 무너지고, 틀리면 1턴과 <b>10초</b>를 잃어요.</p></div>
         <div class="warn"><b><span class="k">호감도</span>마음 열기</b><p>용의자마다 성격이 있어요. ‘마음을 연다’에서 성격에 맞는 말투를 고르면 숨은 증언을 들려줘요. 잘못 고르면 그 증언은 영영 들을 수 없어요.</p></div>
@@ -2979,6 +2983,14 @@ function renderBrief() {
       <div class="cast">
         ${Object.values(c.suspects).map(p => `<div class="person">${pixelFace(p.name, 64, p.role)}<b>${p.name}</b><span>${p.role}</span><span>${p.intro}</span></div>`).join("")}
       </div>
+      <details class="howto-mini" open><summary>조작 방법</summary>
+        <ul>
+          <li><b>움직이기</b> — 방향키·WASD (휴대폰: 화면 누르기 또는 방향 버튼)</li>
+          <li><b>조사 / 대화</b> — 스페이스 또는 버튼. 물건 옆은 ‘조사’(1턴), 사람 옆은 ‘대화’</li>
+          <li><b>팀원 부르기</b> — T 키 또는 ‘📞 팀원 부르기’ 버튼 · 닫기는 Esc</li>
+          <li><b>방 이동</b> — 문으로 걸어가거나 방 이름을 눌러요</li>
+          <li><b>심문</b> — 질문 고르기 · 모순 지적(틀리면 −10초) · 함께 들어온 팀원의 귓속말</li>
+        </ul></details>
       <div class="btn-row">
         <button class="btn" data-act="start">게임 시작</button>
         <button class="btn ghost" data-act="replay-intro">출동 장면 다시 보기</button>
@@ -3682,11 +3694,11 @@ const PX = (() => {
     Sound.ask();
   }
   function describe(t) {
-    if (!t) return "방향키·WASD, 화면 터치, 아래 방향 버튼으로 움직여요. 물음표(?) 물건 옆에서는 ‘조사’, 사람 옆에서는 ‘대화’를 눌러요.";
-    if (t.kind === "ally") return `${t.name} (우리 팀) — ‘대화’ 또는 스페이스: 조사한 걸 물어봐요 (턴 안 씀)`;
-    if (t.kind === "person") return t.ref.kind === "h" ? `${t.ref.name} — 일하는 중 · ‘대화’로 물어보기` : `${t.ref.name} — ‘대화’ 또는 스페이스: 심문하러 가기`;
-    if (has(S.searched, t.ref.spot)) return `${t.ref.label} — 이미 조사했다.`;
-    return `${t.ref.label} — ‘조사’ 또는 스페이스 (−${has(S.tampered, t.ref.spot) ? 2 : 1}턴)`;
+    if (!t) return "";
+    if (t.kind === "ally") return `${t.name} · 우리 팀`;
+    if (t.kind === "person") return t.ref.kind === "h" ? `${t.ref.name} · 일하는 중` : `${t.ref.name}`;
+    if (has(S.searched, t.ref.spot)) return `${t.ref.label} · 이미 조사함`;
+    return `${t.ref.label} · −${has(S.tampered, t.ref.spot) ? 2 : 1}턴`;
   }
 
   /* ---------- 그리기 ---------- */
@@ -3905,12 +3917,12 @@ function renderPixel(out) {
         <button class="pad up" data-pad="up" aria-label="위">▲</button><button class="pad left" data-pad="left" aria-label="왼쪽">◀</button>
         <button class="pad right" data-pad="right" aria-label="오른쪽">▶</button><button class="pad down" data-pad="down" aria-label="아래">▼</button>
       </div>
-      <div class="pad-act"><span id="near-px" class="hint">방향키·WASD, 화면 터치, 방향 버튼으로 움직여요.</span>
+      <div class="pad-act"><span id="near-px" class="hint"></span>
         <span class="act-btns"><button class="btn" id="act-px" data-act="interact-px">조사</button>
         ${!out ? `<button class="btn call-btn" data-act="sheet-open" aria-haspopup="dialog">📞 팀원 부르기${busyCount() ? ` <span class="badge">${busyCount()} 출동 중</span>` : ""}</button>` : ""}</span></div>
     </div>
     ${lk ? `<p class="locked-room">이 방이 잠겼다. 문으로 나가서 ${lk}턴 뒤에 다시 오자.</p>` : ""}
-    <div class="room-nav"><span class="label">방 이동 · 이름을 누르면 바로 가요</span>${roomNav}</div>
+    <div class="room-nav"><span class="label">방 이동</span>${roomNav}</div>
     <p class="desc">${r.desc}</p>
     ${results ? `<details class="found-list"><summary>이 방에서 찾은 것 (${found.length})</summary><div class="spots">${results}</div></details>` : ""}
     </div></div>
