@@ -520,7 +520,7 @@ body.talking .panel.talk > * { flex: none; }
 body.talking .panel.talk .choices { flex: 1 0 auto; align-content: start; }
 
 body.talking .person-head { flex-wrap: nowrap; gap: 14px; }
-body.talking .person-head .portrait img { width: clamp(64px, 9vw, 120px); height: auto; }
+body.talking .person-head .portrait .pxface { width: clamp(64px, 9vw, 120px); height: auto; }
 body.talking .person-head h3 { font-size: clamp(20px, 2.2vw, 30px) !important; }
 body.talking .speech { flex: none; }
 body.talking .line p { font-size: clamp(15px, 1.35vw, 19px); }
@@ -535,7 +535,7 @@ body.talking .choice { font-size: clamp(14px, 1.15vw, 17px); padding-block: 10px
   body.talking .who-text > span, body.talking .who-text .heart { display: none; }
   body.talking .who-text b { font-size: 13px; }
   body.talking .panel.talk { padding: 10px 12px; gap: 6px; }
-  body.talking .person-head .portrait img { width: 52px; }
+  body.talking .person-head .portrait .pxface { width: 52px; }
   body.talking .person-head h3 { font-size: 19px !important; }
   body.talking .person-head .hint, body.talking .person-head .duo { font-size: 11.5px; }
   body.talking .sit-in { gap: 4px; }
@@ -691,6 +691,21 @@ body.shake main { animation: op-shake2 .4s; }
 .stage { position: relative; min-height: 210px; border-radius: 8px; overflow: hidden; padding: 14px 14px 12px clamp(120px, 22%, 210px);
   background: linear-gradient(180deg, color-mix(in srgb, var(--wall) 55%, #0a0c10) 0 70%, #15110e 70% 100%); box-shadow: inset 0 0 60px rgba(0,0,0,.65); display: flex; flex-direction: column; justify-content: flex-end; }
 .stage::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 18% 40%, rgba(255,230,170,.18), transparent 55%); pointer-events: none; }
+.photo-ov { position: fixed; inset: 0; z-index: 90; background: rgba(5,7,10,.82); display: grid; place-items: center; padding: 12px; animation: ph-in .25s both; }
+@keyframes ph-in { from { opacity: 0; } }
+.photo-card { width: min(330px, 100%); max-height: 100%; overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; }
+.photo-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.polaroid { background: #f1ede4; padding: 8px 8px 24px; border-radius: 3px; position: relative; transform: rotate(-1deg); box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+.photo-cv { width: 100%; height: auto; display: block; image-rendering: pixelated; image-rendering: crisp-edges; background: #000; }
+.photo-cv.flash { animation: ph-flash .5s ease-out; }
+@keyframes ph-flash { from { filter: brightness(3) saturate(0); } to { filter: none; } }
+.photo-stamp { position: absolute; left: 10px; bottom: 7px; font: 600 11px/1 monospace; color: #5a4a3a; }
+.photo-caps { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; counter-reset: ph; }
+.photo-caps li { counter-increment: ph; }
+.photo-caps li::before { content: counter(ph); display: inline-block; width: 18px; height: 18px; margin-right: 6px; background: #f2c230; color: #1a1a1a; font-weight: 700; text-align: center; border-radius: 3px; }
+.photo-note { margin: 0; color: var(--muted); font-size: 13px; }
+.photo-close { justify-self: end; }
+.photo-btn { margin: 6px 0; }
 .stage-sprite { position: absolute; left: 2%; bottom: 0; height: 96%; max-height: 260px; width: auto; image-rendering: pixelated; image-rendering: crisp-edges; filter: drop-shadow(0 10px 14px rgba(0,0,0,.6)); transform-origin: bottom center; }
 .stage.talk .stage-sprite { animation: st-bob 2.4s ease-in-out infinite; }
 .stage.shock .stage-sprite { animation: st-shock .5s ease-out 2; }
@@ -2961,9 +2976,86 @@ function addClue(id) {
   const c = C(), key = c.key.includes(id);
   popCard(`<span class="cc-tag">🔎 증거 발견${key ? " · 결정적일지도!" : ""}</span><b>${esc(c.clues[id].name)}</b><small>${esc(c.clues[id].text.slice(0, 54))}${c.clues[id].text.length > 54 ? "…" : ""}</small>`, key ? "gold" : "");
   Sound.clue(); if (key) setTimeout(() => Sound.help(), 180);
+  if (id === "body") setTimeout(openBodyPhoto, 900);   /* 시신을 처음 살피면 감식 사진을 바로 보여 준다 */
   /* 이 단서로 열리는 숨겨진 진술 */
   const who = Object.values(c.suspects).filter(p => p.qs.some(q => q.need === id && !has(S.asked, q.id))).map(p => p.name);
   if (who.length) setTimeout(() => { popCard(`<span class="cc-tag">🔓 숨겨진 진술</span><b>${esc(who.join("·"))}</b><small>‘${esc(c.clues[id].name)}’ 얘기를 꺼내면 숨기던 걸 털어놓을지도 모른다. 현장에서 찾아가 대화해 보자.</small>`, "unlock"); Sound.help(); }, 900);
+}
+/* ===================== 시신 사진: 감식반이 찍은 현장 사진을 살펴본다 ===================== */
+const BODY_KINDS = [
+  ["needle", /바늘|주사/, ["목덜미의 작은 바늘 자국", "외상이 거의 없다"]],
+  ["shock", /감전|화상/, ["손바닥의 화상 자국", "젖어 있는 바닥"]],
+  ["strangle", /졸|끈 자국|띠 모양/, ["목을 가로지른 자국", "손톱 밑에 낀 섬유"]],
+  ["smother", /반점|숨이 막/, ["눈가의 붉은 반점", "수면제가 나온 잔"]],
+  ["push", /손가락 모양 멍|붙잡/, ["팔뚝의 손가락 모양 멍", "넘어지며 생긴 머리 상처"]],
+  ["stab", /찔|좁고 깊은 상처/, ["옆구리의 좁고 깊은 상처", "바닥에 고인 피"]],
+  ["blunt", /함몰|둔기|타박|맞았다/, ["뒤통수의 둥근 상처", "닦아 낸 듯 번진 핏자국"]],
+  ["poison", /독|아몬드|푸르스름/, ["푸르스름한 입술", "쓰러진 잔"]],
+];
+const bodyKind = () => { const t = (C().clues.body || {}).text || ""; return BODY_KINDS.find(k => k[1].test(t)) || BODY_KINDS[BODY_KINDS.length - 1]; };
+function drawBodyPhoto(cv) {
+  const W = 96, H = 72, g = cv.getContext("2d"), th = themeOf(), [kind] = bodyKind();
+  const P = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+  /* 바닥 */
+  const fl = th.floor === "carpet" ? (th.carpetC || "#4a3a3a") : th.floor === "tile" ? "#8c9196" : th.floor === "stone" ? "#77736b" : "#6b4a30";
+  P(0, 0, W, H, fl);
+  for (let y = 0; y < H; y += 8) for (let x = (y / 8 % 2) * 6; x < W; x += 12) P(x, y, 1, 8, "rgba(0,0,0,.18)");
+  for (let y = 0; y < H; y += 8) P(0, y, W, 1, "rgba(0,0,0,.14)");
+  /* 분필 윤곽선 */
+  const chalk = "rgba(240,240,232,.85)";
+  P(13, 27, 2, 14, chalk); P(15, 25, 13, 1, chalk); P(15, 42, 13, 1, chalk); P(28, 17, 18, 1, chalk); P(28, 50, 18, 1, chalk);
+  P(46, 26, 30, 1, chalk); P(46, 44, 30, 1, chalk); P(76, 26, 1, 19, chalk);
+  /* 몸: 머리(왼쪽) → 다리(오른쪽) */
+  const skin = "#e4bd9b", hair = "#2a201c", cloth = "#3b4252", pants = "#262a33";
+  P(16, 28, 9, 12, skin); P(15, 29, 3, 10, hair); P(16, 27, 7, 2, hair);
+  P(25, 31, 3, 6, skin);
+  P(28, 27, 20, 14, cloth);
+  P(30, 21, 3, 6, cloth); P(33, 19, 10, 3, cloth); P(43, 19, 3, 3, skin);
+  P(30, 41, 3, 6, cloth); P(33, 46, 10, 3, cloth); P(43, 46, 3, 3, skin);
+  P(48, 28, 24, 5, pants); P(48, 35, 24, 5, pants); P(72, 28, 3, 5, "#141414"); P(72, 35, 3, 5, "#141414");
+  P(22, 31, 1, 1, "#2a201c"); P(22, 36, 1, 1, "#2a201c");
+  /* 사인에 따른 흔적 + 번호표 */
+  const marks = [], M = (n, x, y) => marks.push([n, x, y]);
+  if (kind === "poison") { P(24, 33, 1, 3, "#4a6aa8"); P(50, 54, 5, 4, "#e8e4da"); P(55, 55, 6, 3, "rgba(120,70,30,.6)"); M(1, 24, 26); M(2, 54, 62); }
+  if (kind === "blunt") { P(14, 31, 3, 5, "#6a0f12"); P(7, 30, 7, 7, "rgba(110,18,20,.55)"); P(4, 32, 4, 3, "rgba(110,18,20,.3)"); M(1, 16, 22); M(2, 6, 42); }
+  if (kind === "strangle") { P(25, 31, 3, 1, "#6b2d5a"); P(25, 33, 3, 1, "#6b2d5a"); P(25, 35, 3, 1, "#7d3a6a"); P(44, 47, 2, 1, "#d8b44a"); M(1, 26, 24); M(2, 46, 54); }
+  if (kind === "smother") { P(21, 30, 1, 1, "#c4242a"); P(23, 32, 1, 1, "#c4242a"); P(21, 37, 1, 1, "#c4242a"); P(23, 35, 1, 1, "#c4242a"); P(52, 10, 5, 4, "#e8e4da"); M(1, 20, 22); M(2, 60, 8); }
+  if (kind === "push") { P(36, 19, 1, 2, "#5a3a7a"); P(38, 19, 1, 2, "#5a3a7a"); P(40, 19, 1, 2, "#5a3a7a"); P(14, 28, 2, 3, "#7a1418"); M(1, 38, 12); M(2, 12, 22); }
+  if (kind === "needle") { P(26, 30, 1, 1, "#c4242a"); M(1, 26, 24); M(2, 38, 58); }
+  if (kind === "shock") { P(43, 19, 3, 3, "#3a2a20"); P(44, 20, 1, 1, "#1a1210"); P(40, 6, 26, 12, "rgba(120,170,220,.35)"); M(1, 48, 22); M(2, 64, 6); }
+  if (kind === "stab") { P(40, 39, 4, 2, "#8a0f14"); P(38, 41, 12, 5, "rgba(120,15,20,.6)"); P(52, 46, 14, 6, "rgba(120,15,20,.45)"); M(1, 42, 34); M(2, 60, 58); }
+  const DIG = { 1: ["010", "110", "010", "010", "111"], 2: ["111", "001", "111", "100", "111"] };   /* 3×5 숫자 */
+  for (const [n, x, y] of marks) {
+    P(x - 2, y - 3, 7, 8, "#f2c230"); P(x - 2, y + 5, 7, 1, "#9a7a10");
+    DIG[n].forEach((row, j) => [...row].forEach((b, i) => { if (b === "1") P(x + i, y - 2 + j, 1, 1, "#1a1a1a"); }));
+  }
+  return marks;
+}
+function openBodyPhoto() {
+  if (document.querySelector(".photo-ov") || !C().clues.body) return;
+  const c = C(), caps = bodyKind()[2], clue = c.clues.body;
+  const base = pxCanvas(96, 72), marks = drawBodyPhoto(base);
+  const ov = document.createElement("div"); ov.className = "photo-ov";
+  ov.innerHTML = `<div class="photo-card" role="dialog" aria-label="시신 사진">
+    <div class="photo-tabs"><button class="chip" data-ph="all" aria-pressed="true">📷 전신</button><button class="chip" data-ph="1" aria-pressed="false">🔍 ① 확대</button><button class="chip" data-ph="2" aria-pressed="false">🔍 ② 확대</button></div>
+    <div class="polaroid"><canvas class="photo-cv" width="384" height="288"></canvas><span class="photo-stamp">감식반 촬영 · ${esc(c.rooms[clue.room].name)}</span></div>
+    <ol class="photo-caps">${caps.map(t => `<li>${esc(t)}</li>`).join("")}</ol>
+    <p class="photo-note">${esc(clue.text)}</p>
+    <button class="btn photo-close">닫기 ✕ <small>(Esc)</small></button></div>`;
+  document.body.appendChild(ov);
+  const cv = ov.querySelector(".photo-cv"), g = cv.getContext("2d");
+  const show = which => {
+    g.imageSmoothingEnabled = false; g.clearRect(0, 0, 384, 288);
+    if (which === "all") g.drawImage(base, 0, 0, 96, 72, 0, 0, 384, 288);
+    else { const m = marks[+which - 1] || marks[0], w = 32, h = 24, x = Math.max(0, Math.min(96 - w, m[1] - w / 2)), y = Math.max(0, Math.min(72 - h, m[2] - h / 2)); g.drawImage(base, x, y, w, h, 0, 0, 384, 288); }
+    ov.querySelectorAll("[data-ph]").forEach(b => b.setAttribute("aria-pressed", b.dataset.ph === which));
+    cv.classList.remove("flash"); void cv.offsetWidth; cv.classList.add("flash");
+  };
+  show("all");
+  const close = () => { ov.remove(); document.removeEventListener("keydown", onKey, true); };
+  const onKey = e => { if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); close(); } };
+  document.addEventListener("keydown", onKey, true);
+  ov.addEventListener("click", e => { const b = e.target.closest("[data-ph]"); if (b) return show(b.dataset.ph); if (e.target === ov || e.target.closest(".photo-close")) close(); });
 }
 /* 아직 안 들은 숨겨진 진술이 있는 용의자 */
 const hasHidden = sid => { const p = C().suspects[sid]; return !!p && p.qs.some(q => q.need && has(S.found, q.need) && !has(S.asked, q.id)); };
@@ -4086,6 +4178,12 @@ const LOOK_OVERRIDE = {
     grdL: { cloth: "#1c2430", pants: "#12161c", top: "suit", cap: true }, grd: { cloth: "#1c2430", pants: "#12161c", top: "suit", cap: true }, finL: { cloth: "#2b2622", top: "suit" }, schL: { cloth: "#3e5566", top: "jacket" }, patL: { cloth: "#1c2a44", pants: "#141c2c", top: "suit", cap: true } };
   for (const r of ROSTER) for (const [n] of r.people) if (!LOOK_OVERRIDE[n]) { const { style, ...rest } = own[r.slot] || LOOK_OVERRIDE[dress[r.slot]] || {}; LOOK_OVERRIDE[n] = rest; }
   for (const x of PATROL_ALL) if (!LOOK_OVERRIDE[x.name]) LOOK_OVERRIDE[x.name] = { cloth: "#26344d", pants: "#1a2233", top: "suit", cap: true };
+  /* 경찰 제복(모자)은 순경만 입는다. 경장 이상은 사복 정장 */
+  const rankOf = {}; for (const r of ROSTER) for (const [n] of r.people) rankOf[n] = r.rank; for (const x of PATROL_ALL) rankOf[x.name] = x.title;
+  const PLAIN = ["#3a3f47", "#4a4038", "#2f3a33", "#463a40"];
+  for (const [n, L] of Object.entries(LOOK_OVERRIDE)) if (rankOf[n] && rankOf[n] !== "순경" && L.cap) {
+    LOOK_OVERRIDE[n] = { ...L, cap: false, top: "jacket", cloth: PLAIN[hashStr(n) % PLAIN.length], pants: "#2a2d33" };
+  }
 })();
 function lookFor(name, role, isPlayer) {
   if (isPlayer) return playerGender() === "f"
@@ -4189,41 +4287,82 @@ function charSprites(name, role, isPlayer) {
   out.left = out.right.map(src => { const cv = pxCanvas(16, 20), g = cv.getContext("2d"); g.translate(16, 0); g.scale(-1, 1); g.drawImage(src, 0, 0); return cv; });
   spriteCache.set(key, out); return out;
 }
+/* 인물 픽셀 그림은 <img src="data:…"> 대신 <canvas>에 직접 그린다
+   (일부 환경에서 data: 그림이 막혀 심문 화면 인물이 안 보이던 문제 해결) */
+const pxSrc = [], pxIdx = new Map();
+function pxRef(key, make) { if (!pxIdx.has(key)) { pxIdx.set(key, pxSrc.length); pxSrc.push(make()); } return pxIdx.get(key); }
+function paintPx(root = document) {
+  root.querySelectorAll("canvas[data-pxf]").forEach(cv => {
+    if (cv._px === cv.dataset.pxf) return; cv._px = cv.dataset.pxf;
+    const src = pxSrc[+cv.dataset.pxf]; if (!src) return;
+    const g = cv.getContext("2d"); g.clearRect(0, 0, cv.width, cv.height); g.imageSmoothingEnabled = false;
+    g.drawImage(src, 0, 0, src.width, src.height, 0, 0, cv.width, cv.height);
+  });
+}
+new MutationObserver(() => paintPx()).observe(document.documentElement, { childList: true, subtree: true });
 /* 심문 무대용 큰 전신 픽셀 그림 */
-const bigCache = new Map();
 function bigSprite(name, role = "") {
-  const key = name + "|" + role;
-  if (!bigCache.has(key)) {
-    const sp = charSprites(name, role).down[0], cv = pxCanvas(128, 160), g = cv.getContext("2d");
-    g.imageSmoothingEnabled = false; g.drawImage(sp, 0, 0, 16, 20, 0, 0, 128, 160);
-    bigCache.set(key, cv.toDataURL());
-  }
-  return bigCache.get(key);
+  const i = pxRef("big|" + name + "|" + role, () => charSprites(name, role).down[0]);
+  return `<canvas class="stage-sprite" data-pxf="${i}" width="128" height="160" role="img" aria-label="${esc(name)}"></canvas>`;
 }
 /* 작은 픽셀 얼굴(목록·대화창용) */
-const faceCache = new Map();
 function pixelFace(name, size = 40, role = "", isPlayer = false) {
   const key = (isPlayer ? "@" + playerGender() : "") + name + "|" + role;
-  if (!faceCache.has(key)) {
-    const sp = charSprites(name, role, isPlayer).down[0], cv = pxCanvas(16, 16), g = cv.getContext("2d");
-    g.drawImage(sp, 0, 0, 16, 16, 0, 0, 16, 16);
-    faceCache.set(key, cv.toDataURL());
-  }
-  return `<img class="pxface" src="${faceCache.get(key)}" width="${size}" height="${size}" alt="">`;
+  const i = pxRef(key, () => { const sp = charSprites(name, role, isPlayer).down[0], cv = pxCanvas(16, 16); cv.getContext("2d").drawImage(sp, 0, 0, 16, 16, 0, 0, 16, 16); return cv; });
+  return `<canvas class="pxface" data-pxf="${i}" width="${size}" height="${size}"></canvas>`;
 }
 
 /* ---------- 가구: 벡터 그림을 16px로 줄여 픽셀처럼 ---------- */
 const furnCache = new Map();
+/* 아주 작은 SVG 그리기: rect·circle·ellipse·path·text·g(속성 상속)·transform 일부 */
+function paintSVG(g, svg, scale) {
+  const doc = new DOMParser().parseFromString(svg.replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" '), "image/svg+xml");
+  const num = (el, k, d = 0) => { const v = el.getAttribute(k); return v == null ? d : parseFloat(v); };
+  const walk = (el, inh) => {
+    for (const ch of el.children) {
+      const st = { ...inh };
+      for (const k of ["fill", "stroke", "stroke-width", "opacity", "font-size", "text-anchor"]) if (ch.hasAttribute(k)) st[k] = ch.getAttribute(k);
+      if (ch.hasAttribute("opacity")) st.opacity = (inh.opacity == null ? 1 : +inh.opacity) * +ch.getAttribute("opacity");
+      g.save();
+      const tf = ch.getAttribute("transform") || "";
+      for (const m of tf.matchAll(/(translate|rotate|scale)\(([^)]*)\)/g)) {
+        const a = m[2].split(/[\s,]+/).filter(Boolean).map(Number);
+        if (m[1] === "translate") g.translate(a[0] || 0, a[1] || 0);
+        else if (m[1] === "scale") g.scale(a[0], a[1] == null ? a[0] : a[1]);
+        else { if (a.length > 2) g.translate(a[1], a[2]); g.rotate(a[0] * Math.PI / 180); if (a.length > 2) g.translate(-a[1], -a[2]); }
+      }
+      const tag = ch.tagName.toLowerCase();
+      if (tag === "g") walk(ch, st);
+      else {
+        let path = null;
+        if (tag === "rect") { path = new Path2D(); const x = num(ch, "x"), y = num(ch, "y"), w = num(ch, "width"), h = num(ch, "height"), r = Math.min(num(ch, "rx"), w / 2, h / 2);
+          if (r > 0 && path.roundRect) path.roundRect(x, y, w, h, r); else path.rect(x, y, w, h); }
+        else if (tag === "circle") { path = new Path2D(); path.arc(num(ch, "cx"), num(ch, "cy"), num(ch, "r"), 0, Math.PI * 2); }
+        else if (tag === "ellipse") { path = new Path2D(); path.ellipse(num(ch, "cx"), num(ch, "cy"), num(ch, "rx"), num(ch, "ry"), 0, 0, Math.PI * 2); }
+        else if (tag === "path") path = new Path2D(ch.getAttribute("d") || "");
+        g.globalAlpha = st.opacity == null ? 1 : +st.opacity;
+        if (tag === "text") {
+          g.font = `bold ${st["font-size"] || 10}px sans-serif`; g.textAlign = st["text-anchor"] === "middle" ? "center" : "left";
+          g.fillStyle = st.fill && st.fill !== "none" ? st.fill : "#000"; g.fillText(ch.textContent, num(ch, "x"), num(ch, "y"));
+        } else if (path) {
+          const fill = st.fill == null ? "#000" : st.fill;
+          if (fill !== "none") { g.fillStyle = fill; g.fill(path); }
+          if (st.stroke && st.stroke !== "none") { g.strokeStyle = st.stroke; g.lineWidth = +(st["stroke-width"] || 1); g.lineJoin = "round"; g.stroke(path); }
+        }
+      }
+      g.restore();
+    }
+  };
+  g.save(); g.scale(scale, scale); walk(doc.documentElement, {}); g.restore();
+}
 function furnPixel(type) {
   if (furnCache.has(type)) return furnCache.get(type);
   const cv = pxCanvas(16, 16), rec = { cv, ready: false };
-  const img = new Image();
-  img.onload = () => {
-    const g = cv.getContext("2d"); g.imageSmoothingEnabled = true; g.drawImage(img, 0, 0, 16, 16);
-    const d = g.getImageData(0, 0, 16, 16); for (let i = 3; i < d.data.length; i += 4) d.data[i] = d.data[i] > 110 ? 255 : 0;
-    g.putImageData(d, 0, 0); outlinePass(cv); rec.ready = true;
-  };
-  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(furnSVG(type).replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" '));
+  /* SVG를 그림 파일로 불러오지 않고 캔버스에 직접 그린다 (data: 그림이 막힌 환경에서도 가구가 보이게) */
+  const g = cv.getContext("2d");
+  try { paintSVG(g, furnSVG(type), 16 / 40); } catch (e) {}
+  const d = g.getImageData(0, 0, 16, 16); for (let i = 3; i < d.data.length; i += 4) d.data[i] = d.data[i] > 110 ? 255 : 0;
+  g.putImageData(d, 0, 0); outlinePass(cv); rec.ready = true;
   furnCache.set(type, rec); return rec;
 }
 
@@ -4782,6 +4921,7 @@ function renderPixel(out) {
     ${lk ? `<p class="locked-room">이 방이 잠겼다. 문으로 나가서 ${lk}턴 뒤에 다시 오자.</p>` : ""}
     <div class="room-nav"><span class="label">방 이동</span>${roomNav}</div>
     <p class="desc">${r.desc}</p>
+    ${has(S.found, "body") && c.clues.body && c.clues.body.room === S.room ? `<button class="btn photo-btn" data-act="body-photo">📷 시신 사진 살펴보기</button>` : ""}
     ${results ? `<details class="found-list"><summary>이 방에서 찾은 것 (${found.length})</summary><div class="spots">${results}</div></details>` : ""}
     </div></div>
   </div>
@@ -5140,7 +5280,7 @@ function renderPeople(out) {
         const key = L ? sid + "|" + L.q + "|" + L.a : sid, fresh = S._shown !== key; S._shown = key;
         const th = themeOf();
         return `<div class="stage ${react}${fresh ? " new" : ""}" style="--wall:${th.wallC || "#3a3346"}">
-          <img class="stage-sprite" src="${bigSprite(p.name, p.role)}" alt="${esc(p.name)}">
+          ${bigSprite(p.name, p.role)}
           ${react === "shock" ? `<i class="sweat"></i><i class="sweat s2"></i><b class="stage-fx">!!</b>` : react === "smug" ? `<b class="stage-fx smug">…</b>` : react === "soft" ? `<b class="stage-fx soft">♥</b>` : ""}
           <div class="speech vn">${speech}</div>
         </div>`;
@@ -5203,7 +5343,7 @@ addEventListener("resize", () => { if (S.tab === "notes") drawBoard(); });
 function renderNotes() {
   const c = C();
   const clues = S.found.length
-    ? S.found.map(id => `<div class="clue"><div class="meta"><b>${c.clues[id].name}</b><span class="label">${c.rooms[c.clues[id].room].name}</span></div><p>${c.clues[id].text}</p></div>`).join("")
+    ? S.found.map(id => `<div class="clue"><div class="meta"><b>${c.clues[id].name}</b><span class="label">${c.rooms[c.clues[id].room].name}</span></div><p>${c.clues[id].text}</p>${id === "body" ? `<button class="btn photo-btn" data-act="body-photo">📷 시신 사진 보기</button>` : ""}</div>`).join("")
     : `<p class="empty">아직 찾은 단서가 없다.</p>`;
   const tl = S.tl.length
     ? S.tl.map(([t, e, src, qid]) => {
@@ -5429,6 +5569,7 @@ app.addEventListener("click", e => {
   else if (d.random) { openRandom(); top = true; }
   else if (d.case) { openCase(d.case); top = true; }
   else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm) mm.querySelector("img").outerHTML = pixelFace(pname(), 64, "", true); return; }
+  else if (d.act === "body-photo") { openBodyPhoto(); return; }
   else if (d.act === "close-talk") { S.tab = "rooms"; S.dlg = null; top = true; }
   else if (d.act === "sheet-open") { S.sheet = true; }
   else if (d.act === "sheet-close") { S.sheet = false; }
