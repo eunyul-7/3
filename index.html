@@ -441,6 +441,7 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .pick input:checked + span { border-color: var(--lamp); background: rgba(232,178,92,.10); box-shadow: inset 0 0 0 1px var(--lamp); }
 .pick input:focus-visible + span { outline: 2px solid var(--lamp); }
 .pick input:disabled + span { opacity: .45; cursor: not-allowed; }
+.div-head { margin: 18px 0 4px; font-size: 15px; color: var(--lamp); letter-spacing: .08em; }
 .dept { opacity: .8; } .dept.on { opacity: 1; border-color: var(--lamp); }
 .dept-toggle { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; font-size: 16px; }
 .dept-toggle input { width: 18px; height: 18px; accent-color: #e8b25c; }
@@ -1601,45 +1602,40 @@ const TEAM_DEFAULT = { seo: "서하루", kang: "강무열", gong: "공태하", y
 const ROSTER = [
   { slot: "seo", label: "동행 파트너", rank: "순경", job: "늘 내 뒤를 따라다니며 방의 가짜 물건을 치워요", people: [
     ["서하루", "f", "신고 전화를 제일 먼저 받는 열혈 순경"], ["김태린", "f", "눈썰미가 좋은 막내 순경"], ["박우진", "m", "말수는 적지만 성실한 순경"], ["정한결", "m", "체력 하나는 자신 있는 순경"]] },
-  { slot: "kang", label: "강력계 상관", rank: "경감", job: "부하들이 놓친 걸 바로잡고 잠긴 문을 열어요 (보통·어려움)", people: [
-    ["강무열", "m", "현장 20년 차 베테랑"], ["백인경", "f", "강력계 최초의 여성 반장"], ["조석훈", "m", "원칙대로만 하는 깐깐한 반장"]] },
-  { slot: "gong", label: "강력계 부하", rank: "순경", job: "가짜 물건을 치우고 용의자에게 겁을 줘요 (보통·어려움)", people: [
-    ["공태하", "m", "덩치 큰 강력계 순경"], ["우강산", "m", "목소리가 우렁찬 순경"], ["안소라", "f", "눈빛 하나로 기선을 잡는 순경"]] },
-  { slot: "yoon", label: "과학수사 상관", rank: "경사", job: "시신 감식·사건 정리·심문 때 증거 내밀기", people: [
-    ["윤도경", "m", "꼼꼼한 감식 반장"], ["염세라", "f", "현미경을 놓지 않는 감식관"], ["차민규", "m", "증거 앞에서만 말이 많아지는 감식관"]] },
-  { slot: "byun", label: "과학수사 부하", rank: "경장", job: "과학수사 상관과 함께 감식해요", people: [
+  { slot: "kang", label: "강력팀장", rank: "경감", job: "부하들이 놓친 걸 바로잡고 잠긴 문을 열어요 (보통·어려움)", people: [
+    ["강무열", "m", "현장 20년 차 베테랑"], ["백인경", "f", "강력팀 최초의 여성 팀장"], ["조석훈", "m", "원칙대로만 하는 깐깐한 팀장"]] },
+  { slot: "gong", label: "강력팀 형사", rank: "순경", job: "가짜 물건을 치우고 용의자에게 겁을 줘요 (보통·어려움)", people: [
+    ["공태하", "m", "덩치 큰 강력팀 순경"], ["우강산", "m", "목소리가 우렁찬 순경"], ["안소라", "f", "눈빛 하나로 기선을 잡는 순경"]] },
+  { slot: "yoon", label: "과학수사팀장", rank: "경사", job: "시신 감식·사건 정리·심문 때 증거 내밀기", people: [
+    ["윤도경", "m", "꼼꼼한 감식 팀장"], ["염세라", "f", "현미경을 놓지 않는 감식관"], ["차민규", "m", "증거 앞에서만 말이 많아지는 감식관"]] },
+  { slot: "byun", label: "과학수사요원", rank: "경장", job: "과학수사 상관과 함께 감식해요", people: [
     ["변주원", "m", "카메라를 늘 목에 건 감식 요원"], ["소하은", "f", "기록 정리의 달인"], ["피준호", "m", "냄새로 약품을 맞히는 요원"]] },
-  { slot: "han", label: "수사팀 상관", rank: "경위", job: "놓친 거짓말을 바로잡고 침묵을 깨요 (보통·어려움)", people: [
+  { slot: "han", label: "수사팀장", rank: "경위", job: "놓친 거짓말을 바로잡고 침묵을 깨요 (보통·어려움)", people: [
     ["한서진", "f", "거짓말을 꿰뚫어 보는 베테랑"], ["서문혁", "m", "조용히 몰아붙이는 신문 전문가"], ["하경미", "f", "범죄 심리 박사 출신"]] },
-  { slot: "mo", label: "수사팀 부하", rank: "경사", job: "헷갈리는 대답을 거짓말 후보에서 치워요", people: [
+  { slot: "mo", label: "수사팀 수사관", rank: "경사", job: "헷갈리는 대답을 거짓말 후보에서 치워요", people: [
     ["모은재", "f", "메모광 수사관"], ["남윤성", "m", "기억력이 좋은 수사관"], ["류다올", "f", "눈치 빠른 수사관"]] },
-  { slot: "digL", label: "디지털 수사팀장", rank: "경위", job: "팀장이 함께 오면 기록을 두 건까지 복구해요", people: [
+  { slot: "digL", label: "사이버수사팀장", rank: "경위", job: "팀장이 함께 오면 기록을 두 건까지 복구해요", people: [
     ["구현석", "m", "사이버 범죄만 20년 쫓은 팀장"], ["도아라", "f", "데이터로 사람을 읽는 팀장"]] },
-  { slot: "dig", label: "디지털 수사팀", rank: "경장", job: "CCTV·카드키·통신 기록을 복구해 단서 하나를 찾아 줘요 (2턴 뒤)", people: [
+  { slot: "dig", label: "사이버수사팀 요원", rank: "경장", job: "CCTV·카드키·통신 기록을 복구해 단서 하나를 찾아 줘요 (2턴 뒤)", people: [
     ["이로운", "m", "해커 출신 디지털 포렌식 요원"], ["은하솔", "f", "지운 파일도 살려내는 분석관"], ["봉준혁", "m", "CCTV 수천 시간을 본 분석관"]] },
-  { slot: "finL", label: "지능범죄수사팀장", rank: "경감", job: "반장이 함께 오면 수상한 서류 한 건은 직접 찾아와요", people: [
-    ["엄태식", "m", "돈 앞에선 누구도 안 믿는 반장"], ["강혜원", "f", "대기업 비리를 파헤친 반장"]] },
-  { slot: "fin", label: "지능범죄수사팀", rank: "경사", job: "돈과 서류 흐름을 쫓아 수상한 서류가 있는 곳을 짚어 줘요 (2턴 뒤)", people: [
+  { slot: "finL", label: "지능팀장", rank: "경감", job: "팀장이 함께 오면 수상한 서류 한 건은 직접 찾아와요", people: [
+    ["엄태식", "m", "돈 앞에선 누구도 안 믿는 팀장"], ["강혜원", "f", "대기업 비리를 파헤친 팀장"]] },
+  { slot: "fin", label: "지능팀 수사관", rank: "경사", job: "돈과 서류 흐름을 쫓아 수상한 서류가 있는 곳을 짚어 줘요 (2턴 뒤)", people: [
     ["설지호", "m", "돈 냄새를 기막히게 맡는 수사관"], ["금나래", "f", "회계사 출신 수사관"], ["양태건", "m", "장부 한 장으로 사람을 읽는 수사관"]] },
-  { slot: "schL", label: "학교전담팀장", rank: "경위", job: "팀장이 함께 오면 숨은 증언을 두 개 가져와요", people: [
-    ["윤슬기", "f", "학교폭력 전담 베테랑 팀장"], ["나도현", "m", "아이들이 먼저 찾아오는 팀장"]] },
   { slot: "patL", label: "순찰팀장", rank: "경위", job: "순찰 메모가 더 정확해져요 (4번 중 3번 → 10번 중 9번)", people: [
     ["주강우", "m", "골목골목을 꿰는 순찰팀장"], ["성미래", "f", "한 번 본 얼굴은 안 잊는 팀장"]] },
-  { slot: "sch", label: "학교전담팀", rank: "순경", job: "용의자 주변 사람들을 탐문해 숨은 증언을 가져와요 (2턴 뒤)", people: [
-    ["채아름", "f", "누구와도 금방 친해지는 경찰"], ["허준", "m", "동네 사정을 꿰고 있는 경찰"], ["민들레", "f", "아이들 눈높이로 말하는 경찰"]] },
 ];
 /* 경찰서 부서: 무작위 사건마다 데려갈 부서를 고른다. 동행 파트너(형사)는 늘 함께 */
 const DEPTS = [
-  { id: "crime", name: "강력계", slots: ["kang", "gong"], desc: "상관은 놓친 걸 바로잡고 잠긴 문을 열고, 부하는 가짜 물건을 치우고 용의자에게 겁을 줘요." },
-  { id: "sci", name: "과학수사팀", slots: ["yoon", "byun"], desc: "시신을 감식해 사인을 밝히고, 증거를 정리해 심문 때 대신 내밀어요." },
-  { id: "prof", name: "수사팀 (프로파일링)", slots: ["han", "mo"], desc: "심문 때 헷갈리는 대답을 치우고, 거짓말을 못 박고, 침묵을 깨요." },
-  { id: "patrol", name: "순찰조", patrol: true, slots: ["patL"], desc: "팀장(경위)과 대원들이 혼자 돌아다니며 용의자를 지키고 순찰 메모를 남겨요." },
-  { id: "digital", name: "디지털 수사팀", slots: ["digL", "dig"], desc: "팀장(경위)과 요원이 CCTV·카드키·통신 기록을 복구해 단서를 두 건까지 찾아 줘요." },
-  { id: "fin", name: "지능범죄수사팀", slots: ["finL", "fin"], desc: "반장(경감)과 수사관이 돈과 서류 흐름을 쫓아, 수상한 서류 한 건은 직접 찾고 두 곳을 더 짚어 줘요." },
-  { id: "school", name: "학교전담팀", slots: ["schL", "sch"], desc: "팀장(경위)과 경찰이 용의자 주변 사람들을 탐문해 숨은 증언을 두 개 가져와요." },
+  { id: "crime", div: "형사과", name: "강력팀", slots: ["kang", "gong"], desc: "팀장(경감)은 놓친 걸 바로잡고 잠긴 문을 열고, 형사(순경)는 가짜 물건을 치우고 용의자에게 겁을 줘요." },
+  { id: "sci", div: "형사과", name: "과학수사팀", slots: ["yoon", "byun"], desc: "시신을 감식해 사인을 밝히고, 증거를 정리해 심문 때 대신 내밀어요." },
+  { id: "prof", div: "수사과", name: "수사팀", slots: ["han", "mo"], desc: "심문 때 헷갈리는 대답을 치우고, 거짓말을 못 박고, 침묵을 깨요." },
+  { id: "digital", div: "수사과", name: "사이버수사팀", slots: ["digL", "dig"], desc: "팀장(경위)과 요원이 CCTV·카드키·통신 기록을 복구해 단서를 두 건까지 찾아 줘요." },
+  { id: "fin", div: "수사과", name: "지능팀", slots: ["finL", "fin"], desc: "팀장(경감)과 수사관이 돈과 서류 흐름을 쫓아, 수상한 서류 한 건은 직접 찾고 두 곳을 더 짚어 줘요." },
+  { id: "patrol", div: "생활안전과", name: "지구대 순찰팀", patrol: true, slots: ["patL"], desc: "팀장(경위)과 대원들이 혼자 돌아다니며 용의자를 지키고 순찰 메모를 남겨요." },
 ];
 const DEPT_DEFAULT = ["crime", "sci", "prof", "patrol"];
-const DEPT_N = { easy: 3, normal: 4, hard: 5 };
+const DEPT_N = { easy: 3, normal: 4, hard: 5 };   /* 6개 부서 중 */
 const deptOn = id => (S.depts || DEPT_DEFAULT).includes(id);
 const N = new Proxy({}, { get: (_, k) => { let t = null; try { t = S && S.team; } catch {} return (t && t[k]) || TEAM_DEFAULT[k] || ""; } });
 const PARTNERS = [
@@ -1967,14 +1963,15 @@ function renderTeam() {
       <span>${pixelFace(n, 44)}<b>${n}</b><small>${r.label} · ${r.rank}</small><small class="hint">${note}</small></span></label>`).join("")}</div>`; };
   const patrolPick = `<p class="hint">순찰조 대원 (4명까지, 고른 순서대로 ${DIFF[S.diff].label}에선 ${pd}명이 나가요)</p><div class="pick-row">${PATROL_ALL.map(x => { const i = tp.patrol.indexOf(x.id); return `<label class="pick"><input type="checkbox" name="team-patrol" value="${x.id}" ${i >= 0 ? "checked" : ""} ${i < 0 && tp.patrol.length >= 4 ? "disabled" : ""}>
       <span>${pixelFace(x.name, 44)}<b>${x.name}</b><small>${x.title}${i >= 0 ? ` · ${i + 1}번째` : ""}</small></span></label>`; }).join("")}</div>`;
-  const depts = DEPTS.map(d => { const on = tp.depts.includes(d.id), full = !on && tp.depts.length >= need;
-    return `<fieldset class="team-slot dept${on ? " on" : ""}"><legend><label class="dept-toggle"><input type="checkbox" name="team-dept" value="${d.id}" ${on ? "checked" : ""} ${full ? "disabled" : ""}> ${d.name}</label></legend>
+  const depts = DEPTS.map((d, i) => { const on = tp.depts.includes(d.id), full = !on && tp.depts.length >= need;
+    const head = !i || DEPTS[i - 1].div !== d.div ? `<h3 class="div-head">${d.div}</h3>` : "";
+    return head + `<fieldset class="team-slot dept${on ? " on" : ""}"><legend><label class="dept-toggle"><input type="checkbox" name="team-dept" value="${d.id}" ${on ? "checked" : ""} ${full ? "disabled" : ""}> ${d.name}</label></legend>
       <p class="hint">${d.desc}</p>${on ? (d.slots || []).map(people).join("") + (d.patrol ? patrolPick : "") : ""}</fieldset>`; }).join("");
   app.innerHTML = `<section class="intro team-pick">
     <span class="label">${c.tag}</span>
     <h1>팀 꾸리기</h1>
-    <p class="lede">${esc(pname())} ${PLAYER_RANK}, 이번 사건은 <b>${esc(c.title)}</b>이다. 경찰서의 여러 부서 중 <b>${need}개</b>를 골라 데려가고, 부서마다 함께할 사람을 뽑자. (${DIFF[S.diff].label} 난이도 · 쉬움 3 · 보통 4 · 어려움 5개)</p>
-    <fieldset class="team-slot on"><legend>동행 파트너 (형사) <span class="hint">· 늘 함께해요</span></legend><p class="hint">내 뒤를 따라다니며 방의 가짜 물건을 치워요.</p>${people("seo")}</fieldset>
+    <p class="lede">${esc(pname())} ${PLAYER_RANK}, 이번 사건은 <b>${esc(c.title)}</b>이다. 경찰서(형사과 · 수사과 · 생활안전과)의 여섯 팀 중 <b>${need}개</b>를 골라 데려가고, 부서마다 함께할 사람을 뽑자. (${DIFF[S.diff].label} 난이도 · 쉬움 3 · 보통 4 · 어려움 5개)</p>
+    <fieldset class="team-slot on"><legend>형사과 동행 파트너 <span class="hint">· 늘 함께해요</span></legend><p class="hint">내 뒤를 따라다니며 방의 가짜 물건을 치워요.</p>${people("seo")}</fieldset>
     <p class="hint"><b>부서 ${tp.depts.length} / ${need}</b> 골랐어요.</p>
     ${depts}
     <div class="btn-row">
@@ -3750,16 +3747,17 @@ function pressBtn(sid) {
   const lv = risk < .3 ? "조금 위험" : risk < .7 ? "위험 — 역효과 날 수 있음" : "매우 위험 — 거의 역효과";
   return `<button class="choice press with-face" data-press="${sid}"><span class="ck">압박</span><span>${pixelFace(N.gong, 22)} ${N.gong} 순경이 겁을 준다${n ? ` <small class="hint">(${n}번 압박함)</small>` : ""}</span><span class="cost">−1턴 · ${lv}</span></button>`;
 }
-/* ---------- 새 부서 지원: 디지털 수사팀 · 지능범죄수사팀 · 학교전담팀 (사건마다 한 번, 2턴 뒤 보고, 턴 소모 없음) ---------- */
-const DEPT_JOB = { digital: "dig", fin: "fin", school: "sch" };
-const DEPT_LEAD = { digital: "digL", fin: "finL", school: "schL" };
+/* ---------- 새 부서 지원: 수사과 사이버수사팀 · 지능팀 (사건마다 한 번, 2턴 뒤 보고, 턴 소모 없음) ---------- */
+const DEPT_JOB = { digital: "dig", fin: "fin" };
+const DEPT_LEAD = { digital: "digL", fin: "finL" };
+const deptName = id => { const d = DEPTS.find(x => x.id === id); return d ? `${d.div} ${d.name}` : ""; };
 const deptWho = id => `${N[DEPT_LEAD[id]]}·${N[DEPT_JOB[id]]}`;
 function callDept(id) {
   S.deptJobs = S.deptJobs || {};
   if (!deptOn(id) || S.deptJobs[id] || S.turns <= 0 || S.decided) return;
   S.deptJobs[id] = { due: S.actions + 2, done: false };
   const r = ROSTER.find(x => x.slot === DEPT_JOB[id]);
-  toast(`<b>${esc(DEPTS.find(d => d.id === id).name)}</b> — ${esc(deptWho(id))}: “맡겨 주세요. 2턴 뒤에 보고하겠습니다.”`); Sound.door();
+  toast(`<b>${esc(deptName(id))}</b> — ${esc(deptWho(id))}: “맡겨 주세요. 2턴 뒤에 보고하겠습니다.”`); Sound.door();
 }
 function resolveDeptJobs() {
   const c = C(), jobs = S.deptJobs || {};
@@ -3767,7 +3765,7 @@ function resolveDeptJobs() {
   for (const [id, j] of Object.entries(jobs)) {
     if (j.done || S.actions < j.due) continue;
     j.done = true;
-    const who = `${DEPTS.find(d => d.id === id).name} ${deptWho(id)}`;
+    const who = `${deptName(id)} ${deptWho(id)}`;
     let msg = "";
     if (id === "digital") {
       let dig = spots.filter(sp => furnType(sp.label) === "terminal");
@@ -3782,14 +3780,7 @@ function resolveDeptJobs() {
       const first = docs[0], pick = docs.slice(1, 3);
       if (first) { S.found.push(first.clue); S.searched.push(first.id); }
       pick.forEach(sp => { S.marked = (S.marked || []).concat(sp.id); });
-      msg = first ? `“${N.finL} 반장님이 ‘${c.clues[first.clue].name}’을(를) 직접 찾아오셨습니다.${pick.length ? ` 그리고 ${pick.map(sp => `${c.rooms[sp.rid].name}의 ‘${sp.label.replace(/(을|를) .*$/, "")}’`).join(", ")} 쪽도 수상합니다. ‘놓친 곳!’으로 표시해 뒀어요.` : ""}”` : "“수상한 서류는 이미 다 확보하셨습니다.”";
-      Sound.help();
-    } else if (id === "school") {
-      const cand = RND.shuffle(Object.entries(c.suspects).filter(([sid]) => !S.secrets.some(x => x.sid === sid))).slice(0, 2);
-      if (cand.length) {
-        const parts = cand.map(([sid, p]) => { const hint = secretHint(sid); S.secrets.push({ sid, name: p.name, text: hint }); return `${p.name} 씨 쪽: ${hint}`; });
-        msg = `“${N.schL} 팀장님과 주변 사람들을 만나고 왔어요. ${parts.join(" / ")}”`;
-      } else msg = "“주변 사람들 얘기는 이미 다 들으셨어요.”";
+      msg = first ? `“${N.finL} 팀장님이 ‘${c.clues[first.clue].name}’을(를) 직접 찾아오셨습니다.${pick.length ? ` 그리고 ${pick.map(sp => `${c.rooms[sp.rid].name}의 ‘${sp.label.replace(/(을|를) .*$/, "")}’`).join(", ")} 쪽도 수상합니다. ‘놓친 곳!’으로 표시해 뒀어요.` : ""}”` : "“수상한 서류는 이미 다 확보하셨습니다.”";
       Sound.help();
     }
     S.events.push({ bad: false, msg: `${who} — ${msg}` });
@@ -3797,17 +3788,17 @@ function resolveDeptJobs() {
   }
 }
 function renderDeptHelp() {
-  const ids = ["digital", "fin", "school"].filter(deptOn);
+  const ids = ["digital", "fin"].filter(deptOn);
   if (!ids.length) return "";
   const jobs = S.deptJobs || {};
   return `<div class="dispatch"><b>부서 지원 <span class="hint">· 사건마다 한 번씩 · 턴 소모 없음</span></b>
     <div class="q-actions">${ids.map(id => { const d = DEPTS.find(x => x.id === id), j = jobs[id], slot = DEPT_JOB[id];
-      return `<button class="act ally with-face" data-dept="${id}" ${j || S.turns <= 0 || S.decided ? "disabled" : ""}>${pixelFace(N[DEPT_LEAD[id]], 24)}${pixelFace(N[slot], 24)}${d.name} ${deptWho(id)}<span class="cost">${j ? (j.done ? "보고 완료" : `${Math.max(0, j.due - S.actions)}턴 뒤 보고`) : d.desc}</span></button>`; }).join("")}</div></div>`;
+      return `<button class="act ally with-face" data-dept="${id}" ${j || S.turns <= 0 || S.decided ? "disabled" : ""}>${pixelFace(N[DEPT_LEAD[id]], 24)}${pixelFace(N[slot], 24)}${d.div} ${d.name} ${deptWho(id)}<span class="cost">${j ? (j.done ? "보고 완료" : `${Math.max(0, j.due - S.actions)}턴 뒤 보고`) : d.desc}</span></button>`; }).join("")}</div></div>`;
 }
 function renderPatrol() {
   if (!(S.patrol || []).length) return "";
   const c = C();
-  return `<div class="dispatch"><b>강력팀 순찰조 <span class="hint">· 알아서 돌아다녀요${S.depts ? ` · 순찰팀장 ${N.patL} 경위` : ""}</span></b>
+  return `<div class="dispatch"><b>${S.depts ? "생활안전과 지구대 순찰팀" : "강력팀 순찰조"} <span class="hint">· 알아서 돌아다녀요${S.depts ? ` · 순찰팀장 ${N.patL} 경위` : ""}</span></b>
     <p class="hint">스스로 방을 돌며 용의자를 지켜봐요. 순찰 경찰이 있는 방의 용의자는 방해로 입을 막을 수 없고, 처음 본 용의자는 ‘순찰 메모’(어떤 질문에 긴장하는지)를 남겨요. 메모는 대부분 맞지만 가끔 헛짚어요.</p>
     <div class="q-actions">${S.patrol.map(o => { const x = patrolOf(o.id); return `<span class="act ally with-face" style="cursor:default">${pixelFace(x.name, 22)}${x.title} ${x.name}<span class="cost">${esc(c.rooms[o.room].name)}${o.room === S.room ? " (여기)" : ""}</span></span>`; }).join("")}</div>
     <p class="hint">메모: ${Object.keys(S.patrolNotes || {}).length} / ${Object.keys(c.suspects).length}명</p></div>`;
