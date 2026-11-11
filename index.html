@@ -712,6 +712,18 @@ body.shake main { animation: op-shake2 .4s; }
 .photo-btn { margin: 6px 0; }
 .continue-box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0 4px; padding: 12px 14px; border: 1px solid var(--lamp); border-radius: 8px; background: rgba(226,178,92,.08); }
 .continue-btn { font-size: 18px; }
+.log-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+.log-stats div { border: 1px solid var(--line); border-radius: 8px; padding: 10px; text-align: center; background: var(--surface); }
+.log-stats b { display: block; font-size: 26px; color: var(--lamp); } .log-stats span { font-size: 13px; color: var(--muted); }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.ach { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px dashed var(--line); border-radius: 8px; opacity: .5; }
+.ach.on { opacity: 1; border-style: solid; border-color: var(--lamp-dim); background: rgba(226,178,92,.07); }
+.ach-ic { font-size: 26px; flex: none; } .ach b { display: block; } .ach small { color: var(--muted); font-size: 12px; }
+.log-list { display: grid; gap: 6px; }
+.log-row { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.log-row b { display: block; } .log-row small { color: var(--muted); font-size: 12px; }
+.log-row.fail { opacity: .7; }
+.log-grade { margin-left: auto; font-weight: 800; font-size: 20px; color: var(--lamp); flex: none; } .log-row.fail .log-grade { font-size: 14px; color: #e06a5a; }
 .mix-btn { margin-left: 4px; padding-inline: 10px; }
 .mix-card { width: min(380px, 100%); }
 .mix-row { display: grid; grid-template-columns: 1fr 120px 44px; align-items: center; gap: 10px; }
@@ -2157,6 +2169,56 @@ function saveRecord(caseId, grade) {
   if (!r[caseId] || GRADE_RANK[grade] > GRADE_RANK[r[caseId]]) r[caseId] = grade;
   try { localStorage.setItem(REC_KEY, JSON.stringify(r)); } catch {}
 }
+/* ---------- 사건 기록장 + 업적 ---------- */
+const LOG_KEY = "midnight-log-v1", ACH_KEY = "midnight-ach-v1";
+const loadLog = () => { try { return JSON.parse(localStorage.getItem(LOG_KEY) || "[]") || []; } catch (e) { return []; } };
+const loadAch = () => { try { return JSON.parse(localStorage.getItem(ACH_KEY) || "{}") || {}; } catch (e) { return {}; } };
+const ACH = [
+  { id: "first", icon: "🔰", name: "첫 출동", desc: "사건을 처음으로 해결했다", ok: e => e.win },
+  { id: "s", icon: "🏅", name: "명탐정", desc: "S 등급으로 해결했다", ok: e => e.win && e.grade === "S" },
+  { id: "hard", icon: "🔥", name: "강철 형사", desc: "어려움 난이도에서 해결했다", ok: e => e.win && e.diff === "hard" },
+  { id: "clean", icon: "🎯", name: "한 치의 실수도 없이", desc: "모순 지적을 한 번도 틀리지 않고 해결했다", ok: e => e.win && e.wrong === 0 },
+  { id: "fast", icon: "⏱", name: "번개 수사", desc: "시간을 2분 넘게 남기고 해결했다", ok: e => e.win && e.timeLeft >= 120 },
+  { id: "nodrug", icon: "💊", name: "약 없이도 안다", desc: "마약팀 없이 약물 사건을 해결했다", ok: e => e.win && e.drug && !e.drugTeam },
+  { id: "acc", icon: "🕵", name: "공범 체포", desc: "숨어 있던 공범을 잡았다", ok: e => e.acc },
+  { id: "student", icon: "🎒", name: "교실의 진실", desc: "학교·학원 사건에서 학생 범인을 잡았다", ok: e => e.win && e.studentCul },
+  { id: "heart", icon: "💗", name: "마음을 여는 형사", desc: "숨은 증언을 2개 이상 듣고 해결했다", ok: e => e.win && e.secrets >= 2 },
+  { id: "solo", icon: "🚶", name: "나 홀로 수사", desc: "팀원을 한 번도 부르지 않고 해결했다", ok: e => e.win && !e.calls },
+  { id: "twist", icon: "🌀", name: "반전을 꿰뚫다", desc: "반전이 숨은 무작위 사건을 해결했다", ok: e => e.win && e.twist },
+  { id: "r5", icon: "🎲", name: "무작위의 달인", desc: "무작위 사건을 5번 해결했다", ok: (e, log) => log.filter(x => x.win && x.random).length >= 5 },
+  { id: "all4", icon: "📁", name: "사건 파일 완결", desc: "고정 사건 4개를 모두 해결했다", ok: (e, log) => CASES.every(c => log.some(x => x.win && x.id === c.id)) },
+  { id: "comeback", icon: "💪", name: "다시 일어선 형사", desc: "실패했던 사건을 다시 도전해 해결했다", ok: (e, log) => e.win && !e.random && log.some(x => !x.win && x.id === e.id) },
+];
+/* 사건이 끝나면 기록하고, 새로 딴 업적을 돌려준다 */
+function logCase(win, grade) {
+  const c = C(), cul = c.suspects[c.answer.culprit] || {};
+  const e = { at: Date.now(), id: c.id, random: !!c.random, title: c.title, win, grade: win ? grade : "F", diff: S.diff,
+    culprit: cul.name || "", role: cul.role || "", wrong: S.wrong, timeLeft: S.timed ? S.timeLeft : 0, turnsLeft: S.turns,
+    drug: typeof drugInfo === "function" && !!drugInfo(), drugTeam: !!(S.depts && deptOn("drug")), acc: !!S.accCaught,
+    studentCul: isStudent(cul.role || ""), secrets: (S.secrets || []).length, calls: (S.calls || 0) + (S.dispatched || []).length + Object.keys(S.copAsk || {}).length, twist: !!c.twist };
+  const log = loadLog(); log.unshift(e); try { localStorage.setItem(LOG_KEY, JSON.stringify(log.slice(0, 60))); } catch (err) {}
+  const got = loadAch(), fresh = [];
+  for (const a of ACH) if (!got[a.id] && a.ok(e, log)) { got[a.id] = e.at; fresh.push(a); }
+  try { localStorage.setItem(ACH_KEY, JSON.stringify(got)); } catch (err) {}
+  fresh.forEach((a, i) => setTimeout(() => { popCard(`<span class="cc-tag">🏆 업적 달성</span><b>${a.icon} ${esc(a.name)}</b><small>${esc(a.desc)}</small>`, "unlock"); Sound.help(); }, 1800 + i * 2500));
+  return fresh;
+}
+function renderLog() {
+  const log = loadLog(), got = loadAch(), wins = log.filter(x => x.win);
+  const ss = wins.filter(x => x.grade === "S").length;
+  app.innerHTML = `<section class="files casebook">
+    <span class="label">사건 기록장</span><h1>📒 ${esc(pname())} 형사의 기록</h1>
+    <div class="log-stats"><div><b>${wins.length}</b><span>해결</span></div><div><b>${log.length - wins.length}</b><span>실패</span></div><div><b>${ss}</b><span>S 등급</span></div><div><b>${Object.keys(got).length}/${ACH.length}</b><span>업적</span></div></div>
+    <h2>🏆 업적</h2>
+    <div class="ach-grid">${ACH.map(a => `<div class="ach${got[a.id] ? " on" : ""}"><span class="ach-ic">${got[a.id] ? a.icon : "🔒"}</span><div><b>${esc(a.name)}</b><small>${esc(a.desc)}</small></div></div>`).join("")}</div>
+    <h2>🗂 최근 사건</h2>
+    ${log.length ? `<div class="log-list">${log.slice(0, 20).map(x => `<div class="log-row${x.win ? "" : " fail"}">
+      ${x.culprit ? pixelFace(x.culprit, 40, x.role) : ""}
+      <div><b>${esc(x.title)}</b><small>${new Date(x.at).toLocaleDateString("ko-KR")} · ${({ easy: "쉬움", normal: "보통", hard: "어려움" })[x.diff] || ""}${x.twist ? " · 🌀반전" : ""} · 범인 ${esc(x.culprit)}${x.timeLeft ? ` · ${mmss(x.timeLeft)} 남김` : ""}</small></div>
+      <span class="log-grade g-${x.grade}">${x.win ? x.grade : "실패"}</span></div>`).join("")}</div>` : `<p class="hint">아직 기록이 없어요. 첫 사건을 해결해 보세요!</p>`}
+    <div class="btn-row"><button class="btn" data-act="enter">사건 파일로</button><button class="btn ghost" data-act="title">첫 화면</button></div>
+  </section>`;
+}
 const caseById = id => CASES.find(c => c.id === id);
 const turnsFor = c => {
   const spots = Object.values(c.rooms).reduce((n, r) => n + r.spots.length, 0);
@@ -2787,7 +2849,7 @@ function dispatch(pid) {
     toast(`<b>${esc(pfull(x))} ⭐</b> — “${esc(said)}”`); Sound.help(); return;
   }
   S.dispatched.push(pid);
-  S.missions.push({ pid, room: S.room, due: S.actions + delay, only: "-", role });
+  S.calls = (S.calls || 0) + 1; S.missions.push({ pid, room: S.room, due: S.actions + delay, only: "-", role });
   PX.helperEnter(S.missions[S.missions.length - 1]);
   const x = partner(pid), rn = C().rooms[S.room].name;
   toast(`<b>${esc(x.title)} ${esc(x.name)}</b> — “${esc(role === "clear" ? `${rn}에서 헷갈리게 하는 것들 치우겠습니다.` : `${rn}, 애들이 놓친 거 없는지 제가 바로잡겠습니다.`)}” (${delay}턴 뒤 보고)`);
@@ -2826,8 +2888,8 @@ function callForensic() {
   if (S.autopsyDone || S.turns <= 0 || S.decided || S.missions.some(m => m.role === "autopsy")) return;
   const room = crimeRoomId();
   const ad = starSlot("yoon") || starSlot("byun") ? 1 : MISSION_DELAY;   /* ⭐ 인재가 있으면 1턴 빨리 */
-  S.missions.push({ pid: "yoon", room, due: S.actions + ad, only: "-", role: "autopsy" });
-  S.missions.push({ pid: "byun", room, due: S.actions + ad, only: "-", role: "autopsy", quiet: true });
+  S.calls = (S.calls || 0) + 1; S.missions.push({ pid: "yoon", room, due: S.actions + ad, only: "-", role: "autopsy" });
+  S.calls = (S.calls || 0) + 1; S.missions.push({ pid: "byun", room, due: S.actions + ad, only: "-", role: "autopsy", quiet: true });
   PX.helperEnter(S.missions[S.missions.length - 2]); PX.helperEnter(S.missions[S.missions.length - 1]);
   const withDrug = S.depts && deptOn("drug") && !(S.deptJobs || {}).drug;   /* 마약팀도 데려왔으면 같이 들어와 약물 검사 */
   if (withDrug) { S.deptJobs = S.deptJobs || {}; S.deptJobs.drug = { due: S.actions + ad, done: false, joint: true }; drugWalkIn(room, S.actions + ad); }
@@ -3584,6 +3646,7 @@ function render() {
   if (S.screen === "opening") return renderOpening();
   if (S.screen === "title") return renderTitle();
   if (S.screen === "files") return renderFiles();
+  if (S.screen === "log") return renderLog();
   if (S.screen === "brief") return renderBrief();
   if (S.screen === "team") return renderTeam();
   if (S.screen === "result") return renderResult();
@@ -3886,6 +3949,7 @@ function renderFiles() {
         }).join("")}
       </div>
       <div class="btn-row">
+        <button class="btn ghost" data-act="casebook">📒 사건 기록장 · 업적</button>
         <button class="btn ghost" data-act="title">조작 방법 보기</button>
         ${soundBtn()}
       </div>
@@ -5281,7 +5345,7 @@ const deptWho = id => `${N[DEPT_LEAD[id]]}·${N[DEPT_JOB[id]]}`;
 function drugWalkIn(room, due) {
   for (const pid of ["drugL", "drug"]) {
     if (S.missions.some(m => m.pid === pid)) continue;
-    S.missions.push({ pid, room, due, only: "-", role: "autopsy", quiet: true });
+    S.calls = (S.calls || 0) + 1; S.missions.push({ pid, room, due, only: "-", role: "autopsy", quiet: true });
     PX.helperEnter(S.missions[S.missions.length - 1]);
   }
 }
@@ -5730,7 +5794,7 @@ function judge() {
       if (S.turns > 0) penalty("범인을 잘못 지목했다");
       return;
     }
-    S.screen = "gameover"; saveRecord(c.id, "F"); Sound.verdict(false);
+    S.screen = "gameover"; saveRecord(c.id, "F"); logCase(false, "F"); Sound.verdict(false);
     return;
   }
   const evGood = pk.evidence.filter(e => c.key.includes(e)).length;
@@ -5741,6 +5805,7 @@ function judge() {
   S.result = { ...ok, evGood, score, grade };
   S.screen = "result";
   saveRecord(c.id, grade);
+  S.result.newAch = logCase(true, grade).map(a => a.id);
   Sound.verdict(true);
 }
 
@@ -5910,6 +5975,7 @@ app.addEventListener("click", e => {
   else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm) mm.querySelector("img").outerHTML = pixelFace(pname(), 64, "", true); return; }
   else if (d.act === "body-photo") { openBodyPhoto(); return; }
   else if (d.act === "continue") { continueGame(); return; }
+  else if (d.act === "casebook") { S.screen = "log"; render(); window.scrollTo(0, 0); return; }
   else if (d.act === "mix") { Sound.init(); openMix(); return; }
   else if (d.act === "tut-skip") { try { localStorage.setItem(TUT_KEY, "1"); } catch (e) {} render(); return; }
   else if (d.act === "close-talk") { S.tab = "rooms"; S.dlg = null; top = true; }
