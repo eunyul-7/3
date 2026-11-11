@@ -712,6 +712,10 @@ body.shake main { animation: op-shake2 .4s; }
 .photo-btn { margin: 6px 0; }
 .continue-box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0 4px; padding: 12px 14px; border: 1px solid var(--lamp); border-radius: 8px; background: rgba(226,178,92,.08); }
 .continue-btn { font-size: 18px; }
+.tut-bar { position: fixed; left: 12px; bottom: 12px; z-index: 60; width: min(440px, calc(100vw - 24px)); display: flex; gap: 10px; align-items: center; padding: 8px 12px; border: 1px solid #3fae6a; border-radius: 8px; background: rgba(14,32,22,.94); box-shadow: 0 8px 24px rgba(0,0,0,.5); animation: ph-in .3s both; }
+.tut-bar b { display: block; font-size: 12px; color: #7fd8a0; } .tut-bar p { margin: 2px 0 0; font-size: 14px; line-height: 1.45; }
+.tut-bar .tut-skip { margin-left: auto; flex: none; font-size: 12px; padding: 4px 8px; }
+@media (max-width: 600px) { .tut-bar { bottom: 6px; left: 6px; width: calc(100vw - 12px); padding: 6px 8px; } .tut-bar p { font-size: 12px; } .tut-bar .pxface { display: none; } }
 .cop-card { width: min(420px, 100%); }
 .cop-head { display: flex; gap: 10px; align-items: center; } .cop-head b { display: block; font-size: 17px; }
 .cop-say { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: rgba(0,0,0,.25); }
@@ -3492,6 +3496,29 @@ function nextToast() {
 /* ===================== 렌더 ===================== */
 const soundBtn = () => `<button class="sound-btn" data-act="sound" aria-pressed="${Sound.on}">${Sound.on ? "소리 켜짐" : "소리 꺼짐"}</button>`;
 
+/* ---------- 첫 판 길잡이: 처음 하는 사람에게 서하루가 한 단계씩 알려 준다 ---------- */
+const TUT_KEY = "midnight-tutorial-done";
+const TUT = [
+  { done: () => S.found.length >= 1, text: () => `선배님, 물음표(?)가 떠 있는 물건 옆으로 가서 ‘조사’를 눌러 보세요. 컴퓨터는 방향키, 휴대폰은 가고 싶은 곳을 누르면 걸어가요.` },
+  { done: () => S.asked.length >= 1, text: () => `단서를 찾았어요! 이번엔 용의자 옆에서 ‘대화’를 눌러 심문해 보세요. 질문 하나에 1턴이에요.` },
+  { done: () => S.broken.length >= 1 || S.found.length >= 5, text: () => `대답이 수상하면 ‘모순을 지적한다’로 그 말과 안 맞는 단서를 내밀어요. 단서는 ‘수사 수첩’에서 다시 볼 수 있어요. 심문은 ‘닫기’로 끝내요.` },
+  { done: () => Object.keys(S.copAsk || {}).length >= 1 || (S.dispatched || []).length >= 1 || S.missions.length >= 1, text: () => `막히면 ‘📞 팀원 부르기’로 팀원을 부르거나, 저 같은 경찰한테 말을 걸어 단서를 물어보세요. 그 분야 전문가한테 물어야 정확해요!` },
+  { done: () => S.tab === "accuse" || S.decided, text: () => `증거가 모이면 ‘범인 지목’에서 범인·동기·수법을 골라요. 턴이나 시간이 다 되면 그때 꼭 골라야 해요. 화이팅, 선배님!` },
+];
+function tutStep() {
+  try { if (localStorage.getItem(TUT_KEY)) return -1; } catch (e) { return -1; }
+  if (S.screen !== "game" || S.caseId == null) return -1;
+  const i = TUT.findIndex(t => !t.done());
+  if (i < 0) { try { localStorage.setItem(TUT_KEY, "1"); } catch (e) {} toast(`<b>${esc(N.seo)}</b> — “이제 혼자서도 잘하실 거예요, 선배님!”`); return -1; }
+  return i;
+}
+let tutSaid = -1;
+function tutorialBar() {
+  const i = tutStep(); if (i < 0) return "";
+  const text = TUT[i].text();
+  if (tutSaid !== i) { tutSaid = i; setTimeout(() => Sound.babble(text, voiceOf(N.seo, "순경").base), 400); }
+  return `<div class="tut-bar" role="note">${pixelFace(N.seo, 36, "순경")}<div><b>길잡이 ${i + 1}/${TUT.length} · ${esc(N.seo)} 순경</b><p>${esc(text)}</p></div><button class="btn ghost tut-skip" data-act="tut-skip">길잡이 끄기</button></div>`;
+}
 /* ---------- 이어하기: 사건 진행을 자동 저장 ---------- */
 const SAVE_KEY = "midnight-save-v1";
 function saveGame() {
@@ -3549,6 +3576,7 @@ function render() {
       </div>
       <nav class="tabs" role="tablist">${tabs}<button class="tab quit" data-act="files" ${interro ? "disabled" : ""}>사건 목록</button>${soundBtn()}</nav>
       ${alertRow}
+      ${tutorialBar()}
     </header>
     <main>${body}</main>`;
   const talking = S.tab === "people" && !S.decided;
@@ -5844,6 +5872,7 @@ app.addEventListener("click", e => {
   else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm) mm.querySelector("img").outerHTML = pixelFace(pname(), 64, "", true); return; }
   else if (d.act === "body-photo") { openBodyPhoto(); return; }
   else if (d.act === "continue") { continueGame(); return; }
+  else if (d.act === "tut-skip") { try { localStorage.setItem(TUT_KEY, "1"); } catch (e) {} render(); return; }
   else if (d.act === "close-talk") { S.tab = "rooms"; S.dlg = null; top = true; }
   else if (d.act === "sheet-open") { S.sheet = true; }
   else if (d.act === "sheet-close") { S.sheet = false; }
