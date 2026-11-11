@@ -2135,9 +2135,30 @@ function generateCase() {
       deflect: RND.pick(["그게 무슨 상관이죠? 제 말엔 틀린 게 없어요.", "그런 걸로 절 몰아세우지 마세요.", "말도 안 돼요. 그건 아무 의미 없어요.", "…그래서요? 그게 뭘 증명하는데요?"]), qs };
   }
   const secrets = inn.map(p => `${p.name}의 ${p.motive.docName}`).join(", ");
+  /* ---------- 반전 (가끔): 신고자가 범인 / 다잉 메시지 ---------- */
+  let twist = null, finder = (inn.find(p => p !== liar) || inn[0]).id;
+  const key = ["weapon", "trait_" + cul.id, "witness", "diary", "motive_" + cul.id, "body"], twistTruth = [];
+  const roll = Math.random();
+  if (roll < 0.2) {
+    twist = "신고자가 범인"; finder = cul.id;
+    clues.calllog = { name: "피해자 휴대전화 통화 기록", room: "crime", text: `피해자 휴대전화의 통화 기록. ${hm(T - 14)}에 ${WA(cul.name)} 2분 통화했다. 그런데 ${EUN(cul.name)} 신고 전화에서 ‘와 보니 이미 쓰러져 있었다’고만 했다.` };
+    rooms.crime.spots.push({ id: "x_call", label: "피해자 휴대전화를 본다", clue: "calllog", text: "액정에 금이 간 휴대전화가 떨어져 있다." });
+    suspects[cul.id].qs.push({ id: cul.id + "_5", need: "body", q: isStudent(cul.role) ? "신고한 게 너지? 그 전에 피해자랑 연락한 적 있어?" : "신고하신 분이시죠? 그 전에 피해자와 연락한 적 있습니까?",
+      a: "아뇨, 오늘은 연락한 적 없어요. 와 보니까 이미 쓰러져 있었다니까요.",
+      lie: { clues: ["calllog"], reply: "…통화는 했어요. 잠깐 보자고 해서요. 그래도 제가 왔을 땐 이미…! 정말이에요.", tl: [hm(T - 14), `${cul.name}, 사건 직전 피해자와 통화 (처음엔 부인)`, cul.name] } });
+    key.push("calllog");
+    twistTruth.push(`🌀 반전 — 처음 발견해 112에 신고한 ${I(cul.name)} 바로 범인이었다. 신고자인 척해서 의심을 피하려 했지만, 피해자 휴대전화의 통화 기록이 남아 있었다.`);
+  } else if (roll < 0.4) {
+    twist = "다잉 메시지";
+    const mark = cul.name[0];
+    clues.dying = { name: "바닥의 피 글씨", room: "crime", text: `피해자 손끝 옆 바닥에 피로 쓴 글자 ‘${mark}’. 무언가 더 쓰려다 멈춘 듯하다. 같은 성을 가진 사람이 있는지 살펴보자.` };
+    rooms.crime.spots.push({ id: "x_dying", label: "피해자 손 주변을 살핀다", clue: "dying", text: "손끝에 마른 피가 묻어 있다." });
+    key.push("dying");
+    twistTruth.push(`🌀 반전 — 피해자는 숨이 멎기 전, 바닥에 범인의 성 ‘${mark}’를 피로 남겼다.`);
+  }
   return {
     id: "random", no: "??", random: true, title: `${st.title} 사건`, where: st.where,
-    finder: (inn.find(p => p !== liar) || inn[0]).id, victimLabel: sch ? "학생이" : `${st.victimRole}님이`,
+    finder, twist, victimLabel: sch ? "학생이" : `${st.victimRole}님이`,
     tag: `무작위 사건 · ${st.title} · ${hm(T + 45)} 접수`,
     lede: `${st.intro}, ${vRole} ${v}(${vAge})${I("" + v).slice(v.length)} ${crime}에서 숨진 채 발견되었다.`,
     brief: st.brief,
@@ -2148,13 +2169,14 @@ function generateCase() {
     clues, rooms, suspects,
     motives: P.map(p => ({ id: p.motive.key, text: p.motive.opt })),
     methods: METHOD_POOL.map(m => ({ id: m.key, text: m.opt })),
-    key: ["weapon", "trait_" + cul.id, "witness", "diary", "motive_" + cul.id, "body"],
+    key,
     answer: { culprit: cul.id, motive: cul.motive.key, method: method.key },
     truth: [
       cul.motive.story(cul.name, v),
       `${hm(T - 10)}, ${EUN(cul.name)} ${crime}에 찾아가 ${method.story}. 그리고 ${EUL(method.weaponName)} ${framed.name}의 ${roomOf(framed)}에 숨겨 누명을 씌우려 했다. 하지만 ${cul.trait.item}의 흔적까지는 지우지 못했다.`,
       `${st.witness.name}에 ${cul.name}의 흔적이 남았고, ${st.c2.name}에 있던 ${EUN(liar.name)} ${crime} 쪽에서 ${EUL(cul.trait.whiff)} 맡았다.`,
       `${secrets}. 다른 세 사람에게도 저마다 숨긴 사정이 있었지만, 그날 밤 ${crime}에 들어간 사람은 ${cul.name}뿐이었다.`,
+      ...twistTruth,
     ],
   };
 }
