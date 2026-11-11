@@ -3091,7 +3091,7 @@ function accuseScene(done) {
     <div class="gc-row team ac-team">${crewFaces().map(t => `<div class="gc-p">${pixelFace(t.name, 40, "", !!t.me)}<small>${esc(t.name)}</small></div>`).join("")}</div>
     <button class="btn ghost ac-skip">건너뛰기 ▶</button>`;
   document.body.appendChild(ov);
-  const say = (who, text, cls = "") => { const el = ov.querySelector("#ac-say"); el.className = "ac-say on " + cls; el.innerHTML = `<b>${esc(who)}</b>${esc(text)}`; };
+  const say = (who, text, cls = "") => { const el = ov.querySelector("#ac-say"); el.className = "ac-say on " + cls; el.innerHTML = `<b>${esc(who)}</b>${esc(text)}`; speakAs(who, text); };
   const sus = [...ov.querySelectorAll(".ac-sus")];
   let finished = false; const timers = [];
   const at = (ms, fn) => timers.push(setTimeout(() => { if (!finished) fn(); }, ms));
@@ -3337,12 +3337,26 @@ function addTl(tl, qid) {
   S.tl.sort((a, b) => night(a[0]) - night(b[0]));
 }
 const toastQ = []; let toastBusy = false;
+/* 누가 하는 말인지 찾아서 그 사람 목소리로 (팀원 보고·대답 등) */
+function speakAs(who, text) {
+  const me = String(who).endsWith(pname()), nm = me ? pname() : String(who).split(" ").pop();
+  const sus = Object.values(C() ? C().suspects : {}).find(p => p.name === nm);
+  Sound.babble(text, voiceOf(nm, sus ? sus.role : "", me).base);
+}
+function speakToast(html) {
+  const plain = String(html).replace(/<[^>]*>/g, ""), q = plain.match(/“([^”]+)”/); if (!q) return;
+  const before = plain.slice(0, q.index);
+  const names = ROSTER.flatMap(r => r.people.map(x => x[0])).concat(PATROL_ALL.map(x => x.name), Object.values((C() || {}).suspects || {}).map(p => p.name), (S.vars || []).map(v => v.name));
+  let who = null, at = -1; for (const n of names) { const i = before.lastIndexOf(n); if (i > at) { at = i; who = n; } }
+  if (who) speakAs(who, q[1]);
+}
 function toast(html, bad) { toastQ.push([html, bad]); if (!toastBusy) nextToast(); }
 function nextToast() {
   const t = document.getElementById("toast"), item = toastQ.shift();
   if (!item) { toastBusy = false; t.hidden = true; return; }
   toastBusy = true;
   t.innerHTML = item[0]; t.className = "toast" + (item[1] ? " bad" : ""); t.hidden = false;
+  try { if (S.screen === "game") speakToast(item[0]); } catch (e) {}
   setTimeout(nextToast, toastQ.length ? 2200 : 3200);
 }
 
@@ -4783,7 +4797,7 @@ const PX = (() => {
     if (!el) { el = document.createElement("div"); el.className = "px-say"; host.appendChild(el); }
     el.innerHTML = `${pixelFace(name, 32)}<div><b>${esc(name)} ${esc(rankOf(name))}</b><p>${esc(text)}</p></div>`;
     el.hidden = false; clearTimeout(sayTimer); sayTimer = setTimeout(() => { el.hidden = true; }, 8000);
-    Sound.ask();
+    Sound.babble(text, voiceOf(name).base);   /* 팀원 목소리 */
   }
   function describe(t) {
     if (!t) return "";
