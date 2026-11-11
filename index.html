@@ -1368,6 +1368,7 @@ const Face = (() => {
     const top = look.top || (F ? pick(["blouse", "cardigan", "jacket", "knit"]) : pick(["suit", "suit", "shirt", "knit", "jacket"]));
     const cloth = look.cloth || (top === "suit" || top === "jacket" ? pick(SUIT) : pick(SOFT));
     const pants = pick(["#2a2d33", "#3a3330", "#2c3540", "#454040", "#1f2226"]);
+    if (age && age < 20) return { g, F, age, skin, old: false, hair: pick(HAIR), style: F ? pick(["long", "bob", "bob"]) : pick(["short", "crew"]), glasses, facial: null, top: "jacket", cloth: "#2b3a55", pants: "#2a2d33" };   /* 학생: 교복 */
     return { g, F, age, skin, old, hair, style, glasses, facial, top, cloth, pants };
   }
   function draw(name, age, look) {
@@ -1641,7 +1642,7 @@ const SETTINGS = [
     c2: { name: "교무실", desc: "책상마다 시험지가 쌓인 교무실. 커피포트가 식어 있다." },
     solo: { spot: "교무실 당직 일지를 본다", name: "교무실 당직 일지", act: "교무실에서 행사 사진을 정리했다고 당직 교사가 적었다" },
     witness: { spot: "본관 복도 CCTV를 돌려 본다", name: "본관 복도 CCTV", text: (n, t) => `본관 복도 CCTV, ${t}. ${I(n)} 이사장실 문을 두드리는 모습이 찍혀 있다.` },
-    room: "기숙사 방", floors: ["본관", "기숙사동"] },
+    room: "기숙사 방", floors: ["본관", "기숙사동"], roles: ["사감 교사", "기숙사생", "학생회장", "교목", "행정실장", "동창회장", "이사장 비서", "급식 조리사"] },
   { title: "소금꽃 염전 마을", where: "바닷가 염전 마을 · 태풍", intro: "태풍이 상륙한 밤", victimRole: "염전 조합장",
     brief: "당신은 태풍을 뚫고 출동한 강력팀 형사다. 방파제 길이 잠겨 범인도 마을을 떠나지 못했다.",
     crime: { name: "조합 사무실", desc: "소금 포대와 장부가 쌓인 사무실. 피해자는 책상 옆에 쓰러져 있다." },
@@ -1677,7 +1678,7 @@ const SETTINGS = [
     c2: { name: "경비실", desc: "교문 옆 경비실. 라디오가 작게 켜져 있다." },
     solo: { spot: "경비실 출입 대장을 본다", name: "경비실 출입 대장", act: "경비실에서 교문 열쇠를 반납하고 기다렸다고 경비원이 적었다" },
     witness: { spot: "복도 CCTV를 돌려 본다", name: "본관 복도 CCTV", text: (n, t) => `본관 복도 CCTV, ${t}. ${I(n)} 교감실 쪽으로 서둘러 걸어가는 모습이 찍혀 있다.` },
-    room: "준비실", floors: ["본관", "별관"], roles: ["담임 교사", "체육 교사", "행정실장", "학부모회장", "경비원", "급식 조리사"] },
+    room: "준비실", studentRoom: "반 교실", floors: ["본관", "별관"], roles: ["담임 교사", "체육 교사", "행정실장", "학부모회장", "경비원", "급식 조리사", "2학년 학생", "3학년 학생", "학생회장"] },
   { title: "해송 아파트", where: "고층 아파트 단지 · 정전", intro: "입주자 회의가 끝난 밤", victimRole: "입주자 대표",
     brief: "당신은 신고를 받고 아파트 단지로 출동한 강력팀 형사다. 엘리베이터가 멈춰 범인도 아직 단지 안에 있다.",
     crime: { name: "관리사무소", desc: "회의 자료가 흩어진 관리사무소. 피해자는 회의 탁자 옆에 쓰러져 있다." },
@@ -1708,6 +1709,22 @@ const TRAITS = [
   { item: "반짝이 매니큐어", has: n => `${n}의 손톱에 금색 반짝이 매니큐어. 한 손가락이 살짝 벗겨졌다.`, trace: "금색 반짝이 가루가 묻어 있다", whiff: "매니큐어 냄새" },
   { item: "커피 원두 가루", has: n => `${n}의 앞주머니에 원두 가루가 묻은 계량 스푼. 직접 커피를 내렸다고 한다.`, trace: "곱게 간 커피 원두 가루가 묻어 있다", whiff: "진한 커피 향" },
   { item: "엔진 오일 장갑", has: n => `${n}의 작업 장갑에 검은 엔진 오일이 배어 있다.`, trace: "검은 엔진 오일 얼룩이 묻어 있다", whiff: "기름 냄새" },
+];
+/* 학생 용의자: 학생에게 어울리는 동기만 쓴다 */
+const isStudent = role => /학생|기숙사생/.test(role) && !/학부모/.test(role);
+const STUDENT_MOTIVES = [
+  { key: "expel", opt: "퇴학을 막으려고", docName: "퇴학 처분 서류",
+    doc: (n, v) => `${v} 명의의 퇴학 처분 서류. 대상 학생 ${n}, 사유는 ‘시험지 유출’. 내일 아침 징계위원회에 올릴 예정.`,
+    lieA: "저요? 학교생활 아무 문제 없어요. 선생님들도 다 아세요.",
+    inno: "…징계 얘기는 들었어요. 그런데 진짜 유출한 애가 오늘 자백했대요. 담임 선생님이 서류 취소된다고 문자도 주셨어요. 보세요.",
+    guilty: "…퇴학당하면 부모님 얼굴을 어떻게 봐요. 내일만 지나면… 아니에요. 더 말 안 할래요.",
+    story: (n, v) => `${EUN(v)} 시험지 유출을 이유로 ${n}의 퇴학 처분을 내일 징계위원회에 올릴 참이었다.` },
+  { key: "grade", opt: "성적 조작이 들통나서", docName: "성적 정정 기록",
+    doc: (n, v) => `${I(v)} 표시해 둔 성적 정정 기록. ${n}의 점수가 누군가에 의해 몰래 고쳐졌다는 메모. “내일 학부모 호출.”`,
+    lieA: "성적이요? 저 원래 공부 잘해요. 그런 거 몰라요.",
+    inno: "…그 기록 저도 봤어요. 그런데 고친 사람은 제가 아니라 전산 오류였대요. 오늘 행정실에서 확인서까지 나왔어요.",
+    guilty: "…대학이 걸려 있었어요. 한 번만 넘어가면 됐는데… 그만 물어보세요.",
+    story: (n, v) => `${EUN(v)} ${n}의 성적이 몰래 고쳐진 걸 알아내고 내일 부모를 학교로 부르겠다고 했다.` },
 ];
 const MOTIVE_POOL = [
   { key: "debt", opt: "감당할 수 없는 빚 독촉", docName: "차용증",
@@ -1816,15 +1833,20 @@ function pickSetting() {
 }
 function generateCase() {
   const st = pickSetting(), v = RND.pick(VICTIMS), vAge = RND.int(52, 74);
-  const names = RND.shuffle(NAMES).slice(0, 4), roles = RND.shuffle(st.roles || ROLES).slice(0, 4);   /* 무대마다 어울리는 직업 */
-  const traits = RND.shuffle(TRAITS).slice(0, 4), motives = RND.shuffle(MOTIVE_POOL).slice(0, 4);
+  const names = RND.shuffle(NAMES).slice(0, 4), roles = [];   /* 무대마다 어울리는 직업 (학생은 최대 2명) */
+  for (const r of RND.shuffle(st.roles || ROLES)) if (roles.length < 4 && !(isStudent(r) && roles.filter(isStudent).length >= 2)) roles.push(r);
+  /* 동기·버릇: 학생은 학생다운 것으로 (겹치지 않게) */
+  const usedM = new Set(), usedT = new Set();
+  const take = (pool, ok) => { const x = RND.shuffle(pool).find(m => !usedM.has(m.key) && ok(m)); usedM.add(x.key); return x; };
+  const motives = roles.map(r => isStudent(r) ? take(STUDENT_MOTIVES.concat(MOTIVE_POOL), m => STUDENT_MOTIVES.includes(m) || m.key === "blackmail") : take(MOTIVE_POOL, () => true));
+  const traits = roles.map(r => { const t = RND.shuffle(TRAITS).find(t => !usedT.has(t.item) && !(isStudent(r) && /담배|매니큐어|엔진/.test(t.item))); usedT.add(t.item); return t; });
   const method = RND.pick(METHOD_POOL);
-  const P = [0, 1, 2, 3].map(i => ({ id: "p" + i, i, name: names[i], role: roles[i], age: RND.int(26, 63), trait: traits[i], motive: motives[i] }));
+  const P = [0, 1, 2, 3].map(i => ({ id: "p" + i, i, name: names[i], role: roles[i], age: isStudent(roles[i]) ? (/2학년/.test(roles[i]) ? 17 : /3학년/.test(roles[i]) ? 18 : RND.int(17, 18)) : RND.int(26, 63), trait: traits[i], motive: motives[i] }));
   const cul = RND.pick(P), inn = P.filter(p => p !== cul);
   const liar = RND.pick(inn), pair = inn.filter(p => p !== liar);
   const framed = RND.pick(inn), rh = RND.pick(inn);
   const T = RND.int(22 * 60, 23 * 60 + 15);
-  const crime = st.crime.name, rName = p => `${p.name}의 ${st.room}`;
+  const crime = st.crime.name, roomOf = p => (st.studentRoom && isStudent(p.role)) ? st.studentRoom : st.room, rName = p => `${p.name}의 ${roomOf(p)}`;
 
   const clues = {
     body:    { name: "시신의 상태", room: "crime", text: `${method.body} 체온으로 보아 사망 시각은 ${hm(T - 5)}~${hm(T + 5)} 사이.` },
@@ -1858,41 +1880,44 @@ function generateCase() {
       { id: "x_m" + p.i, label: "서랍과 가방을 뒤진다", clue: "motive_" + p.id, text: "서류 몇 장이 접혀 있다." },
     ];
     if (p === framed) spots.push({ id: "x_weapon", label: method.spot, clue: "weapon", text: "손에 무언가 걸린다." });
-    rooms[p.id] = { name: rName(p), desc: `${p.name}이 묵는 ${st.room}. ${RND.pick(["침대가 반듯하게 정리되어 있다.", "짐이 반쯤 풀려 있다.", "창문 밖으로 어둠만 보인다.", "탁자 위에 마시다 만 물컵이 있다."])}`, spots };
+    rooms[p.id] = { name: rName(p), desc: isStudent(p.role) && st.studentRoom ? `${p.name}네 ${st.studentRoom}. ${RND.pick(["책상 위에 문제집이 펼쳐져 있다.", "칠판에 내일 시간표가 적혀 있다.", "창문 밖으로 어둠만 보인다."])}` : `${p.name}이 묵는 ${st.room}. ${RND.pick(["침대가 반듯하게 정리되어 있다.", "짐이 반쯤 풀려 있다.", "창문 밖으로 어둠만 보인다.", "탁자 위에 마시다 만 물컵이 있다."])}`, spots };
   }
 
   const suspects = {};
   const around = hm(T - 10);
   for (const p of P) {
     const others = P.filter(o => o !== p), qs = [];
+    /* 학생에게는 반말로 친근하게 묻는다 (경계심을 풀도록) */
+    const kid = isStudent(p.role), Q = (formal, casual) => kid ? casual : formal, vK = `${v} ${st.victimRole}님`;
+    const whereQ = Q(`${around} 무렵 어디에 계셨습니까?`, `${around}쯤 어디 있었어? 편하게 말해 봐.`);
     if (p === cul) {
-      qs.push({ id: p.id + "_1", q: `${around} 무렵 어디에 계셨습니까?`, a: `제 ${st.room}에서 쉬고 있었어요. 한 발짝도 안 나갔어요.`,
-        tl: [hm(T - 15), `${p.name} 주장: 자기 ${st.room}에 있었음`, p.name],
+      qs.push({ id: p.id + "_1", q: whereQ, a: `제 ${roomOf(p)}에서 쉬고 있었어요. 한 발짝도 안 나갔어요.`,
+        tl: [hm(T - 15), `${p.name} 주장: 자기 ${roomOf(p)}에 있었음`, p.name],
         lie: { clues: ["diary", "witness"], reply: `…잠깐 ${crime}에 들렀어요. ${v} 씨가 부르셔서요. 5분 만에 나왔어요. 그땐 멀쩡했어요.`,
           tl: [hm(T - 10), `${p.name}, ${crime} 방문 인정 (처음엔 부인)`, p.name] } });
     } else if (p === liar) {
-      qs.push({ id: p.id + "_1", q: `${around} 무렵 어디에 계셨습니까?`, a: `제 ${st.room}에서 일찍 잤어요.`,
+      qs.push({ id: p.id + "_1", q: whereQ, a: isStudent(p.role) ? `제 ${roomOf(p)}에서 책상에 엎드려 잤어요.` : `제 ${st.room}에서 일찍 잤어요.`,
         lie: { clues: ["solo"], reply: `…사실 ${st.c2.name}에 있었어요. 혼자 있고 싶었는데 괜히 오해받을까 봐 말 못 했어요. 그런데 ${hm(T - 6)}쯤 ${crime} 쪽에서 누가 지나갔는지 ${I(cul.trait.whiff)} 확 풍겼어요.`,
           tl: [hm(T - 6), `${p.name}, ${crime} 쪽에서 ${cul.trait.whiff}를 맡음`, p.name] } });
     } else {
       const mate = pair.find(o => o !== p);
-      qs.push({ id: p.id + "_1", q: `${around} 무렵 어디에 계셨습니까?`, a: `${st.c1.name}에서 ${mate.name} 씨와 같이 있었어요. 꽤 오래요.`,
+      qs.push({ id: p.id + "_1", q: whereQ, a: `${st.c1.name}에서 ${mate.name} 씨와 같이 있었어요. 꽤 오래요.`,
         tl: [hm(T - 40), `${pair[0].name}·${pair[1].name}, ${st.c1.name}에 함께 있음`, p.name] });
     }
-    qs.push({ id: p.id + "_2", q: `${v} 씨와는 어떤 사이였죠?`, a: p.motive.lieA,
+    qs.push({ id: p.id + "_2", q: Q(`${v} 씨와는 어떤 사이였죠?`, `${vK}이랑은 사이가 어땠어?`), a: p.motive.lieA,
       lie: { clues: ["motive_" + p.id], reply: p === cul ? p.motive.guilty : p.motive.inno } });
     if (p === cul) {
-      qs.push({ id: p.id + "_3", need: "weapon", q: `${EUL(method.weaponName)} 본 적 있습니까?`, a: "처음 보는 물건이에요. 저랑은 아무 상관 없어요.",
+      qs.push({ id: p.id + "_3", need: "weapon", q: Q(`${EUL(method.weaponName)} 본 적 있습니까?`, `혹시 ${EUL(method.weaponName)} 본 적 있어?`), a: "처음 보는 물건이에요. 저랑은 아무 상관 없어요.",
         lie: { clues: ["trait_" + p.id], reply: "……. 변호사를 불러 주세요. 그 전엔 아무 말도 하지 않겠어요." } });
     } else if (p === framed) {
-      qs.push({ id: p.id + "_3", need: "weapon", q: `${EUL(method.weaponName)} 본 적 있습니까?`, a: `제 ${st.room}에서요? 처음 봐요! 누가 일부러 갖다 놓은 거예요. 제 방은 낮에 문이 열려 있었다고요.` });
+      qs.push({ id: p.id + "_3", need: "weapon", q: Q(`${EUL(method.weaponName)} 본 적 있습니까?`, `혹시 ${EUL(method.weaponName)} 본 적 있어?`), a: `제 ${roomOf(p)}에서요? 처음 봐요! 누가 일부러 갖다 놓은 거예요. 제 방은 낮에 문이 열려 있었다고요.` });
     } else {
-      qs.push({ id: p.id + "_3", need: "weapon", q: `${EUL(method.weaponName)} 본 적 있습니까?`,
+      qs.push({ id: p.id + "_3", need: "weapon", q: Q(`${EUL(method.weaponName)} 본 적 있습니까?`, `혹시 ${EUL(method.weaponName)} 본 적 있어?`),
         a: RND.pick(["처음 봐요. 저는 그런 걸 만질 일도 없어요.", "아뇨. 그런데 그 냄새… 아니, 잘 모르겠어요.", "처음 봐요. 그게 왜 그 방에서 나왔대요?"]) });
     }
     const o = RND.pick(others);
-    qs.push({ id: p.id + "_4", need: "body", q: `오늘 ${v} 씨가 누구와 다퉜습니까?`, a: `낮에 ${o.name} 씨와 언성을 높이는 걸 봤어요. 무슨 내용인지는 몰라요.` });
-    suspects[p.id] = { name: p.name, role: `${p.role} · ${p.age}세`, intro: `피해자의 ${p.role}. ${RND.pick(INTRO_TAILS)}`,
+    qs.push({ id: p.id + "_4", need: "body", q: Q(`오늘 ${v} 씨가 누구와 다퉜습니까?`, `오늘 ${vK}이 누구랑 다투시는 거 봤어?`), a: `낮에 ${o.name} 씨와 언성을 높이는 걸 봤어요. 무슨 내용인지는 몰라요.` });
+    suspects[p.id] = { name: p.name, role: `${p.role} · ${p.age}세`, intro: isStudent(p.role) ? `피해자 학교의 ${p.role}. ${RND.pick(["오늘 밤 늦게까지 학교에 남아 있었다.", "피해자에게 자주 불려 갔다고 한다.", "친구들 사이에서 모범생으로 통한다."])}` : `피해자의 ${p.role}. ${RND.pick(INTRO_TAILS)}`,
       deflect: RND.pick(["그게 무슨 상관이죠? 제 말엔 틀린 게 없어요.", "그런 걸로 절 몰아세우지 마세요.", "말도 안 돼요. 그건 아무 의미 없어요.", "…그래서요? 그게 뭘 증명하는데요?"]), qs };
   }
   const secrets = inn.map(p => `${p.name}의 ${p.motive.docName}`).join(", ");
@@ -1913,7 +1938,7 @@ function generateCase() {
     answer: { culprit: cul.id, motive: cul.motive.key, method: method.key },
     truth: [
       cul.motive.story(cul.name, v),
-      `${hm(T - 10)}, ${EUN(cul.name)} ${crime}에 찾아가 ${method.story}. 그리고 ${EUL(method.weaponName)} ${framed.name}의 ${st.room}에 숨겨 누명을 씌우려 했다. 하지만 ${cul.trait.item}의 흔적까지는 지우지 못했다.`,
+      `${hm(T - 10)}, ${EUN(cul.name)} ${crime}에 찾아가 ${method.story}. 그리고 ${EUL(method.weaponName)} ${framed.name}의 ${roomOf(framed)}에 숨겨 누명을 씌우려 했다. 하지만 ${cul.trait.item}의 흔적까지는 지우지 못했다.`,
       `${st.witness.name}에 ${cul.name}의 흔적이 남았고, ${st.c2.name}에 있던 ${EUN(liar.name)} ${crime} 쪽에서 ${EUL(cul.trait.whiff)} 맡았다.`,
       `${secrets}. 다른 세 사람에게도 저마다 숨긴 사정이 있었지만, 그날 밤 ${crime}에 들어간 사람은 ${cul.name}뿐이었다.`,
     ],
@@ -2621,7 +2646,7 @@ function forensicPresent(sid) {
   if (!hit) { toast(`과학수사대 — “지금 모은 증거로는 ${esc(p.name)} 씨에게 내밀 게 없습니다. ${evidenceAgainst(sid).length ? "먼저 관련된 걸 물어보세요." : "증거를 더 찾아 주세요."}”`, true); return; }
   S.dlg = null;
   S.broken.push(hit.q.id); addTl(hit.q.lie.tl);
-  S.lastLine = { sid, who: "과학수사 경사 " + N.yoon, q: `(서류철을 펼친다) “감식 결과와 정리한 증거입니다. ‘${hit.name}’ — ‘${hit.q.a}’라고 하셨죠? 이건 어떻게 설명하시겠습니까?”`, a: hit.q.lie.reply, kind: "broken" };
+  S.lastLine = { sid, who: "과학수사 경사 " + N.yoon, q: isStudent(p.role) ? `(서류철을 펼친다) “감식 결과야. ‘${hit.name}’ — 아까 ‘${hit.q.a}’라고 했지? 이건 어떻게 된 건지 말해 줄래?”` : `(서류철을 펼친다) “감식 결과와 정리한 증거입니다. ‘${hit.name}’ — ‘${hit.q.a}’라고 하셨죠? 이건 어떻게 설명하시겠습니까?”`, a: hit.q.lie.reply, kind: "broken" };
   S.events.push({ bad: false, msg: `과학수사대가 ${p.name}에게 ‘${hit.name}’을(를) 내밀어 진술을 무너뜨렸다.` });
   toast(`<b>과학수사대의 증거 제시</b> — ${esc(EUN(p.name))} 진술을 바꿨다!`); Sound.lie(); flash(); slam("모순!", `${p.name}의 진술이 무너졌다`);
   spend();
@@ -4363,8 +4388,8 @@ const PX = (() => {
 
   /* ---------- 그리기 ---------- */
   function drawSprite(sp, dir, frameT, fx, fy, dy = 0) {
-    const seq = [0, 1, 0, 2], f = frameT ? seq[Math.floor(frameT) % 4] : 0;
-    g.drawImage(sp[dir][f], Math.round(fx * TS), Math.round(fy * TS + TS - 20 + dy));
+    const seq = [0, 1, 0, 2], f = (frameT ? seq[Math.floor(frameT) % 4] : 0) || 0;
+    g.drawImage((sp[dir] || sp.down)[f], Math.round(fx * TS), Math.round(fy * TS + TS - 20 + dy));
   }
   function draw(t) {
     const L = layout(S.room);
@@ -4856,7 +4881,7 @@ function doRead(rid, qid) {
   if (R[rid]) return;
   R[rid] = readOf(q, rid); S.rebuts.push(rid);
   S.lastLine = { sid, who: `${x.title} ${x.name}`, kind: "answer", qid,
-    q: rid === "prof" ? `(${p.name} 씨를 빤히 바라본다) “‘${q.q}’ — 방금 그 말, 한 번만 더 해 보시죠.”` : `“${p.name} 씨, ‘${q.q}’ 다시 여쭤봐도 될까요?”`, a: q.a };
+    q: isStudent(p.role) ? (rid === "prof" ? `(${p.name}을 가만히 바라본다) “‘${q.q}’ — 방금 그 말, 한 번만 더 해 볼래?”` : `“${p.name}, ‘${q.q}’ 한 번만 더 물어봐도 될까?”`) : rid === "prof" ? `(${p.name} 씨를 빤히 바라본다) “‘${q.q}’ — 방금 그 말, 한 번만 더 해 보시죠.”` : `“${p.name} 씨, ‘${q.q}’ 다시 여쭤봐도 될까요?”`, a: q.a };
   toast(`<b>${esc(x.title + " " + x.name)}</b> — ${esc(R[rid].text)}`); Sound.help();
 }
 
