@@ -2994,8 +2994,9 @@ function render() {
   const alertRow = alerts.length && !out
     ? `<div class="alerts">${alerts.join("")}<button class="act" data-act="wait">기다린다<span class="cost">−1턴</span></button></div>` : "";
   const pips = Array.from({ length: S.maxTurns }, (_, i) => `<span class="pip${i >= S.turns ? " used" : ""}"></span>`).join("");
+  const interro = S.tab === "people" && !out;   /* 심문 중: 닫기로만 나갈 수 있다 (1대1) */
   const tabs = [["rooms", "현장 조사"], ["people", "심문"], ["notes", "수사 수첩", S.found.length], ["accuse", "범인 지목"]]
-    .map(([id, label, n]) => `<button class="tab" role="tab" aria-selected="${S.tab === id}" data-tab="${id}" ${out && (id === "rooms" || id === "people") ? "disabled" : ""}>${label}${n ? `<span class="count">${n}</span>` : ""}</button>`).join("");
+    .map(([id, label, n]) => `<button class="tab" role="tab" aria-selected="${S.tab === id}" data-tab="${id}" ${(out && (id === "rooms" || id === "people")) || (interro && id !== "people") ? "disabled" : ""} ${interro && id !== "people" ? 'title="심문 중에는 닫기를 눌러야 나갈 수 있어요"' : ""}>${label}${n ? `<span class="count">${n}</span>` : ""}</button>`).join("");
   const body = S.tab === "rooms" ? renderRooms(out) : S.tab === "people" ? renderPeople(out) : S.tab === "notes" ? renderNotes() : renderAccuse();
   app.innerHTML = `
     <header class="board">
@@ -3008,7 +3009,7 @@ function render() {
           <span class="diff-chip">${DIFF[S.diff].label}${S.chances > 1 ? ` · 지목 기회 ${S.chances}` : ""}</span>
         </div>
       </div>
-      <nav class="tabs" role="tablist">${tabs}<button class="tab quit" data-act="files">사건 목록</button>${soundBtn()}</nav>
+      <nav class="tabs" role="tablist">${tabs}<button class="tab quit" data-act="files" ${interro ? "disabled" : ""}>사건 목록</button>${soundBtn()}</nav>
       ${alertRow}
     </header>
     <main>${body}</main>`;
@@ -4834,7 +4835,7 @@ function renderPeople(out) {
     ${S.vars.map((v, i) => `<button class="who has-face" aria-pressed="${S.suspect === "v" + i}" data-suspect="v${i}">${pixelFace(v.name, 44)}<span class="who-text"><b>${v.name}</b><span>${v.role} · 변수 인물</span>
       <span class="mono">${S.accCaught && v.acc ? "공범 체포" : has(S.accWrong, i) ? "공범 아님" : has(S.varTalked, i) ? "이야기 나눔" : "아직 모름"}</span></span></button>`).join("")}` : "";
   const extra = /^v\d$/.test(S.suspect) ? renderVar(+S.suspect[1], out) : "";
-  const closeBar = who => `<div class="interro-bar"><span class="label">심문실 · ${esc(who)}</span><button class="btn ghost interro-close" data-act="close-talk">닫기 ✕ <small>현장으로</small></button></div>`;
+  const closeBar = who => `<div class="interro-bar"><span class="label">심문실 · ${esc(who)}</span><button class="btn interro-close" data-act="close-talk">닫기 ✕ <small>심문 끝내고 현장으로</small></button></div>`;
   if (extra) return `<div class="split solo">${closeBar(S.vars[+S.suspect[1]] ? S.vars[+S.suspect[1]].name : "")}${extra}</div>`;
   const sid = S.suspect, p = c.suspects[sid], sl = S.silence[sid], per = PERSONAS[S.persona[sid]], show = DIFF[S.diff].persona === "show";
   /* 말풍선: 마지막 대화 */
@@ -5128,7 +5129,6 @@ const inGameRooms = () => S.screen === "game" && S.tab === "rooms";
 document.addEventListener("keyup", e => { if (inGameRooms()) PX.key(e, false); });
 addEventListener("blur", () => PX.clearKeys());
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape" && S.screen === "game" && S.tab === "people" && !/INPUT|SELECT|TEXTAREA/.test((document.activeElement || {}).tagName || "")) { S.tab = "rooms"; S.dlg = null; render(); return; }
   if (S.screen === "opening" && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); if (OPENING.revealed) OPENING.go(); else OPENING.skip(); return; }
   if (!inGameRooms()) return;
   if (e.key === "Escape" && S.sheet) { S.sheet = false; render(); return; }
@@ -5204,7 +5204,7 @@ app.addEventListener("click", e => {
   else if (d.act === "start") { beginCase(); top = true; Sound.thunder(); flash(); }
   else if (d.act === "files") { S = Object.assign(fresh(), { screen: "files" }); top = true; }
   else if (d.act === "wait") { if (S.turns <= 0) return; Sound.step(); spend(); }
-  else if (d.tab) { S.tab = d.tab; S.dlg = null; }
+  else if (d.tab) { if (S.tab === "people" && d.tab !== "people" && !S.decided) return; S.tab = d.tab; S.dlg = null; }
   else if (d.room) { S.room = d.room; }
   else if (d.dispatch) { dispatch(d.dispatch); S.sheet = false; }
   else if (d.vtalk) { talkVar(+d.vtalk); }
