@@ -678,6 +678,59 @@ body.shake main { animation: op-shake2 .4s; }
 .ac-team { position: absolute; bottom: 14px; left: 0; right: 0; opacity: .8; }
 .ac-team .gc-p { animation: none; }
 @media (max-width: 600px) { .ac-team { display: none; } .gc-row.team .gc-p .pxface { width: 40px; height: 40px; } }
+/* ===== 심문 무대 (비주얼 노벨식) ===== */
+.stage { position: relative; min-height: 210px; border-radius: 8px; overflow: hidden; padding: 14px 14px 12px clamp(120px, 22%, 210px);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--wall) 55%, #0a0c10) 0 70%, #15110e 70% 100%); box-shadow: inset 0 0 60px rgba(0,0,0,.65); display: flex; flex-direction: column; justify-content: flex-end; }
+.stage::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 18% 40%, rgba(255,230,170,.18), transparent 55%); pointer-events: none; }
+.stage-sprite { position: absolute; left: 2%; bottom: 0; height: 96%; max-height: 260px; width: auto; image-rendering: pixelated; image-rendering: crisp-edges; filter: drop-shadow(0 10px 14px rgba(0,0,0,.6)); transform-origin: bottom center; }
+.stage.talk .stage-sprite { animation: st-bob 2.4s ease-in-out infinite; }
+.stage.shock .stage-sprite { animation: st-shock .5s ease-out 2; }
+.stage.shock::after { content: ""; position: absolute; inset: 0; background: rgba(220,30,30,.28); animation: cc-fade .9s .2s both; pointer-events: none; }
+.stage.smug .stage-sprite { transform: rotate(-4deg); }
+.stage.soft .stage-sprite { filter: drop-shadow(0 0 18px rgba(255,170,190,.6)); }
+.stage.silent .stage-sprite { filter: grayscale(.8) brightness(.6); }
+.stage-fx { position: absolute; left: clamp(70px, 14%, 150px); top: 10px; font-size: 34px; color: #ff4b4b; text-shadow: 2px 2px 0 #000; animation: sw-in .3s both; }
+.stage-fx.smug { color: #c9c3b6; } .stage-fx.soft { color: #ff8aa0; }
+.sweat { position: absolute; left: clamp(40px, 9%, 110px); top: 26%; width: 8px; height: 12px; background: #8fd3ff; border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%; animation: st-drop 1s ease-in infinite; }
+.sweat.s2 { left: clamp(60px, 12%, 140px); top: 20%; animation-delay: .4s; }
+@keyframes st-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes st-shock { 0%, 100% { transform: none; } 20% { transform: translateX(-8px) rotate(-3deg); } 40% { transform: translateX(8px) rotate(3deg); } 60% { transform: translateX(-5px); } 80% { transform: translateX(4px); } }
+@keyframes st-drop { from { transform: translateY(0); opacity: 1; } to { transform: translateY(26px); opacity: 0; } }
+.speech.vn { position: relative; z-index: 1; display: grid; gap: 6px; }
+.speech.vn .line { max-width: none; background: rgba(8,10,14,.86); border-width: 1px; backdrop-filter: blur(2px); }
+.speech.vn .line.mine { justify-self: end; max-width: 80%; opacity: .92; }
+.speech.vn .line.them { border: 2px solid #c9a24e; box-shadow: 0 6px 18px rgba(0,0,0,.5); }
+.speech.vn .line.them .who-tag { display: inline-block; background: #c9a24e; color: #15110e; padding: 1px 10px; border-radius: 3px; font-weight: 700; margin: -2px 0 4px; }
+.speech.vn .line.them.broken { border-color: #ff4b4b; } .speech.vn .line.them.broken .who-tag { background: #ff4b4b; color: #fff; }
+.speech.vn .line.them.secret { border-color: #7fd1a0; } .speech.vn .line.them.secret .who-tag { background: #7fd1a0; }
+.stage.new .line.them p { animation: vn-type 1.1s steps(36) both; }
+@keyframes vn-type { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+body.talking .person-head .portrait { display: none; }
+@media (max-width: 720px) {
+  .stage { min-height: 150px; padding: 8px 8px 8px 92px; }
+  .stage-sprite { height: 88%; max-height: 150px; left: 0; }
+  .stage-fx { left: 56px; font-size: 24px; }
+}
+/* ===== 수사 보드 ===== */
+.board-panel { gap: 10px; }
+.cork { position: relative; border-radius: 6px; padding: 18px 14px 22px; min-height: 260px; display: grid; gap: 54px;
+  background: radial-gradient(circle at 20% 30%, rgba(0,0,0,.08) 0 2px, transparent 3px) 0 0 / 23px 19px, radial-gradient(circle at 70% 60%, rgba(255,255,255,.06) 0 1.5px, transparent 2.5px) 0 0 / 17px 21px, #8a6a45;
+  box-shadow: inset 0 0 0 10px #4a3524, inset 0 0 40px rgba(0,0,0,.45); }
+.strings { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.strings path { fill: none; stroke-width: 2.4; }
+.strings path.red { stroke: #d32b2b; filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
+.strings path.dash { stroke: rgba(30,20,12,.55); stroke-dasharray: 5 5; stroke-width: 1.6; }
+.cork-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px 18px; position: relative; }
+.pin-p { background: #f4efe4; color: #2b2116; padding: 8px 8px 6px; display: grid; justify-items: center; gap: 2px; transform: rotate(var(--r)); box-shadow: 0 6px 14px rgba(0,0,0,.45); min-width: 92px; position: relative; }
+.pin-p::before { content: ""; position: absolute; top: -6px; width: 12px; height: 12px; border-radius: 50%; background: #c0392b; box-shadow: 0 2px 2px rgba(0,0,0,.5); }
+.pin-p b { font-family: var(--f-display); font-size: 15px; } .pin-p small { font-size: 11px; color: #6b5a44; }
+.pin-p.liar { outline: 3px solid #d32b2b; }
+.pin-tag { font-style: normal; font-size: 10.5px; font-weight: 800; padding: 1px 6px; border-radius: 3px; }
+.pin-tag.red { background: #d32b2b; color: #fff; } .pin-tag.green { background: #2e8b57; color: #fff; }
+.pin-c { position: relative; background: #fffbe6; color: #2b2116; font-size: 13px; font-weight: 700; padding: 10px 10px 8px; max-width: 150px; transform: rotate(var(--r)); box-shadow: 0 5px 12px rgba(0,0,0,.4); display: grid; gap: 2px; }
+.pin-c small { font-weight: 400; font-size: 10.5px; color: #7a6a52; }
+.pin-c .pin { position: absolute; top: -5px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #2f6fd6; box-shadow: 0 2px 2px rgba(0,0,0,.5); }
+.cork .empty { color: #f4efe4; }
 .sit-in { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
 .sit-in > b { font-size: 12.5px; color: var(--muted); font-family: var(--f-mono); }
 .sit-in .act { padding: 4px 8px; font-size: 13px; }
@@ -1139,8 +1192,8 @@ const CASES = [
 /* ------------------------------------------------------------------ */
 {
   id: "museum", no: "04", title: "한빛 박물관 사건", where: "시립 박물관 · 폐관 후",
-  tag: "사건 번호 11-23 · 한빛 시립박물관 · 08:12 접수",
-  lede: "아침 개관 전, 관장 고명준(61)이 지하 수장고에서 숨진 채 발견되었다. 진열장 속 국보 ‘청자 학무늬 매병’은 감쪽같이 복제품으로 바뀌어 있었다.",
+  tag: "사건 번호 11-23 · 한빛 시립박물관 · 02:12 접수",
+  lede: "폐관 후 깊은 밤, 관장 고명준(61)이 지하 수장고에서 숨진 채 발견되었다. 진열장 속 국보 ‘청자 학무늬 매병’은 감쪽같이 복제품으로 바뀌어 있었다.",
   brief: "당신은 신고를 받고 출동한 강력팀 형사다. 사라진 진품과 관장의 죽음은 같은 밤에 일어났다. 언론이 몰려오기 전에 범인을 밝혀내야 한다.",
   floors: [
     { label: "2층", rooms: ["gallery", "office"] },
@@ -1218,12 +1271,12 @@ const CASES = [
         { id: "p4", q: "관장님과는 어떤 사이였습니까?", a: "그냥 상사죠. 별문제 없었어요.",
           lie: { clues: ["catalog"], reply: "…사이 나빴어요. 제 복원 작업을 늘 깎아내렸거든요. 그 도록도 관장님이 두고 간 거예요. 팔기 전에 상태 점검이나 하라고. 화는 났지만, 저는 6시에 나갔어요." } },
       ]},
-    seungcheol: { name: "노승철", role: "야간 경비원 · 58세", intro: "야간 경비 12년 차. 아침 8시 교대 때 시신을 발견하고 신고했다.",
+    seungcheol: { name: "노승철", role: "야간 경비원 · 58세", intro: "야간 경비 12년 차. 새벽 2시 순찰 때 시신을 발견하고 신고했다.",
       deflect: "12년 동안 사고 한 번 없었소. 그런 걸로 날 의심하지 마시오.",
       qs: [
         { id: "n1", q: "어젯밤 순찰은 어떻게 하셨습니까?", a: "한 시간마다 꼬박꼬박 돌았지요. 아무 이상 없었소.",
           lie: { clues: ["log"], reply: "…7시부터 11시까지 휴게실에서 축구 결승전을 봤소. 미안하오. 그 사이에 관장님이… 그런데 그 전, 6시 40분에 CCTV를 끈 건 학예실에서 전화가 와서였소. 민 학예사 목소리였지.", tl: ["18:40", "민서영의 전화 요청으로 전시실 CCTV 2분간 정지", "노승철"] } },
-        { id: "n2", q: "시신은 어떻게 발견하셨죠?", a: "아침 교대 전에 전시실을 도는데 매병 색이 영 이상하더라고. 관장님께 알리려고 찾아다니다가… 수장고에서 쓰러져 계신 걸 봤소.", tl: ["08:00", "노승철, 수장고에서 관장 시신 발견", "노승철"] },
+        { id: "n2", q: "시신은 어떻게 발견하셨죠?", a: "새벽 2시 순찰 때 전시실을 도는데 매병 색이 영 이상하더라고. 관장님께 알리려고 찾아다니다가… 수장고에서 쓰러져 계신 걸 봤소.", tl: ["02:00", "노승철, 수장고에서 관장 시신 발견", "노승철"] },
       ]},
     yejin: { name: "홍예진", role: "청소 아르바이트 · 22세", intro: "대학생 청소 아르바이트. 폐관 후 전시실을 청소한다.",
       deflect: "저 그냥 알바예요… 그런 거 진짜 몰라요.",
@@ -2891,7 +2944,8 @@ function addTl(tl, qid) {
   if (!tl) return;
   const list = typeof tl[0] === "string" ? [tl] : tl;
   for (const [t, e, src] of list) if (!S.tl.some(x => x[0] === t && x[1] === e)) S.tl.push([t, e, src, qid || null]);
-  S.tl.sort((a, b) => a[0].localeCompare(b[0]));
+  const night = t => { const h = +String(t).slice(0, 2); return (h < 12 ? h + 24 : h) * 60 + +String(t).slice(3, 5); };   /* 자정 넘은 시각은 밤의 끝으로 */
+  S.tl.sort((a, b) => night(a[0]) - night(b[0]));
 }
 const toastQ = []; let toastBusy = false;
 function toast(html, bad) { toastQ.push([html, bad]); if (!toastBusy) nextToast(); }
@@ -2949,6 +3003,7 @@ function render() {
   document.body.classList.toggle("talking", talking);
   if (S.tab === "rooms") PX.mount(document.getElementById("pxview")); else PX.clearKeys();
   fitTalk();
+  if (S.screen === "game" && S.tab === "notes") requestAnimationFrame(drawBoard);
 }
 /* 심문 화면을 창 높이에 꼭 맞춘다 (페이지 스크롤 없음, 선택지만 안에서 넘김) */
 function fitTalk() {
@@ -3227,7 +3282,7 @@ const INTRO = (() => {
   const callTime = () => {
     const m = String(C().tag || "").match(/(\d{1,2}):(\d{2})\s*접수/);
     if (!m) return "늦은 밤";
-    const h = +m[1], mi = +m[2], part = h < 5 ? "새벽" : h < 11 ? "아침" : h < 17 ? "낮" : h < 19 ? "저녁" : "밤";
+    const h = +m[1], mi = +m[2], part = h < 5 || h >= 19 ? "밤" : h < 11 ? "아침" : h < 17 ? "낮" : "저녁";   /* 사건은 모두 밤 */
     const h12 = h % 12 === 0 ? 12 : h % 12;
     return `${part} ${h12}시${mi ? ` ${mi}분` : ""}`;
   };
@@ -3876,6 +3931,17 @@ function charSprites(name, role, isPlayer) {
   for (const dir of ["down", "up", "right"]) out[dir] = [0, 1, 2].map(f => { const cv = pxCanvas(16, 20); drawChar(cv.getContext("2d"), L, dir, f); return outlinePass(cv); });
   out.left = out.right.map(src => { const cv = pxCanvas(16, 20), g = cv.getContext("2d"); g.translate(16, 0); g.scale(-1, 1); g.drawImage(src, 0, 0); return cv; });
   spriteCache.set(key, out); return out;
+}
+/* 심문 무대용 큰 전신 픽셀 그림 */
+const bigCache = new Map();
+function bigSprite(name, role = "") {
+  const key = name + "|" + role;
+  if (!bigCache.has(key)) {
+    const sp = charSprites(name, role).down[0], cv = pxCanvas(128, 160), g = cv.getContext("2d");
+    g.imageSmoothingEnabled = false; g.drawImage(sp, 0, 0, 16, 20, 0, 0, 128, 160);
+    bigCache.set(key, cv.toDataURL());
+  }
+  return bigCache.get(key);
 }
 /* 작은 픽셀 얼굴(목록·대화창용) */
 const faceCache = new Map();
@@ -4811,7 +4877,16 @@ function renderPeople(out) {
         ${guarded(sid) ? `<span class="duo">🛡 순찰 경찰이 지키는 중 — 방해로 입을 막을 수 없어요</span>` : ""}
         ${sitInRow(sid)}
         <span class="duo">함께 심문: ${pixelFace(N.han, 20)}${N.han} 경위 · ${pixelFace(N.mo, 20)}${N.mo} 경사</span></div></div>
-      <div class="speech">${speech}</div>
+      ${(() => {
+        const react = sl ? "silent" : !L ? "idle" : L.kind === "broken" ? "shock" : L.kind === "secret" ? "soft" : (L.kind === "deflect" || L.kind === "closed") ? "smug" : "talk";
+        const key = L ? sid + "|" + L.q + "|" + L.a : sid, fresh = S._shown !== key; S._shown = key;
+        const th = themeOf();
+        return `<div class="stage ${react}${fresh ? " new" : ""}" style="--wall:${th.wallC || "#3a3346"}">
+          <img class="stage-sprite" src="${bigSprite(p.name, p.role)}" alt="${esc(p.name)}">
+          ${react === "shock" ? `<i class="sweat"></i><i class="sweat s2"></i><b class="stage-fx">!!</b>` : react === "smug" ? `<b class="stage-fx smug">…</b>` : react === "soft" ? `<b class="stage-fx soft">♥</b>` : ""}
+          <div class="speech vn">${speech}</div>
+        </div>`;
+      })()}
       <div class="choices">${choices}</div>
       ${log ? `<details class="talklog"><summary>지난 대화 (${p.qs.filter(q => has(S.asked, q.id)).length})</summary>${log}</details>` : ""}
     </section>
@@ -4831,6 +4906,42 @@ function renderVar(i, out) {
   </section>`;
 }
 
+/* ===================== 수사 보드: 코르크판에 용의자 사진과 증거 카드, 실로 연결 ===================== */
+function renderBoard() {
+  const c = C();
+  const sus = Object.entries(c.suspects).map(([sid, p]) => {
+    const liar = p.qs.some(q => has(S.broken, q.id)), sec = S.secrets.some(x => x.sid === sid);
+    return `<div class="pin-p${liar ? " liar" : ""}" data-sid="${sid}" style="--r:${(hashStr(sid) % 7) - 3}deg">${pixelFace(p.name, 64, p.role)}<b>${esc(p.name)}</b><small>${esc(p.role.split(" · ")[0])}</small>
+      ${liar ? `<em class="pin-tag red">거짓말 발각</em>` : ""}${sec ? `<em class="pin-tag green">숨은 증언</em>` : ""}</div>`;
+  }).join("");
+  const cards = S.found.map(id => `<div class="pin-c${c.key.includes(id) && S.result ? " key" : ""}" data-clue="${id}" style="--r:${(hashStr(id) % 9) - 4}deg"><i class="pin"></i>${esc(c.clues[id].name)}<small>${esc(c.rooms[c.clues[id].room] ? c.rooms[c.clues[id].room].name : "")}</small></div>`).join("");
+  return `<section class="panel board-panel"><h3>수사 보드 <span class="hint">· 붉은 실 = 증거로 밝힌 거짓말 · 점선 = 그 사람의 방에서 나온 증거</span></h3>
+    <div class="cork" id="cork"><svg class="strings" id="strings"></svg>
+      <div class="cork-row">${sus}</div>
+      <div class="cork-row cards">${cards || `<p class="empty">아직 붙일 증거가 없다. 현장을 조사하자.</p>`}</div>
+    </div></section>`;
+}
+function drawBoard() {
+  const cork = document.getElementById("cork"), svg = document.getElementById("strings"); if (!cork || !svg) return;
+  const c = C(), R = cork.getBoundingClientRect(), pos = el => { const b = el.getBoundingClientRect(); return [b.left - R.left + b.width / 2, b.top - R.top, b.bottom - R.top]; };
+  svg.setAttribute("width", R.width); svg.setAttribute("height", R.height);
+  const lines = [];
+  for (const id of S.found) {
+    const card = cork.querySelector(`[data-clue="${id}"]`); if (!card) continue;
+    const [cx, ct] = pos(card);
+    /* 증거로 무너뜨린 거짓말: 붉은 실 */
+    for (const [sid, p] of Object.entries(c.suspects)) {
+      const hit = p.qs.some(q => q.lie && has(S.broken, q.id) && q.lie.clues.includes(id));
+      const owner = roomPeople(c.clues[id].room).some(pp => pp.id === sid);
+      if (!hit && !owner) continue;
+      const ph = cork.querySelector(`[data-sid="${sid}"]`); if (!ph) continue;
+      const [px, , pb] = pos(ph), mid = (pb + ct) / 2 + 18;
+      lines.push(`<path d="M${cx} ${ct + 4} Q${(cx + px) / 2} ${mid} ${px} ${pb - 4}" class="${hit ? "red" : "dash"}"/>`);
+    }
+  }
+  svg.innerHTML = lines.join("");
+}
+addEventListener("resize", () => { if (S.tab === "notes") drawBoard(); });
 function renderNotes() {
   const c = C();
   const clues = S.found.length
@@ -4843,6 +4954,7 @@ function renderNotes() {
       }).join("")
     : `<p class="empty">진술을 들으면 시간표가 채워진다.</p>`;
   return `<div class="notes">
+    ${renderBoard()}
     ${S.autopsy ? `<section class="panel"><h3>과학수사대 감식 소견 · 사건 정리</h3><p><b>사인:</b> ${esc(S.autopsy.cause)}</p>${S.autopsy.body ? `<p class="hint">${esc(S.autopsy.body)}</p>` : ""}
       <div class="event-log">${Object.entries(c.suspects).map(([sid, p]) => { const ev = evidenceAgainst(sid); return `<p class="${ev.length ? "" : "good"}"><b>${esc(p.name)}</b> — ${ev.length ? `걸리는 증거: ${ev.map(x => `‘${esc(x.name)}’${x.asked ? "" : " (관련 질문 아직 안 함)"}`).join(", ")}` : "지금까지 증거와 어긋나는 말은 없음"}</p>`; }).join("")}</div></section>` : ""}
     <section class="panel"><h3>시간표</h3><div class="timeline">${tl}</div></section>
