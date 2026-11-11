@@ -1020,7 +1020,8 @@ const GENDER = {
   /* 수사팀 */ 강무열: "m", 윤도경: "m", 변주원: "m", 공태하: "m", 서하루: "f",
   김태린: "f", 박우진: "m", 정한결: "m", 백인경: "f", 조석훈: "m", 우강산: "m", 안소라: "f", 염세라: "f", 차민규: "m", 소하은: "f", 피준호: "m",
   서문혁: "m", 하경미: "f", 남윤성: "m", 류다올: "f", 신재호: "m", 함소연: "f", 육지훈: "m", 방수아: "f",
-  이로운: "m", 은하솔: "f", 봉준혁: "m", 구현석: "m", 도아라: "f", 엄태식: "m", 강혜원: "f", 윤슬기: "f", 나도현: "m", 주강우: "m", 성미래: "f", 설지호: "m", 금나래: "f", 양태건: "m", 채아름: "f", 허준: "m", 민들레: "f", 도현수: "m", 나예림: "f", 권하준: "m", 오지민: "f", 한서진: "f", 모은재: "f", 차도율: "m",
+  이로운: "m", 은하솔: "f", 봉준혁: "m", 마석진: "m", 연수경: "f", 방태율: "m", 설아린: "f", 길주원: "m", 국선영: "f", 임도진: "m", 반하린: "f",
+  왕지석: "m", 손예담: "f", 감도윤: "m", 추은솔: "f", 곽정민: "m", 태수연: "f", 봉하람: "f", 육서윤: "f", 범태호: "m", 진미라: "f", 여강민: "m", 담소윤: "f", 구현석: "m", 도아라: "f", 엄태식: "m", 강혜원: "f", 윤슬기: "f", 나도현: "m", 주강우: "m", 성미래: "f", 설지호: "m", 금나래: "f", 양태건: "m", 채아름: "f", 허준: "m", 민들레: "f", 도현수: "m", 나예림: "f", 권하준: "m", 오지민: "f", 한서진: "f", 모은재: "f", 차도율: "m",
   /* 무작위 사건 이름 */ 서도윤: "m", 한예린: "f", 박준서: "m", 김하율: "f", 이서진: "f", 정민재: "m", 최유나: "f", 오태경: "m",
   윤소이: "f", 강지후: "m", 문채원: "f", 배성훈: "m", 임가온: "f", 장우빈: "m", 송다인: "f", 홍재민: "m", 류시아: "f", 권태오: "m",
   신보람: "f", 차은호: "m", 백지안: "f", 노현우: "m", 유해원: "f", 표나래: "f",
@@ -1597,7 +1598,8 @@ let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
 /* 수사팀(경찰): 어려워지면 돕고, 직접 현장에 보낼 수 있다 */
 /* ===================== 팀 구성: 자리(역할)마다 사람을 바꿀 수 있다 ===================== */
-const TEAM_DEFAULT = { seo: "서하루", kang: "강무열", gong: "공태하", yoon: "윤도경", byun: "변주원", han: "한서진", mo: "모은재", dig: "이로운", fin: "설지호", sch: "채아름", digL: "구현석", finL: "엄태식", schL: "윤슬기", patL: "주강우" };
+const TEAM_DEFAULT = { seo: "서하루", kang: "강무열", gong: "공태하", yoon: "윤도경", byun: "변주원", han: "한서진", mo: "모은재", dig: "이로운", fin: "설지호", sch: "채아름", digL: "구현석", finL: "엄태식", schL: "윤슬기", patL: "주강우",
+  drugL: "마석진", drug: "방태율", trL: "길주원", tr: "임도진", intL: "왕지석", int: "감도윤", sitL: "곽정민", sit: "봉하람", grdL: "범태호", grd: "여강민" };
 /* 무작위 사건에서 고를 수 있는 사람들 (자리마다 계급·역할은 같고 사람만 다르다) */
 const ROSTER = [
   { slot: "seo", label: "동행 파트너", rank: "순경", job: "늘 내 뒤를 따라다니며 방의 가짜 물건을 치워요", people: [
@@ -1622,6 +1624,26 @@ const ROSTER = [
     ["엄태식", "m", "돈 앞에선 누구도 안 믿는 팀장"], ["강혜원", "f", "대기업 비리를 파헤친 팀장"]] },
   { slot: "fin", label: "지능팀 수사관", rank: "경사", job: "돈과 서류 흐름을 쫓아 수상한 서류가 있는 곳을 짚어 줘요 (2턴 뒤)", people: [
     ["설지호", "m", "돈 냄새를 기막히게 맡는 수사관"], ["금나래", "f", "회계사 출신 수사관"], ["양태건", "m", "장부 한 장으로 사람을 읽는 수사관"]] },
+  { slot: "drugL", label: "마약팀장", rank: "경감", job: "약물이 쓰였는지 판별해요", people: [
+    ["마석진", "m", "마약 사건만 15년, 냄새만 맡아도 안다"], ["연수경", "f", "약품 이름을 줄줄 외는 팀장"]] },
+  { slot: "drug", label: "마약팀 형사", rank: "경장", job: "약병·주사기 같은 흔적을 찾아요", people: [
+    ["방태율", "m", "시약 키트를 늘 들고 다니는 형사"], ["설아린", "f", "가루 한 톨도 놓치지 않는 형사"]] },
+  { slot: "trL", label: "교통조사팀장", rank: "경위", job: "도로 CCTV·블랙박스를 확보해요", people: [
+    ["길주원", "m", "차량 번호판은 한 번 보면 외우는 팀장"], ["국선영", "f", "동선 지도를 그리는 팀장"]] },
+  { slot: "tr", label: "교통조사관", rank: "순경", job: "블랙박스 영상을 돌려 봐요", people: [
+    ["임도진", "m", "밤새 영상을 봐도 지치지 않는 순경"], ["반하린", "f", "번호판 판독의 달인"]] },
+  { slot: "intL", label: "정보팀장", rank: "경위", job: "동네 소문과 주변 사정을 모아요", people: [
+    ["왕지석", "m", "발 넓기로 소문난 정보관"], ["손예담", "f", "한 번 들은 얘기는 안 잊는 정보관"]] },
+  { slot: "int", label: "정보관", rank: "경사", job: "주변 사람들을 만나 탐문해요", people: [
+    ["감도윤", "m", "누구와도 금방 친해지는 정보관"], ["추은솔", "f", "말없이 듣기만 해도 다 알아내는 정보관"]] },
+  { slot: "sitL", label: "상황실장", rank: "경감", job: "윗선과 연락해 수사 시간을 벌어요", people: [
+    ["곽정민", "m", "무전 하나로 경찰서를 움직이는 실장"], ["태수연", "f", "위기 때 가장 침착한 실장"]] },
+  { slot: "sit", label: "상황요원", rank: "경장", job: "112 신고 녹취를 분석해요", people: [
+    ["봉하람", "f", "신고 전화를 가장 많이 받은 요원"], ["육서윤", "f", "녹취 속 작은 소리도 잡는 요원"]] },
+  { slot: "grdL", label: "기동대장", rank: "경감", job: "현장을 통째로 봉쇄해요", people: [
+    ["범태호", "m", "말보다 행동이 빠른 대장"], ["진미라", "f", "현장 통제의 교과서"]] },
+  { slot: "grd", label: "기동대원", rank: "순경", job: "문과 증거물을 지켜요", people: [
+    ["여강민", "m", "꿈쩍도 안 하는 대원"], ["담소윤", "f", "밤새 한자리를 지키는 대원"]] },
   { slot: "patL", label: "순찰팀장", rank: "경위", job: "순찰 메모가 더 정확해져요 (4번 중 3번 → 10번 중 9번)", people: [
     ["주강우", "m", "골목골목을 꿰는 순찰팀장"], ["성미래", "f", "한 번 본 얼굴은 안 잊는 팀장"]] },
 ];
@@ -1629,13 +1651,18 @@ const ROSTER = [
 const DEPTS = [
   { id: "crime", div: "형사과", name: "강력팀", slots: ["kang", "gong"], desc: "팀장(경감)은 놓친 걸 바로잡고 잠긴 문을 열고, 형사(순경)는 가짜 물건을 치우고 용의자에게 겁을 줘요." },
   { id: "sci", div: "형사과", name: "과학수사팀", slots: ["yoon", "byun"], desc: "시신을 감식해 사인을 밝히고, 증거를 정리해 심문 때 대신 내밀어요." },
+  { id: "drug", div: "형사과", name: "마약팀", slots: ["drugL", "drug"], desc: "약물이 쓰였는지 판별하고, 쓰였다면 약병·주사기 같은 흔적을 직접 찾아와요." },
   { id: "prof", div: "수사과", name: "수사팀", slots: ["han", "mo"], desc: "심문 때 헷갈리는 대답을 치우고, 거짓말을 못 박고, 침묵을 깨요." },
   { id: "digital", div: "수사과", name: "사이버수사팀", slots: ["digL", "dig"], desc: "팀장(경위)과 요원이 CCTV·카드키·통신 기록을 복구해 단서를 두 건까지 찾아 줘요." },
   { id: "fin", div: "수사과", name: "지능팀", slots: ["finL", "fin"], desc: "팀장(경감)과 수사관이 돈과 서류 흐름을 쫓아, 수상한 서류 한 건은 직접 찾고 두 곳을 더 짚어 줘요." },
   { id: "patrol", div: "생활안전과", name: "지구대 순찰팀", patrol: true, slots: ["patL"], desc: "팀장(경위)과 대원들이 혼자 돌아다니며 용의자를 지키고 순찰 메모를 남겨요." },
+  { id: "traffic", div: "교통과", name: "교통조사팀", slots: ["trL", "tr"], desc: "도로 CCTV·블랙박스로 동선을 확인해, 누가 어디 있었는지 보여 주는 기록을 두 건까지 찾아와요." },
+  { id: "intel", div: "정보과", name: "정보팀", slots: ["intL", "int"], desc: "주변 사람들을 만나 탐문해, 용의자들에 대한 숨은 증언을 두 개 가져와요." },
+  { id: "guard", div: "경비과", name: "기동대", slots: ["grdL", "grd"], desc: "현장을 봉쇄해요. 데려가면 그 판 내내 범인 쪽이 문을 잠그거나 증거를 망칠 수 없어요." },
+  { id: "sit", div: "112치안종합상황실", name: "상황팀", slots: ["sitL", "sit"], desc: "윗선과 연락해 수사 시간을 벌어 줘요. 부르면 바로 3턴과 1분이 늘어나요(한 번)." },
 ];
 const DEPT_DEFAULT = ["crime", "sci", "prof", "patrol"];
-const DEPT_N = { easy: 3, normal: 4, hard: 5 };   /* 6개 부서 중 */
+const DEPT_N = { easy: 3, normal: 4, hard: 5 };   /* 11개 팀 중 */
 const deptOn = id => (S.depts || DEPT_DEFAULT).includes(id);
 const N = new Proxy({}, { get: (_, k) => { let t = null; try { t = S && S.team; } catch {} return (t && t[k]) || TEAM_DEFAULT[k] || ""; } });
 const PARTNERS = [
@@ -1970,7 +1997,7 @@ function renderTeam() {
   app.innerHTML = `<section class="intro team-pick">
     <span class="label">${c.tag}</span>
     <h1>팀 꾸리기</h1>
-    <p class="lede">${esc(pname())} ${PLAYER_RANK}, 이번 사건은 <b>${esc(c.title)}</b>이다. 경찰서(형사과 · 수사과 · 생활안전과)의 여섯 팀 중 <b>${need}개</b>를 골라 데려가고, 부서마다 함께할 사람을 뽑자. (${DIFF[S.diff].label} 난이도 · 쉬움 3 · 보통 4 · 어려움 5개)</p>
+    <p class="lede">${esc(pname())} ${PLAYER_RANK}, 이번 사건은 <b>${esc(c.title)}</b>이다. 경찰서(형사과 · 수사과 · 생활안전과 · 교통과 · 정보과 · 경비과 · 112상황실)의 ${DEPTS.length}개 팀 중 <b>${need}개</b>를 골라 데려가고, 부서마다 함께할 사람을 뽑자. (${DIFF[S.diff].label} 난이도 · 쉬움 3 · 보통 4 · 어려움 5개)</p>
     <fieldset class="team-slot on"><legend>형사과 동행 파트너 <span class="hint">· 늘 함께해요</span></legend><p class="hint">내 뒤를 따라다니며 방의 가짜 물건을 치워요.</p>${people("seo")}</fieldset>
     <p class="hint"><b>부서 ${tp.depts.length} / ${need}</b> 골랐어요.</p>
     ${depts}
@@ -2282,8 +2309,9 @@ function sabotage(late) {
   const silenceable = Object.entries(c.suspects).filter(([sid, p]) => !S.silence[sid] && !guarded(sid) &&
     p.qs.some(q => qOpen(q) && (!has(S.asked, q.id) || (q.lie && !has(S.broken, q.id)))));
   const accFree = !S.accCaught && accomplice();   /* 공범이 잡히면 훼손·잠금이 멈춘다 */
-  if (tamperable.length && accFree) opts.push("tamper");
-  if (lockable.length && accFree) opts.push("lock");
+  const sealed = S.depts && deptOn("guard");   /* 기동대가 현장을 봉쇄하면 잠금·훼손 없음 */
+  if (tamperable.length && accFree && !sealed) opts.push("tamper");
+  if (lockable.length && accFree && !sealed) opts.push("lock");
   if (silenceable.length) opts.push("silence");
   if (late && S.turns > 4) opts.push("police");
   if (!opts.length) return;
@@ -3095,7 +3123,10 @@ const LOOK_OVERRIDE = {
 (() => {
   const dress = { seo: "서하루", kang: "강무열", gong: "공태하", yoon: "윤도경", byun: "변주원", han: "한서진", mo: "모은재" };
   const own = { dig: { cloth: "#2f3b3f", pants: "#22282b", top: "cardigan" }, fin: { cloth: "#3a3530", top: "suit" }, sch: { cloth: "#4f6a7c", pants: "#2a3340", top: "knit" },
-    digL: { cloth: "#24303a", top: "jacket" }, finL: { cloth: "#2b2622", top: "suit" }, schL: { cloth: "#3e5566", top: "jacket" }, patL: { cloth: "#1c2a44", pants: "#141c2c", top: "suit", cap: true } };
+    digL: { cloth: "#24303a", top: "jacket" }, drugL: { cloth: "#3a2f2a", top: "jacket" }, drug: { cloth: "#4a4038", top: "jacket" },
+    trL: { cloth: "#c9b23a", pants: "#2a2d33", top: "jacket" }, tr: { cloth: "#d9c24a", pants: "#2a2d33", top: "jacket", cap: true },
+    intL: { cloth: "#4a5a4a", top: "suit" }, int: { cloth: "#6a6a5a", top: "knit" }, sitL: { cloth: "#22314f", top: "suit" }, sit: { cloth: "#22314f", top: "shirt" },
+    grdL: { cloth: "#1c2430", pants: "#12161c", top: "suit", cap: true }, grd: { cloth: "#1c2430", pants: "#12161c", top: "suit", cap: true }, finL: { cloth: "#2b2622", top: "suit" }, schL: { cloth: "#3e5566", top: "jacket" }, patL: { cloth: "#1c2a44", pants: "#141c2c", top: "suit", cap: true } };
   for (const r of ROSTER) for (const [n] of r.people) if (!LOOK_OVERRIDE[n]) { const { style, ...rest } = own[r.slot] || LOOK_OVERRIDE[dress[r.slot]] || {}; LOOK_OVERRIDE[n] = rest; }
   for (const x of PATROL_ALL) if (!LOOK_OVERRIDE[x.name]) LOOK_OVERRIDE[x.name] = { cloth: "#26344d", pants: "#1a2233", top: "suit", cap: true };
 })();
@@ -3748,13 +3779,20 @@ function pressBtn(sid) {
   return `<button class="choice press with-face" data-press="${sid}"><span class="ck">압박</span><span>${pixelFace(N.gong, 22)} ${N.gong} 순경이 겁을 준다${n ? ` <small class="hint">(${n}번 압박함)</small>` : ""}</span><span class="cost">−1턴 · ${lv}</span></button>`;
 }
 /* ---------- 새 부서 지원: 수사과 사이버수사팀 · 지능팀 (사건마다 한 번, 2턴 뒤 보고, 턴 소모 없음) ---------- */
-const DEPT_JOB = { digital: "dig", fin: "fin" };
-const DEPT_LEAD = { digital: "digL", fin: "finL" };
+const DEPT_JOB = { digital: "dig", fin: "fin", drug: "drug", traffic: "tr", intel: "int", sit: "sit" };
+const DEPT_LEAD = { digital: "digL", fin: "finL", drug: "drugL", traffic: "trL", intel: "intL", sit: "sitL" };
 const deptName = id => { const d = DEPTS.find(x => x.id === id); return d ? `${d.div} ${d.name}` : ""; };
 const deptWho = id => `${N[DEPT_LEAD[id]]}·${N[DEPT_JOB[id]]}`;
 function callDept(id) {
   S.deptJobs = S.deptJobs || {};
   if (!deptOn(id) || S.deptJobs[id] || S.turns <= 0 || S.decided) return;
+  if (id === "sit") {   /* 상황팀은 바로 */
+    S.deptJobs[id] = { due: S.actions, done: true };
+    S.turns += 3; S.maxTurns = Math.max(S.maxTurns, S.turns); S.timeLeft += 60; S.timeMax = Math.max(S.timeMax, S.timeLeft);
+    const msg = `“윗선에 상황 보고 마쳤습니다. 수사 시간 3턴과 1분을 더 받았어요.”`;
+    S.events.push({ bad: false, msg: `${deptName(id)} ${deptWho(id)} — ${msg}` });
+    toast(`<b>${esc(deptName(id))}</b> — ${esc(msg)}`); Sound.help(); return;
+  }
   S.deptJobs[id] = { due: S.actions + 2, done: false };
   const r = ROSTER.find(x => x.slot === DEPT_JOB[id]);
   toast(`<b>${esc(deptName(id))}</b> — ${esc(deptWho(id))}: “맡겨 주세요. 2턴 뒤에 보고하겠습니다.”`); Sound.door();
@@ -3783,15 +3821,36 @@ function resolveDeptJobs() {
       msg = first ? `“${N.finL} 팀장님이 ‘${c.clues[first.clue].name}’을(를) 직접 찾아오셨습니다.${pick.length ? ` 그리고 ${pick.map(sp => `${c.rooms[sp.rid].name}의 ‘${sp.label.replace(/(을|를) .*$/, "")}’`).join(", ")} 쪽도 수상합니다. ‘놓친 곳!’으로 표시해 뒀어요.` : ""}”` : "“수상한 서류는 이미 다 확보하셨습니다.”";
       Sound.help();
     }
+    if (id === "drug") {
+      const DRUG = /독|약|주사|수면|디곡신|아몬드/;
+      const hit = spots.filter(sp => c.key.includes(sp.clue) && DRUG.test(c.clues[sp.clue].name + c.clues[sp.clue].text))
+        .sort((a, b) => DRUG.test(c.clues[b.clue].name) - DRUG.test(c.clues[a.clue].name) || (a.id === bodySpot().id) - (b.id === bodySpot().id));   /* 약병·주사기 같은 물건부터 */
+      const viaBody = DRUG.test(Object.values(c.clues).map(x => x.name + x.text).join(" ")) && DRUG.test((c.methods.find(m => m.id === c.answer.method) || {}).text || "");
+      if (hit.length) { const sp = hit[0]; S.found.push(sp.clue); S.searched.push(sp.id); msg = `“약물 반응 나왔습니다. ${c.rooms[sp.rid].name}에서 ‘${c.clues[sp.clue].name}’을(를) 찾아 왔어요.”`; Sound.clue(); }
+      else msg = viaBody ? "“약물이 쓰인 건 확실합니다. 관련 흔적은 이미 다 찾으셨네요.”" : "“시약 반응이 없습니다. 이번 사건엔 약물이 쓰이지 않았어요. 다른 수법을 보세요.”";
+    } else if (id === "traffic") {
+      const ali = spots.filter(sp => !has(S.searched, sp.id) && ["board"].includes(furnType(sp.label))).slice(0, 2);
+      ali.forEach(sp => { S.found.push(sp.clue); S.searched.push(sp.id); });
+      msg = ali.length ? `“블랙박스와 동선을 맞춰 봤습니다. ${ali.map(sp => `‘${c.clues[sp.clue].name}’`).join(", ")} — 수첩에 넣었어요.”` : "“동선 기록은 이미 다 확보하셨습니다.”";
+      if (ali.length) Sound.clue();
+    } else if (id === "intel") {
+      const cand = RND.shuffle(Object.entries(c.suspects).filter(([sid]) => !S.secrets.some(x => x.sid === sid))).slice(0, 2);
+      if (cand.length) {
+        const parts = cand.map(([sid, p]) => { const hint = secretHint(sid); S.secrets.push({ sid, name: p.name, text: hint }); return `${p.name} 씨 쪽: ${hint}`; });
+        msg = `“주변 사람들을 만나고 왔습니다. ${parts.join(" / ")}”`;
+      } else msg = "“주변 얘기는 이미 다 들으셨습니다.”";
+      Sound.help();
+    }
     S.events.push({ bad: false, msg: `${who} — ${msg}` });
     toast(`<b>${esc(who)}</b> — ${esc(msg)}`);
   }
 }
 function renderDeptHelp() {
-  const ids = ["digital", "fin"].filter(deptOn);
-  if (!ids.length) return "";
+  const ids = ["digital", "fin", "drug", "traffic", "intel", "sit"].filter(deptOn);
+  const guardNote = deptOn("guard") && S.depts ? `<p class="hint">🛡 ${deptName("guard")} ${N.grdL}·${N.grd} — 현장을 봉쇄 중이에요. 문을 잠그거나 증거를 망치는 방해가 일어나지 않아요.</p>` : "";
+  if (!ids.length) return guardNote ? `<div class="dispatch"><b>부서 지원</b>${guardNote}</div>` : "";
   const jobs = S.deptJobs || {};
-  return `<div class="dispatch"><b>부서 지원 <span class="hint">· 사건마다 한 번씩 · 턴 소모 없음</span></b>
+  return `<div class="dispatch"><b>부서 지원 <span class="hint">· 사건마다 한 번씩 · 턴 소모 없음</span></b>${guardNote}
     <div class="q-actions">${ids.map(id => { const d = DEPTS.find(x => x.id === id), j = jobs[id], slot = DEPT_JOB[id];
       return `<button class="act ally with-face" data-dept="${id}" ${j || S.turns <= 0 || S.decided ? "disabled" : ""}>${pixelFace(N[DEPT_LEAD[id]], 24)}${pixelFace(N[slot], 24)}${d.div} ${d.name} ${deptWho(id)}<span class="cost">${j ? (j.done ? "보고 완료" : `${Math.max(0, j.due - S.actions)}턴 뒤 보고`) : d.desc}</span></button>`; }).join("")}</div></div>`;
 }
