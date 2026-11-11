@@ -545,6 +545,36 @@ body.talking .choice { font-size: clamp(14px, 1.15vw, 17px); padding-block: 10px
   body.talking .choice { font-size: 13.5px; padding-block: 7px; }
   body.talking .talklog { display: none; }
 }
+/* ===== 오프닝 ===== */
+.opening { position: relative; min-height: min(100dvh - 40px, 900px); display: grid; place-items: center; overflow: hidden; border-radius: 10px; border: 1px solid var(--line); background: #0b0f1a; }
+.opening-stage { position: absolute; inset: 0; }
+.opening-canvas { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+.opening-shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, rgba(5,7,12,.15), rgba(5,7,12,.75) 75%); pointer-events: none; }
+.opening-text { position: relative; z-index: 2; text-align: center; display: grid; gap: 14px; justify-items: center; padding: 20px; transform: translateY(-6%); }
+.op-tag { letter-spacing: .3em; animation: op-fade 1s .2s both; }
+.op-title { font-family: var(--f-display); font-size: clamp(38px, 8vw, 92px); line-height: 1.05; text-shadow: 0 4px 30px rgba(0,0,0,.8), 0 0 18px rgba(232,178,92,.25); }
+.op-title span { display: inline-block; opacity: 0; animation: op-type .45s both; }
+.op-sub { color: #c9c3b6; font-size: clamp(14px, 1.8vw, 19px); animation: op-fade 1s 2.2s both; }
+.op-start { justify-self: center; margin-inline: auto; font-size: clamp(16px, 2vw, 22px); padding: 14px 34px; animation: op-fade .8s 2.8s both, op-pulse 1.8s 3.6s ease-in-out infinite; }
+.op-hint { animation: op-fade 1s 3.2s both; }
+@keyframes op-type { from { opacity: 0; transform: translateY(14px) scale(.9); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes op-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes op-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(232,178,92,.55); } 50% { box-shadow: 0 0 0 12px rgba(232,178,92,0); } }
+.police-line { position: absolute; left: -10%; right: -10%; bottom: 9%; z-index: 3; transform: rotate(-4deg); background: repeating-linear-gradient(90deg, #f2c300 0 40px, #e0b400 40px 80px); color: #111; font-weight: 800; letter-spacing: .12em; font-size: clamp(11px, 1.4vw, 15px); padding: 6px 0; white-space: nowrap; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+.police-line span { display: inline-block; animation: op-tape 22s linear infinite; }
+@keyframes op-tape { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.file-flaps { position: absolute; inset: 0; z-index: 5; pointer-events: none; display: grid; grid-template-columns: 1fr 1fr; }
+.file-flaps i { background: #6b5536; box-shadow: inset 0 0 0 2px #4a3a24; transform: scaleX(0); }
+.file-flaps i:first-child { transform-origin: left; } .file-flaps i:last-child { transform-origin: right; }
+.opening.leaving::after { content: ""; position: absolute; inset: 0; z-index: 4; background: #fff; animation: op-flash .5s ease-out both; }
+.opening.leaving .file-flaps i { animation: op-close .55s .45s cubic-bezier(.7,0,.3,1) forwards; }
+.opening.leaving .opening-text { animation: op-zoom .9s ease-in forwards; }
+@keyframes op-flash { 0% { opacity: 0; } 15% { opacity: .95; } 100% { opacity: 0; } }
+@keyframes op-close { to { transform: scaleX(1); } }
+@keyframes op-zoom { to { transform: translateY(-6%) scale(1.25); opacity: 0; filter: blur(3px); } }
+body.arrive main { animation: op-arrive .8s ease-out both; }
+@keyframes op-arrive { from { opacity: 0; transform: scale(.97); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+@media (prefers-reduced-motion: reduce) { .op-title span, .op-sub, .op-start, .op-hint, .op-tag { animation: none; opacity: 1; } .police-line span { animation: none; } }
 .sit-in { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
 .sit-in > b { font-size: 12.5px; color: var(--muted); font-family: var(--f-mono); }
 .sit-in .act { padding: 4px 8px; font-size: 13px; }
@@ -2644,6 +2674,7 @@ function render() {
   Sound.tension();
   if (decisionShowing && S.screen !== "game") { decisionShowing = false; hideDecisionOverlay(); }
   document.body.classList.toggle("urgent", S.screen === "game" && S.turns > 0 && (S.turns <= 6 || S.timeLeft <= 60));
+  if (S.screen === "opening") return renderOpening();
   if (S.screen === "title") return renderTitle();
   if (S.screen === "files") return renderFiles();
   if (S.screen === "brief") return renderBrief();
@@ -2693,6 +2724,95 @@ function fitTalk() {
 }
 addEventListener("resize", () => fitTalk());
 
+/* ===================== 오프닝: 비 오는 밤거리, 경찰차, 번개, 제목 → 게임 시작 ===================== */
+const OPENING = (() => {
+  const W = 192, H = 108;
+  let cv = null, g = null, raf = 0, t0 = 0, sky = null, leaving = false;
+  const rnd = (() => { let x = 7; return () => (x = (x * 16807) % 2147483647) / 2147483647; })();
+  const towers = Array.from({ length: 14 }, (_, i) => ({ x: i * 14 - 4 + Math.floor(rnd() * 6), w: 10 + Math.floor(rnd() * 8), h: 26 + Math.floor(rnd() * 34) }));
+  const lit = towers.map(b => Array.from({ length: 40 }, () => rnd() < .35));
+  function backdrop() {
+    if (sky) return sky;
+    sky = pxCanvas(W, H); const b = sky.getContext("2d");
+    const bands = ["#0b0f1a", "#0e1322", "#111829", "#141c30", "#172036"];
+    bands.forEach((c, i) => { b.fillStyle = c; b.fillRect(0, i * 14, W, 14); });
+    b.fillStyle = "#e9e2c8"; b.fillRect(150, 10, 8, 8); b.fillStyle = "#172036"; b.fillRect(153, 10, 5, 5);   /* 초승달 */
+    towers.forEach((t, i) => {
+      b.fillStyle = i % 2 ? "#0a0d15" : "#0d111b"; b.fillRect(t.x, 84 - t.h, t.w, t.h);
+      let k = 0; for (let y = 84 - t.h + 3; y < 80; y += 4) for (let x = t.x + 2; x < t.x + t.w - 2; x += 3) { if (lit[i][k++ % 40]) { b.fillStyle = "#d9b45a"; b.fillRect(x, y, 1, 2); } }
+    });
+    b.fillStyle = "#1a1d22"; b.fillRect(0, 84, W, 24);   /* 젖은 도로 */
+    b.fillStyle = "#2a2e35"; for (let x = 4; x < W; x += 22) b.fillRect(x, 95, 10, 1);
+    b.fillStyle = "#3a3026"; b.fillRect(20, 60, 2, 24); b.fillRect(20, 60, 9, 2);   /* 가로등 */
+    return sky;
+  }
+  function draw(t) {
+    g.imageSmoothingEnabled = false;
+    g.drawImage(backdrop(), 0, 0);
+    /* 가로등 빛 */
+    g.fillStyle = "rgba(255,214,120,.10)"; g.beginPath(); g.moveTo(26, 62); g.lineTo(10, 96); g.lineTo(46, 96); g.fill();
+    /* 경찰차 */
+    const cx = 92, cy = 78, blink = Math.floor(t * 4) % 2;
+    g.fillStyle = "#0e1014"; g.fillRect(cx, cy + 4, 46, 9);
+    g.fillStyle = "#e8e8ea"; g.fillRect(cx + 1, cy + 3, 44, 6); g.fillStyle = "#1c2a4a"; g.fillRect(cx + 1, cy + 8, 44, 3);
+    g.fillStyle = "#e8e8ea"; g.fillRect(cx + 10, cy - 3, 24, 6); g.fillStyle = "#28384c"; g.fillRect(cx + 12, cy - 2, 9, 4); g.fillRect(cx + 23, cy - 2, 9, 4);
+    g.fillStyle = "#111"; g.fillRect(cx + 6, cy + 11, 7, 4); g.fillRect(cx + 33, cy + 11, 7, 4);
+    g.fillStyle = blink ? "#ff3b3b" : "#5a1a1a"; g.fillRect(cx + 16, cy - 5, 6, 2);
+    g.fillStyle = blink ? "#24346a" : "#3b6bff"; g.fillRect(cx + 22, cy - 5, 6, 2);
+    g.fillStyle = blink ? "rgba(255,60,60,.16)" : "rgba(60,110,255,.16)"; g.fillRect(0, 0, W, H);
+    g.fillStyle = blink ? "rgba(255,60,60,.35)" : "rgba(60,110,255,.35)"; g.fillRect(cx - 6, 98, 58, 3);   /* 젖은 길에 비친 불빛 */
+    /* 강력팀 셋: 차 옆에 서 있다 */
+    [["서하루", 70, "right"], ["강무열", 140, "left"], ["한서진", 154, "left"]].forEach(([n, x, d]) => {
+      const sp = charSprites(n, ""), f = 0; g.drawImage(sp[d][f], x, 72);
+    });
+    /* 비 */
+    g.fillStyle = "rgba(170,195,230,.45)";
+    for (let i = 0; i < 70; i++) { const x = (i * 37 + Math.floor(t * 60) * (1 + i % 3)) % W, y = (i * 23 + Math.floor(t * 140)) % H; g.fillRect(x, y, 1, 3); }
+    /* 번개 */
+    const ph = t % 7;
+    if (ph > 5.2 && ph < 5.35 || ph > 5.45 && ph < 5.5) { g.fillStyle = "rgba(230,235,255,.55)"; g.fillRect(0, 0, W, H); g.fillStyle = "#f3f6ff"; [[60, 0], [64, 10], [58, 18], [66, 30]].reduce((a, b) => { g.fillRect(Math.min(a[0], b[0]), a[1], 2, b[1] - a[1]); return b; }); }
+  }
+  function loop() {
+    raf = 0;
+    if (S.screen !== "opening" || !cv || !cv.isConnected) return;
+    const t = (performance.now() - t0) / 1000;
+    draw(t);
+    const thunderAt = Math.floor((t - 5.2) / 7);
+    if (t > 5.2 && thunderAt >= 0 && OPENING._th !== thunderAt) { OPENING._th = thunderAt; if (Sound.on) Sound.thunder(); }
+    raf = requestAnimationFrame(loop);
+  }
+  return {
+    _th: -1,
+    mount(el) {
+      if (!el) return; if (!t0) t0 = performance.now();
+      cv = pxCanvas(W, H); cv.className = "opening-canvas"; el.appendChild(cv); g = cv.getContext("2d");
+      if (!raf) raf = requestAnimationFrame(loop);
+    },
+    go() {   /* 게임 시작: 번개 → 사이렌 → 사건 파일이 열리듯 넘어간다 */
+      if (leaving) return; leaving = true;
+      Sound.init(); Sound.thunder(); setTimeout(() => Sound.siren(), 350);
+      const o = document.querySelector(".opening"); if (o) o.classList.add("leaving");
+      setTimeout(() => { leaving = false; S.screen = "title"; render(); document.body.classList.add("arrive"); setTimeout(() => document.body.classList.remove("arrive"), 900); }, 1250);
+    },
+  };
+})();
+function renderOpening() {
+  const title = "한밤의 사건 파일";
+  app.innerHTML = `<section class="opening">
+    <div class="opening-stage" id="opening-stage"></div>
+    <div class="opening-shade"></div>
+    <div class="opening-text">
+      <span class="label op-tag">CASE FILE · 강력팀</span>
+      <h1 class="op-title" aria-label="${title}">${[...title].map((ch, i) => `<span style="animation-delay:${.6 + i * .14}s">${ch === " " ? "&nbsp;" : ch}</span>`).join("")}</h1>
+      <p class="op-sub">비 오는 밤, 살인 사건 신고가 들어왔다.</p>
+      <button class="btn op-start" data-act="opening-go">게임 시작</button>
+      <p class="hint op-hint">엔터를 눌러도 시작해요 · 소리가 나와요</p>
+    </div>
+    <div class="police-line" aria-hidden="true"><span>${"POLICE LINE · DO NOT CROSS · 수사 중 · 출입 금지 · ".repeat(6)}</span></div>
+    <div class="file-flaps" aria-hidden="true"><i></i><i></i></div>
+  </section>`;
+  OPENING.mount(document.getElementById("opening-stage"));
+}
 function mePreview() {
   const g = playerGender(), auto = PLAYER_G === "auto";
   const btn = (v, t) => `<button type="button" class="chip" data-pg="${v}" aria-pressed="${PLAYER_G === v}">${t}</button>`;
@@ -4534,6 +4654,7 @@ const inGameRooms = () => S.screen === "game" && S.tab === "rooms";
 document.addEventListener("keyup", e => { if (inGameRooms()) PX.key(e, false); });
 addEventListener("blur", () => PX.clearKeys());
 document.addEventListener("keydown", e => {
+  if (S.screen === "opening" && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); OPENING.go(); return; }
   if (!inGameRooms()) return;
   if (e.key === "Escape" && S.sheet) { S.sheet = false; render(); return; }
   if (/^[tTㅅ]$/.test(e.key) && !/INPUT|SELECT|TEXTAREA/.test((document.activeElement || {}).tagName || "")) { S.sheet = !S.sheet; render(); return; }
@@ -4581,6 +4702,7 @@ app.addEventListener("click", e => {
   else if (d.act === "sheet-open") { S.sheet = true; }
   else if (d.act === "sheet-close") { S.sheet = false; }
   else if (d.dept) { callDept(d.dept); S.sheet = false; }
+  else if (d.act === "opening-go") { OPENING.go(); return; }
   else if (d.act === "team-go") { confirmTeam(); top = true; }
   else if (d.act === "team-random") { S.teamPick = randomTeam(); S.teamPick.fit = true; Sound.help(); }
   else if (d.act === "team-default") { S.teamPick = { team: { ...TEAM_DEFAULT }, patrol: PATROL.map(x => x.id), depts: DEPT_DEFAULT.slice(0, DEPT_N[S.diff] || 4) }; }
@@ -4684,7 +4806,7 @@ app.addEventListener("submit", e => {
 
 /* 페이지 업데이트 시 진행 상태 유지 */
 window.claude?.hot?.snapshot?.(() => S);
-const start = data => { if (data && data.screen && (["title", "files"].includes(data.screen) || caseById(data.caseId) || data.randomCase)) S = Object.assign(fresh(), data); render(); };
+const start = data => { if (data && data.screen && (["title", "files"].includes(data.screen) || caseById(data.caseId) || data.randomCase)) S = Object.assign(fresh(), data); else S.screen = "opening"; render(); };
 window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 </script>
 </body>
