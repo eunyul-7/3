@@ -3240,6 +3240,28 @@ const Sound = (() => {
     wrong() { if (ctx) tone(110, "sine", now(), 0.01, 0.4, 0.4, 45); },
     ring() { if (!ctx) return; const t = now(); for (let k = 0; k < 14; k++) tone(k % 2 ? 1180 : 940, "square", t + k * 0.045, 0.002, 0.035, 0.035); },
     tick() { if (ctx) tone(1800, "square", now(), 0.002, 0.05, 0.04); },
+    /* 전화 속 목소리: 브라우저 음성 합성(한국어)으로 읽는다. ( ) 속 지문은 읽지 않는다 */
+    voice(text, female = true, onend, onstart) {
+      try {
+        if (!on || !window.speechSynthesis || !window.SpeechSynthesisUtterance) { if (onend) onend(); return false; }
+        const say = String(text).replace(/\([^)]*\)/g, " ").replace(/[“”"‘’]/g, "").replace(/…+/g, "… ").trim();
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(say); u.lang = "ko-KR";
+        const vs = speechSynthesis.getVoices().filter(v => /^ko/i.test(v.lang)); if (vs.length) u.voice = vs.find(v => female ? /female|여|Yuna|Heami|SunHi|Sora/i.test(v.name) : /male|남|InJoon|Minsu/i.test(v.name)) || vs[0];
+        u.rate = 1.12; u.pitch = female ? 1.35 : 0.8; u.volume = 1;
+        if (onend) u.onend = onend; if (onstart) u.onstart = onstart;
+        speechSynthesis.speak(u); return true;
+      } catch (e) { if (onend) onend(); return false; }
+    },
+    hush() { try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} },
+    phoneLine(sec) {   /* 수화기 잡음: 지지직 + 숨소리 */
+      if (!ctx) return; const t = now();
+      noise(t, sec, 0.035, "bandpass", 1900, 0.8);
+      for (let k = 0; k < sec / 0.9; k++) noise(t + k * 0.9 + Math.random() * 0.3, 0.35, 0.05, "bandpass", 700, 1.5);
+      for (let k = 0; k < sec * 3; k++) if (Math.random() < 0.35) noise(t + k / 3, 0.03, 0.12, "highpass", 3200);
+    },
+    pickup() { if (!ctx) return; const t = now(); noise(t, 0.06, 0.4, "lowpass", 900); tone(300, "square", t + 0.02, 0.002, 0.05, 0.05); },
+    hangup() { if (!ctx) return; const t = now(); for (let k = 0; k < 3; k++) { tone(480, "sine", t + k * 0.5, 0.01, 0.12, 0.25); tone(620, "sine", t + k * 0.5, 0.01, 0.1, 0.25); } },
     door() {   /* 끼이익 문 열리는 소리 + 쿵 */
       if (!ctx) return; const t = now(), o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
       o.type = "sawtooth"; o.frequency.setValueAtTime(150, t); o.frequency.linearRampToValueAtTime(92, t + .55);
@@ -3414,18 +3436,26 @@ const OPENING = (() => {
     raf = requestAnimationFrame(loop);
   }
   /* ---------- 콜드 오픈: 112 신고 전화 → 번쩍 → 현장 ---------- */
-  let revealed = false, coTimers = [];
+  let revealed = false, coTimers = [], voiced = false;
   const CALL = "“여, 여보세요… 사, 사람이… 사람이 쓰러져 있어요… 피가… 빨리 와 주세요…!”";
   function coldOpen() {
     coTimers.forEach(clearTimeout); coTimers = [];
     const line = document.getElementById("co-line"); if (!line) return;
-    [...CALL].forEach((ch, i) => coTimers.push(setTimeout(() => { const l = document.getElementById("co-line"); if (l) l.textContent = CALL.slice(0, i + 1); }, 900 + i * 55)));
-    const end = 900 + CALL.length * 55;
-    coTimers.push(setTimeout(() => { const a = document.getElementById("co-alert"); if (a) a.classList.add("on"); if (Sound.running) Sound.wrong(); }, end + 300));
-    coTimers.push(setTimeout(reveal, end + 1500));
+    line.textContent = ""; const al = document.getElementById("co-alert"); if (al) al.classList.remove("on");
+    /* 소리가 켜져 있으면: 따르릉 → 딸깍 → 지지직 + 신고자 목소리 → 뚜-뚜- */
+    const loud = Sound.running && Sound.on, lead = loud ? 2200 : 900;
+    if (loud) {
+      Sound.ring(); coTimers.push(setTimeout(() => Sound.ring(), 700), setTimeout(() => Sound.pickup(), 1700));
+      coTimers.push(setTimeout(() => { Sound.phoneLine(CALL.length * 0.06 + 1); Sound.voice(CALL, true, null, () => { voiced = true; }); }, lead));
+    }
+    [...CALL].forEach((ch, i) => coTimers.push(setTimeout(() => { const l = document.getElementById("co-line"); if (l) l.textContent = CALL.slice(0, i + 1); }, lead + i * 55)));
+    const end = lead + CALL.length * 55 + (loud ? 900 : 0);
+    coTimers.push(setTimeout(() => { const a = document.getElementById("co-alert"); if (a) a.classList.add("on"); if (Sound.running) { Sound.hangup(); setTimeout(() => Sound.wrong(), 1500); } }, end + 300));
+    coTimers.push(setTimeout(reveal, end + (loud ? 2600 : 1500)));
+    const sk = document.querySelector(".co-skip"); if (sk) sk.textContent = loud || !Sound.on ? "누르면 건너뛰어요" : "🔊 누르면 신고 전화를 소리로 들어요 · 한 번 더 누르면 건너뛰어요";
   }
   function reveal() {
-    if (revealed) return; revealed = true; coTimers.forEach(clearTimeout);
+    if (revealed) return; revealed = true; coTimers.forEach(clearTimeout); Sound.hush();
     const o = document.querySelector(".opening"); if (!o) return;
     o.classList.add("revealed", "slam"); setTimeout(() => o.classList.remove("slam"), 700);
     if (Sound.running) { Sound.thunder(); setTimeout(() => Sound.sirenFar(), 500); setTimeout(() => Sound.lie(), 1150); }
@@ -3444,6 +3474,12 @@ const OPENING = (() => {
   return {
     get revealed() { return revealed; },
     skip() { reveal(); },
+    /* 콜드 오픈을 누르면: 아직 소리로 못 들었으면 소리와 함께 처음부터, 들었으면 건너뛰기 */
+    tap() {
+      if (revealed) return;
+      if (!voiced && Sound.on && !this._retried) { this._retried = true; Sound.init(); setTimeout(() => { if (!revealed) { if (Sound.running) coldOpen(); else reveal(); } }, 120); return; }
+      reveal();
+    },
     _th: -1, _si: -1,
     mount(el) {
       if (!el) return; if (!t0) t0 = performance.now();
@@ -3709,6 +3745,7 @@ const INTRO = (() => {
     const isMe = b.who === pname();
     el.className = "intro-cap" + (b.who ? "" : " narr");
     el.className = "intro-cap" + (b.who ? "" : " narr") + (b.tag ? " phone" : "");
+    if (b.tag && b.who) Sound.voice(b.text, Face.traits(b.who, ageOf(b.role || "")).F);   /* 신고자 목소리 */
     el.innerHTML = b.who ? `${pixelFace(b.who, 40, b.role || "", isMe)}<div><b>${b.tag ? `${esc(b.tag)} · ${esc(b.who)}` : `${esc(b.who)}${isMe ? " " + PLAYER_RANK : rankOf(b.who) ? " " + rankOf(b.who) : ""}`}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
   }
   function sounds(t) {
@@ -5523,13 +5560,14 @@ document.addEventListener("keydown", e => {
   PX.key(e, true);
 });
 /* 콜드 오픈(112 신고 장면)은 누르면 건너뛴다 */
-document.addEventListener("click", e => { if (S.screen === "opening" && e.target.closest && e.target.closest(".cold-open")) OPENING.skip(); });
+document.addEventListener("click", e => { if (S.screen === "opening" && e.target.closest && e.target.closest(".cold-open")) OPENING.tap(); });
 /* 오프닝: 화면 어디를 처음 눌러도 배경음악이 시작된다 (브라우저는 첫 조작 전엔 소리를 막는다) */
 let opMusicTried = false;
 for (const ev of ["pointerdown", "keydown"]) document.addEventListener(ev, e => {
   if (S.screen !== "opening" || opMusicTried || !Sound.on) return;
   const t = e.target && e.target.closest && e.target.closest("[data-act]");
   if (t && (t.dataset.act === "opening-go" || t.dataset.act === "op-music")) return;
+  if (!OPENING.revealed && e.target.closest && e.target.closest(".cold-open")) { Sound.init(); return; }   /* 신고 전화를 먼저 듣고, 음악은 화면이 열린 뒤 */
   if (ev === "keydown" && (e.key === "Enter" || e.key === " ")) return;
   opMusicTried = true; Sound.init(); Sound.musicStart(); Sound.thunder(); flash(); setTimeout(() => Sound.sirenFar(), 600);
   const b = document.querySelector(".op-music"); if (b) { b.textContent = "♪ 음악 끄기"; b.setAttribute("aria-pressed", "true"); }
@@ -5575,7 +5613,7 @@ app.addEventListener("click", e => {
   else if (d.act === "sheet-close") { S.sheet = false; }
   else if (d.dept) { callDept(d.dept); S.sheet = false; }
   else if (d.act === "opening-go") { OPENING.go(); return; }
-  else if (d.act === "op-skip") { OPENING.skip(); return; }
+  else if (d.act === "op-skip") { return; }   /* 콜드 오픈 클릭은 위의 document 클릭에서 처리 */
   else if (d.act === "op-music") { Sound.init(); if (Sound.music) Sound.musicStop(0.8); else { if (!Sound.on) Sound.toggle(); Sound.musicStart(); }
     b.textContent = Sound.music ? "♪ 음악 끄기" : "♪ 음악 켜기"; b.setAttribute("aria-pressed", String(Sound.music)); return; }
   else if (d.act === "team-go") { confirmTeam(); top = true; }
