@@ -364,6 +364,38 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 @supports not (height: 100dvh) { .playfield .pxview { width: min(100%, calc((100vh - 245px) * 11 / 8)); } }
 .playfield .pad-row { width: min(100%, 900px); justify-self: center; }
 .play-grid { display: grid; gap: 12px; }
+/* 휴대폰: 한 화면에 다 들어가게 (헤더 한 줄, 방 이동은 옆으로 넘기는 한 줄, 방 설명은 숨김) */
+@media (max-width: 899px) {
+  body.playing { padding-block: 6px 6px; }
+  body.playing .board { gap: 4px; padding-block: 4px; }
+  body.playing .board-top { flex-wrap: nowrap; gap: 8px; align-items: center; }
+  body.playing .board-top h2 { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  body.playing .clock { flex-wrap: nowrap; gap: 6px; flex: none; }
+  body.playing .clock .mono { font-size: 11.5px; }
+  body.playing .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 2px; }
+  body.playing .tabs::-webkit-scrollbar { display: none; }
+  body.playing .tab, body.playing .sound-btn { padding: 4px 8px; font-size: 12.5px; white-space: nowrap; flex: none; }
+  body.playing .playfield { gap: 6px; margin-top: 4px; }
+  body.playing .play-grid, body.playing .play-main, body.playing .play-side { gap: 6px; }
+  body.playing .room-bar { gap: 6px; }
+  body.playing .room-bar b { font-size: 16px; }
+  body.playing .room-bar .label, body.playing .room-bar .hint { font-size: 11.5px; }
+  body.playing .playfield .pxview { width: min(100%, calc((100dvh - 330px) * 11 / 8)); justify-self: center; }
+  body.playing .pad-row { gap: 8px; flex-wrap: nowrap; align-items: center; }
+  body.playing .dpad { grid-template-columns: repeat(3, 40px); grid-template-rows: repeat(2, 36px); gap: 3px; }
+  body.playing .pad-act { flex: 1 1 auto; gap: 4px; flex-direction: column; align-items: stretch; }
+  body.playing .pad-act #near-px { font-size: 12px; flex: none; min-height: 1.2em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body.playing .act-btns { flex-wrap: nowrap; gap: 6px; }
+  body.playing .pad-act .btn { padding: 9px 10px; flex: 1 1 0; font-size: 14px; }
+  body.playing .call-btn .badge { display: none; }
+  body.playing .room-nav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  body.playing .room-nav::-webkit-scrollbar { display: none; }
+  body.playing .room-nav > .label, body.playing .nav-floor > .label { display: none; }
+  body.playing .nav-floor, body.playing .nav-rooms { display: contents; }
+  body.playing .room-nav .room { flex: none; padding: 5px 9px; white-space: nowrap; }
+  body.playing .room-nav .room .rstat { display: none; }
+  body.playing .playfield .desc, body.playing .playfield .found-list, body.playing .playfield .locked-room { display: none; }
+}
 .play-main, .play-side { display: grid; gap: 10px; align-content: start; min-width: 0; }
 /* 넓은 화면: 지도는 왼쪽에 크게, 버튼은 오른쪽에 → 스크롤 없이 한 화면에 */
 @media (min-width: 900px) {
