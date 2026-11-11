@@ -452,6 +452,10 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .dept-toggle { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; font-size: 16px; }
 .dept-toggle input { width: 18px; height: 18px; accent-color: #e8b25c; }
 .act-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+#act-px.talk { background: #7fd1a0; border-color: #7fd1a0; color: #0f1a12; }
+.px-say { position: absolute; left: 3%; right: 3%; bottom: 3%; z-index: 4; display: flex; gap: 10px; align-items: center; padding: 8px 12px; background: rgba(10,13,16,.9); border: 1px solid #7fd1a0; border-radius: 8px; }
+.px-say b { display: block; font-size: 12px; color: #7fd1a0; font-family: var(--f-mono); }
+.px-say p { margin: 0; font-size: 14px; line-height: 1.45; }
 .call-btn .badge { font-size: 11px; background: var(--ok); color: #0f1a12; border-radius: 999px; padding: 1px 7px; margin-left: 4px; }
 .sheet-back { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 40; border: 0; padding: 0; cursor: default; }
 .team-sheet { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(100%, 760px); max-height: 78dvh; z-index: 41; display: flex; flex-direction: column;
@@ -3628,7 +3632,8 @@ const PX = (() => {
   function act(t) {
     if (!t) return;
     if (t.kind === "obj") { if (doSearch(t.ref.spot)) render(); }
-    else if (t.kind === "person" && t.ref.kind === "h") toast(`<b>${esc(t.ref.name)}</b> — “여긴 제게 맡기십시오! 곧 보고하겠습니다.”`);
+    else if (t.kind === "ally") say(t.name, allyHint(t.who));
+    else if (t.kind === "person" && t.ref.kind === "h") say(t.ref.name, allyHint(t.ref.id.slice(2)));
     else if (t.kind === "person") { S.tab = "people"; S.suspect = t.ref.id; S.dlg = null; render(); window.scrollTo(0, 0); }
   }
   function nearby() {
@@ -3636,13 +3641,29 @@ const PX = (() => {
     for (const [dx, dy] of [order, ...NB]) {
       const x = S.pos.x + dx, y = S.pos.y + dy;
       const it = L.items.find(o => o.x === x && o.y === y); if (it) return { kind: "obj", ref: it };
-      const p = L.people.find(o => o.x === x && o.y === y); if (p) return { kind: "person", ref: p };
+      const p = L.people.find(o => o.x === x && o.y === y); if (p) return p.kind === "h" ? { kind: "ally", who: p.id.slice(2), name: p.name } : { kind: "person", ref: p };
+      const a = allyAt(x, y); if (a) return a;
     }
     return null;
   }
+  function allyAt(x, y) {
+    if (buddy.on && Math.round(buddy.fx) === x && Math.round(buddy.fy) === y) return { kind: "ally", who: "seo", name: N.seo };
+    const c = cops.find(o => !o.leaving && Math.round(o.fx) === x && Math.round(o.fy) === y);
+    return c ? { kind: "ally", who: c.id, name: patrolOf(c.id).name } : null;
+  }
+  let sayTimer = 0;
+  function say(name, text) {
+    if (!host) return;
+    let el = host.querySelector(".px-say");
+    if (!el) { el = document.createElement("div"); el.className = "px-say"; host.appendChild(el); }
+    el.innerHTML = `${pixelFace(name, 32)}<div><b>${esc(name)} ${esc(rankOf(name))}</b><p>${esc(text)}</p></div>`;
+    el.hidden = false; clearTimeout(sayTimer); sayTimer = setTimeout(() => { el.hidden = true; }, 8000);
+    Sound.ask();
+  }
   function describe(t) {
-    if (!t) return "방향키·WASD, 화면 터치, 아래 방향 버튼으로 움직여요. 물음표(?) 물건이나 사람 옆에서 ‘조사’를 눌러요.";
-    if (t.kind === "person") return t.ref.kind === "h" ? `${t.ref.name} — 조사 중` : `${t.ref.name} — ‘조사’ 또는 스페이스: 대화`;
+    if (!t) return "방향키·WASD, 화면 터치, 아래 방향 버튼으로 움직여요. 물음표(?) 물건 옆에서는 ‘조사’, 사람 옆에서는 ‘대화’를 눌러요.";
+    if (t.kind === "ally") return `${t.name} (우리 팀) — ‘대화’ 또는 스페이스: 조사한 걸 물어봐요 (턴 안 씀)`;
+    if (t.kind === "person") return t.ref.kind === "h" ? `${t.ref.name} — 일하는 중 · ‘대화’로 물어보기` : `${t.ref.name} — ‘대화’ 또는 스페이스: 심문하러 가기`;
     if (has(S.searched, t.ref.spot)) return `${t.ref.label} — 이미 조사했다.`;
     return `${t.ref.label} — ‘조사’ 또는 스페이스 (−${has(S.tampered, t.ref.spot) ? 2 : 1}턴)`;
   }
@@ -3746,7 +3767,12 @@ const PX = (() => {
       hoverT = t; hint = nearby();
       const el = document.getElementById("near-px"), btn = document.getElementById("act-px");
       if (el) el.textContent = describe(hint);
-      if (btn) btn.disabled = !hint || (hint.kind === "obj" && has(S.searched, hint.ref.spot)) || S.turns <= 0;
+      if (btn) {
+        btn.disabled = !hint || (hint.kind === "obj" && has(S.searched, hint.ref.spot)) || (S.turns <= 0 && hint.kind !== "ally");
+        const label = !hint || hint.kind === "obj" ? "조사" : "대화";
+        if (btn.textContent !== label) btn.textContent = label;
+        btn.classList.toggle("talk", label === "대화");
+      }
     }
   }
   function tileFromEvent(e) {
@@ -3760,6 +3786,12 @@ const PX = (() => {
     if (it) return go({ kind: "obj", ref: it });
     const p = L.people.find(o => o.x === x && o.y === y) || L.people.find(o => o.x === x && o.y === y + 1);
     if (p) return go({ kind: "person", ref: p });
+    const a = allyAt(x, y) || allyAt(x, y + 1);
+    if (a) {   /* 우리 팀원: 옆이면 바로 대화, 멀면 다가가서 */
+      if (Math.abs(x - S.pos.x) + Math.abs(y - S.pos.y) <= 2) return act(a);
+      const goals = NB.map(([dx, dy]) => [x + dx, y + dy]).filter(([gx, gy]) => walkable(L, gx, gy) && !doorAt(L, gx, gy));
+      return walkTo(goals, () => act(a));
+    }
     const d = doorAt(L, x, y); if (d) return go({ kind: "door", ref: d });
     go({ kind: "floor", x, y });
   }
@@ -3804,6 +3836,34 @@ const PX = (() => {
   };
 })();
 
+/* ===================== 팀원과 대화: 조사한 걸 힌트로 준다 (턴 소모 없음) ===================== */
+function allyHint(who) {
+  const c = C(), rid = S.room;
+  const realLeft = r => c.rooms[r].spots.filter(sp => sp.clue && !has(S.searched, sp.id) && !has(S.found, sp.clue) && !has(S.lost || [], sp.id));
+  if (who === "seo") {
+    const real = realLeft(rid), fakes = ((S.fakes || {})[rid] || []).filter(f => !has(S.searched, f.id));
+    const r = (hashStr(rid + "|" + S.found.length + "|" + S.fakeSeed) % 100) / 100, sharp = starSlot("seo") ? 1 : .75;
+    if (real.length) {
+      const sp = real[Math.floor(r * 97) % real.length];
+      if (fakes.length && r > sharp) return `선배님, 저 ‘${fakes[0].label.replace(/(을|를) .*$/, "")}’ 쪽이 수상해 보여요. …아닐 수도 있지만요.`;
+      return `선배님, 이 방 ‘${sp.label.replace(/(을|를) .*$/, "")}’ 쪽 아직 안 보셨죠? 뭔가 있을 것 같아요.${fakes.length ? ` 그리고 ? 중에 가짜도 ${fakes.length}개쯤 섞인 것 같아요.` : ""}`;
+    }
+    if (fakes.length) return `여기 남은 ?는 다 가짜 같아요. 괜히 턴 쓰지 마세요.`;
+    const other = Object.keys(c.rooms).map(r2 => [r2, realLeft(r2).length]).filter(([, n]) => n).sort((a, b) => b[1] - a[1])[0];
+    return other ? `여긴 다 봤어요. ${c.rooms[other[0]].name}에 아직 볼 게 ${other[1]}곳쯤 남았어요.` : "단서는 거의 다 모은 것 같아요. 이제 심문으로 몰아붙여요!";
+  }
+  const cop = (S.patrol || []).find(o => o.id === who);
+  if (cop) {
+    const x = patrolOf(who), mine = Object.entries(S.patrolNotes || {}).filter(([, n]) => n.by.endsWith(x.name));
+    const here = roomPeople(cop.room).filter(pp => pp.kind === "s").map(pp => pp.name);
+    const notes = mine.map(([sid, n]) => `${c.suspects[sid].name} 씨는 ${n.text.replace("얘기만 나오면 ", "얘기에 ").replace("던데요.", "더군요.")}`);
+    const rooms = Object.keys(c.rooms).filter(r2 => r2 !== rid && realLeft(r2).length);
+    return (notes.length ? notes.join(" ") : "아직 눈여겨본 사람은 없습니다.") + (here.length ? ` 지금 이 방엔 ${here.join("·")} 씨가 있고, 제가 지키고 있어요.` : "") + (rooms.length ? ` 돌아다녀 보니 ${c.rooms[rooms[0]].name} 쪽엔 아직 안 본 곳이 있더군요.` : "");
+  }
+  const m = S.missions.find(mm => mm.pid === who);
+  if (m) return m.role === "clear" ? "헷갈리게 하는 물건은 제가 치우고 있어요. 금방 끝나요." : m.role === "autopsy" ? "감식 중입니다. 사인이 나오면 바로 알려 드릴게요." : "부하들이 놓친 게 없는지 보고 있네. 조금만 기다리게.";
+  return "열심히 하고 있습니다!";
+}
 function renderPixel(out) {
   ensurePos();
   const c = C(), rid = S.room, r = c.rooms[rid], lk = S.locks[rid];
