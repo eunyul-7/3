@@ -1662,7 +1662,21 @@ const DEPTS = [
   { id: "sit", div: "112치안종합상황실", name: "상황팀", slots: ["sitL", "sit"], desc: "윗선과 연락해 수사 시간을 벌어 줘요. 부르면 바로 3턴과 1분이 늘어나요(한 번)." },
 ];
 const DEPT_DEFAULT = ["crime", "sci", "prof", "patrol"];
-const DEPT_N = { easy: 3, normal: 4, hard: 5 };   /* 11개 팀 중 */
+const DEPT_N = { easy: 5, normal: 7, hard: 9 };   /* 11개 팀 중 */
+const PATROL_RANDOM = { easy: 3, normal: 4, hard: 6 };   /* 무작위 사건에서 나가는 순찰 대원 수 */
+const patrolCount = () => S.depts ? (PATROL_RANDOM[S.diff] || 4) : (PATROL_N[S.diff] || 2);
+/* 장면(출동·끝)에 고른 팀만 나오게 */
+const SLOT_DEPT = { kang: "crime", gong: "crime", yoon: "sci", byun: "sci", han: "prof", mo: "prof" };
+const inCrew = id => !S.depts || !SLOT_DEPT[id] || deptOn(SLOT_DEPT[id]);
+function crew(base, spots) {
+  const list = base.filter(a => inCrew(a.id));
+  if (S.depts) DEPTS.filter(d => deptOn(d.id) && !["crime", "sci", "prof"].includes(d.id)).forEach((d, i) => {
+    const sp = spots[i]; if (sp) list.push({ id: d.slots[0], name: N[d.slots[0]], x: sp[0], y: sp[1], dir: sp[2] || "up" });
+  });
+  return list;
+}
+const leadName = () => inCrew("kang") ? N.kang : (() => { const d = DEPTS.find(d => deptOn(d.id) && d.slots); return d ? N[d.slots[0]] : N.seo; })();
+const rankOf = name => { for (const r of ROSTER) if (r.people.some(p => p[0] === name)) return r.rank; const x = PATROL_ALL.find(p => p.name === name); return x ? x.title : ""; };
 const deptOn = id => (S.depts || DEPT_DEFAULT).includes(id);
 const N = new Proxy({}, { get: (_, k) => { let t = null; try { t = S && S.team; } catch {} return (t && t[k]) || TEAM_DEFAULT[k] || ""; } });
 const PARTNERS = [
@@ -1969,7 +1983,7 @@ function lastTeam() {
 }
 function randomTeam() {
   const team = {}; for (const r of ROSTER) team[r.slot] = RND.pick(r.people)[0];
-  return { team, patrol: RND.shuffle(PATROL_ALL).slice(0, 4).map(x => x.id), depts: RND.shuffle(DEPTS.map(d => d.id)).slice(0, DEPT_N[S.diff] || 4) };
+  return { team, patrol: RND.shuffle(PATROL_ALL).slice(0, 6).map(x => x.id), depts: RND.shuffle(DEPTS.map(d => d.id)).slice(0, DEPT_N[S.diff] || 4) };
 }
 function confirmTeam() {
   const tp = S.teamPick, need = DEPT_N[S.diff] || 4;
@@ -1979,7 +1993,7 @@ function confirmTeam() {
   S.screen = "brief"; S.introDone = false; INTRO.reset();
 }
 function renderTeam() {
-  const c = C(), tp = S.teamPick, need = DEPT_N[S.diff] || 4, pd = PATROL_N[S.diff] || 2;
+  const c = C(), tp = S.teamPick, need = DEPT_N[S.diff] || 4, pd = PATROL_RANDOM[S.diff] || 4;
   if (!tp.depts || !tp.fit) {   /* 처음 열 때 난이도에 맞는 개수로 맞춘다 */
     const order = DEPT_DEFAULT.concat(DEPTS.map(d => d.id).filter(id => !DEPT_DEFAULT.includes(id)));
     tp.depts = (tp.depts || []).filter(id => DEPTS.some(d => d.id === id)).slice(0, need);
@@ -1988,7 +2002,7 @@ function renderTeam() {
   }
   const people = slot => { const r = ROSTER.find(x => x.slot === slot); return `<div class="pick-row">${r.people.map(([n, g, note]) => `<label class="pick"><input type="radio" name="team-${slot}" value="${n}" ${tp.team[slot] === n ? "checked" : ""}>
       <span>${pixelFace(n, 44)}<b>${n}</b><small>${r.label} · ${r.rank}</small><small class="hint">${note}</small></span></label>`).join("")}</div>`; };
-  const patrolPick = `<p class="hint">순찰조 대원 (4명까지, 고른 순서대로 ${DIFF[S.diff].label}에선 ${pd}명이 나가요)</p><div class="pick-row">${PATROL_ALL.map(x => { const i = tp.patrol.indexOf(x.id); return `<label class="pick"><input type="checkbox" name="team-patrol" value="${x.id}" ${i >= 0 ? "checked" : ""} ${i < 0 && tp.patrol.length >= 4 ? "disabled" : ""}>
+  const patrolPick = `<p class="hint">순찰 대원 (6명까지, 고른 순서대로 ${DIFF[S.diff].label}에선 ${pd}명이 나가요)</p><div class="pick-row">${PATROL_ALL.map(x => { const i = tp.patrol.indexOf(x.id); return `<label class="pick"><input type="checkbox" name="team-patrol" value="${x.id}" ${i >= 0 ? "checked" : ""} ${i < 0 && tp.patrol.length >= 6 ? "disabled" : ""}>
       <span>${pixelFace(x.name, 44)}<b>${x.name}</b><small>${x.title}${i >= 0 ? ` · ${i + 1}번째` : ""}</small></span></label>`; }).join("")}</div>`;
   const depts = DEPTS.map((d, i) => { const on = tp.depts.includes(d.id), full = !on && tp.depts.length >= need;
     const head = !i || DEPTS[i - 1].div !== d.div ? `<h3 class="div-head">${d.div}</h3>` : "";
@@ -1997,7 +2011,7 @@ function renderTeam() {
   app.innerHTML = `<section class="intro team-pick">
     <span class="label">${c.tag}</span>
     <h1>팀 꾸리기</h1>
-    <p class="lede">${esc(pname())} ${PLAYER_RANK}, 이번 사건은 <b>${esc(c.title)}</b>이다. 경찰서(형사과 · 수사과 · 생활안전과 · 교통과 · 정보과 · 경비과 · 112상황실)의 ${DEPTS.length}개 팀 중 <b>${need}개</b>를 골라 데려가고, 부서마다 함께할 사람을 뽑자. (${DIFF[S.diff].label} 난이도 · 쉬움 3 · 보통 4 · 어려움 5개)</p>
+    <p class="lede">${esc(pname())} ${PLAYER_RANK}, 이번 사건은 <b>${esc(c.title)}</b>이다. 경찰서(형사과 · 수사과 · 생활안전과 · 교통과 · 정보과 · 경비과 · 112상황실)의 ${DEPTS.length}개 팀 중 <b>${need}개</b>를 골라 데려가고, 부서마다 함께할 사람을 뽑자. (${DIFF[S.diff].label} 난이도 · 쉬움 5 · 보통 7 · 어려움 9개)</p>
     <fieldset class="team-slot on"><legend>형사과 동행 파트너 <span class="hint">· 늘 함께해요</span></legend><p class="hint">내 뒤를 따라다니며 방의 가짜 물건을 치워요.</p>${people("seo")}</fieldset>
     <p class="hint"><b>부서 ${tp.depts.length} / ${need}</b> 골랐어요.</p>
     ${depts}
@@ -2035,7 +2049,7 @@ function initPatrol() {
   const rooms = RND.shuffle(Object.keys(C().rooms).filter(r => !C().rooms[r].crime));
   if (!deptOn("patrol")) { S.patrol = []; S.patrolNotes = {}; return; }
   const pool = (S.patrolPick || []).length ? S.patrolPick.map(patrolOf).filter(Boolean) : PATROL;
-  S.patrol = pool.slice(0, PATROL_N[S.diff] || 2).map((x, i) => ({ id: x.id, room: rooms[i % rooms.length] }));
+  S.patrol = pool.slice(0, patrolCount()).map((x, i) => ({ id: x.id, room: rooms[i % rooms.length] }));
   S.patrolNotes = {};
   patrolWatch(true);
 }
@@ -2596,10 +2610,10 @@ function renderFiles() {
 
 /* ===================== 시작 장면: 경찰서에서 전화를 받고 출동 ===================== */
 const INTRO = (() => {
-  const TS = 16, W = 176, H = 128, END = 20.5;
+  const TS = 16, W = 176, H = 128, END = 22;
   let cv = null, g = null, raf = 0, t0 = 0, capKey = "", rang = [], bgc = null;
   const FURN = [["desk", 2, 3], ["desk", 4, 3], ["desk", 7, 3], ["terminal", 9, 3], ["board", 6, 1], ["plant", 0, 2], ["plant", 10, 2], ["box", 10, 6], ["box", 0, 6], ["window", 2, 1], ["window", 8, 1]];
-  const cast = () => [
+  const cast = () => crew([
     { id: "seo", name: N.seo, x: 4, y: 4, dir: "up" },
     { id: "kang", name: N.kang, x: 7, y: 4, dir: "up" },
     { id: "me", name: pname(), player: true, x: 2, y: 4, dir: "up" },
@@ -2608,7 +2622,7 @@ const INTRO = (() => {
     { id: "yoon", name: N.yoon, x: 9, y: 4, dir: "up" },
     { id: "gong", name: N.gong, x: 8, y: 5, dir: "up" },
     { id: "byun", name: N.byun, x: 10, y: 4, dir: "left" },
-  ];
+  ], [[1, 6], [2, 6], [3, 6], [6, 6], [7, 6], [8, 6], [9, 6], [1, 5], [3, 5]]);
   /* 신고 접수 시각은 사건 정보(“22:41 접수”)를 그대로 읽는다 */
   const callTime = () => {
     const m = String(C().tag || "").match(/(\d{1,2}):(\d{2})\s*접수/);
@@ -2623,10 +2637,10 @@ const INTRO = (() => {
     { t: 2.4, who: "", text: "따르릉— 따르릉—" },
     { t: 4.6, who: N.seo, text: `네, 강력팀 ${N.seo} 순경입니다. …네? 사람이 죽었다고요? 위치가 어디죠?` },
     { t: 8, who: N.seo, text: `선배님들! ${where()} ‘${place()}’에서 살인 사건 신고입니다!` },
-    { t: 11, who: N.kang, text: `가자. ${pname()} 형사, 이번 사건은 자네가 맡게.` },
-    { t: 13.6, who: N.han, text: "용의자 심문은 저희 수사팀 둘이 같이 들어가죠." },
-    { t: 16, who: "", text: "강력팀, 출동!" },
-  ];
+    { t: 11, who: leadName(), text: `가자. ${pname()} 형사, 이번 사건은 자네가 맡게.` },
+    { t: 13.6, who: inCrew("han") ? N.han : null, text: "용의자 심문은 저희 수사팀 둘이 같이 들어가죠." },
+    { t: 16, who: "", text: S.depts ? "부서별로 모인 강력팀, 출동!" : "강력팀, 출동!" },
+  ].filter(b => b.who !== null);
   function bg() {
     if (bgc) return bgc;
     bgc = pxCanvas(W, H); const b = bgc.getContext("2d");
@@ -2661,7 +2675,7 @@ const INTRO = (() => {
     const ents = ppl.map((p, i) => {
       let x = p.x, y = p.y, dir = p.dir, moving = false, dy = 0;
       if (out) {
-        const st = 16 + i * 0.45, w = walkPos(p, Math.max(0, t - st) * 4);
+        const st = 16 + i * 0.3, w = walkPos(p, Math.max(0, t - st) * 4);
         if (t >= st) ({ x, y, dir, moving } = w);
         else dir = "down";
       } else if (t >= 8 && p.id !== "seo") dir = face(p, seo);
@@ -2686,7 +2700,7 @@ const INTRO = (() => {
     capKey = b.t + "|" + el.isConnected;
     const isMe = b.who === pname();
     el.className = "intro-cap" + (b.who ? "" : " narr");
-    el.innerHTML = b.who ? `${pixelFace(b.who, 40, "", isMe)}<div><b>${esc(b.who)}${isMe ? " " + PLAYER_RANK : b.who === N.seo ? " 순경" : b.who === N.kang ? " 경감" : b.who === N.han ? " 경위" : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
+    el.innerHTML = b.who ? `${pixelFace(b.who, 40, "", isMe)}<div><b>${esc(b.who)}${isMe ? " " + PLAYER_RANK : rankOf(b.who) ? " " + rankOf(b.who) : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
   }
   function sounds(t) {
     for (const [at, fn] of [[2.4, "ring"], [3.5, "ring"], [8, "thunder"], [16, "siren"]]) {
@@ -2728,7 +2742,7 @@ const ENDING = (() => {
     if (kind === "win") {
       const cid = c.answer.culprit, cul = c.suspects[cid], grade = S.result ? S.result.grade : "B";
       return {
-        actors: [
+        actors: crew([
           { id: "cul", name: cul.name, role: cul.role, x: 5, y: 3.5, dir: "down" },
           { id: "gong", name: N.gong, x: 6, y: 3.5, dir: "left" },
           { id: "me", name: me, player: true, x: 4, y: 5.5, dir: "up" },
@@ -2738,23 +2752,23 @@ const ENDING = (() => {
           { id: "mo", name: N.mo, x: 9, y: 5.6, dir: "left" },
           { id: "yoon", name: N.yoon, x: 1, y: 5.6, dir: "right" },
           { id: "byun", name: N.byun, x: 10, y: 5, dir: "left" },
-        ],
+        ], [[7, 6.4, "down"], [8, 6.4, "down"], [9, 6.4, "down"], [2, 6.4, "down"], [3, 6.4, "down"], [1, 4.4, "down"], [9, 4.4, "down"], [6, 6.4, "down"], [10, 6.4, "down"]]),
         beats: [
           { t: 0, who: "", text: "경찰서로 돌아온 강력팀." },
           { t: 1.8, who: me, text: `${cul.name} 씨, 당신을 살인 혐의로 체포합니다.` },
           { t: 4.2, who: cul.name, text: "……다 끝났군요." },
-          { t: 5.8, who: N.gong, text: "연행하겠습니다. 이쪽으로." },
+          { t: 5.8, who: inCrew("gong") ? N.gong : N.seo, text: "연행하겠습니다. 이쪽으로." },
           { t: 8.4, who: N.seo, text: "해냈어요, 선배님! 진짜 범인을 잡았어요!" },
-          { t: 11, who: N.mo, text: "와… 저도 언젠가 저렇게 추리하고 싶어요!" },
-          { t: 13.6, who: N.han, text: grade === "S" ? "흠잡을 데 없는 추리였어요. 완벽합니다." : "깔끔했어요. 다음엔 증거를 조금 더 챙겨 보죠." },
-          { t: 16.2, who: N.kang, text: `수고했네, ${me} 형사. 오늘 저녁은 내가 사지!` },
-        ],
+          { t: 11, who: inCrew("mo") ? N.mo : null, text: "와… 저도 언젠가 저렇게 추리하고 싶어요!" },
+          { t: 13.6, who: inCrew("han") ? N.han : null, text: grade === "S" ? "흠잡을 데 없는 추리였어요. 완벽합니다." : "깔끔했어요. 다음엔 증거를 조금 더 챙겨 보죠." },
+          { t: 16.2, who: leadName(), text: `수고했네, ${me} 형사. 오늘 저녁은 내가 사지!` },
+        ].filter(b => b.who !== null),
         walks: { cul: [5.8, [[5, 3.5], [5, 9.5]]], gong: [6.1, [[6, 3.5], [6, 6.5], [5, 6.5], [5, 9.5]]] },
         party: 7.8,
       };
     }
     return {
-      actors: [
+      actors: crew([
         { id: "me", name: me, player: true, x: 5, y: 4.6, dir: "down" },
         { id: "seo", name: N.seo, x: 4, y: 4.8, dir: "down" },
         { id: "mo", name: N.mo, x: 5, y: 2.6, dir: "down" },
@@ -2763,16 +2777,16 @@ const ENDING = (() => {
         { id: "yoon", name: N.yoon, x: 9, y: 4.6, dir: "down" },
         { id: "byun", name: N.byun, x: 10, y: 4.8, dir: "down" },
         { id: "gong", name: N.gong, x: 7, y: 6, dir: "down" },
-      ],
+      ], [[2, 6, "down"], [3, 6, "down"], [8, 6, "down"], [9, 6, "down"], [1, 4.6, "down"], [2, 2.6, "down"], [8, 2.6, "down"], [9, 2.6, "down"], [6, 6, "down"]]),
       beats: [
         { t: 0, who: "", text: "범인은 혼란을 틈타 사라졌다. 비가 그치지 않는 밤." },
         { t: 2.4, who: me, text: "…놓쳤어. 거의 다 잡았는데." },
         { t: 5, who: N.seo, text: "선배님… 제가 더 꼼꼼히 봤어야 했는데요." },
-        { t: 7.6, who: N.mo, text: "증거를 조금만 더 모았어도…" },
-        { t: 10.2, who: N.kang, text: `고개 들게, ${me} 형사. 한 번 더 해 보지! 아직 끝난 거 아니야.` },
-        { t: 13.4, who: N.han, text: "이번에 놓친 걸 기억하세요. 다음엔 안 놓칩니다." },
-      ],
-      walks: { kang: [9.6, [[8, 4.8], [6, 4.8]]] },
+        { t: 7.6, who: inCrew("mo") ? N.mo : null, text: "증거를 조금만 더 모았어도…" },
+        { t: 10.2, who: leadName(), text: `고개 들게, ${me} 형사. 한 번 더 해 보지! 아직 끝난 거 아니야.` },
+        { t: 13.4, who: inCrew("han") ? N.han : null, text: "이번에 놓친 걸 기억하세요. 다음엔 안 놓칩니다." },
+      ].filter(b => b.who !== null),
+      walks: inCrew("kang") ? { kang: [9.6, [[8, 4.8], [6, 4.8]]] } : {},
       gloom: true,
     };
   }
@@ -2832,7 +2846,7 @@ const ENDING = (() => {
     capKey = k; el.dataset.k = k;
     const isMe = b.who === pname(), role = Object.values(C().suspects).find(p => p.name === b.who);
     el.className = "intro-cap" + (b.who ? "" : " narr");
-    el.innerHTML = b.who ? `${pixelFace(b.who, 40, role ? role.role : "", isMe)}<div><b>${esc(b.who)}${isMe ? " " + PLAYER_RANK : TITLE()[b.who] ? " " + TITLE()[b.who] : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
+    el.innerHTML = b.who ? `${pixelFace(b.who, 40, role ? role.role : "", isMe)}<div><b>${esc(b.who)}${isMe ? " " + PLAYER_RANK : TITLE()[b.who] ? " " + TITLE()[b.who] : rankOf(b.who) ? " " + rankOf(b.who) : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
   }
   function sounds(t) {
     const list = kind === "win" ? [[1.8, "lie"], [7.8, "verdict"], [8.4, "help"]] : [[0.3, "thunder"], [10.2, "help"]];
@@ -4336,7 +4350,7 @@ app.addEventListener("change", e => {
   if (t.name === "diff") { S.diff = t.value; render(); return; }
   if (t.name && t.name.startsWith("team-") && S.teamPick) {
     if (t.name === "team-dept") { const D = S.teamPick.depts; if (t.checked) { if (!D.includes(t.value) && D.length < (DEPT_N[S.diff] || 4)) D.push(t.value); } else S.teamPick.depts = D.filter(x => x !== t.value); }
-    else if (t.name === "team-patrol") { const P = S.teamPick.patrol; if (t.checked) { if (!P.includes(t.value) && P.length < 4) P.push(t.value); } else S.teamPick.patrol = P.filter(x => x !== t.value); }
+    else if (t.name === "team-patrol") { const P = S.teamPick.patrol; if (t.checked) { if (!P.includes(t.value) && P.length < 6) P.push(t.value); } else S.teamPick.patrol = P.filter(x => x !== t.value); }
     else S.teamPick.team[t.name.slice(5)] = t.value;
     render(); return;
   }
