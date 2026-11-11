@@ -725,6 +725,8 @@ body.shake main { animation: op-shake2 .4s; }
 .log-row.fail { opacity: .7; }
 .log-grade { margin-left: auto; font-weight: 800; font-size: 20px; color: var(--lamp); flex: none; } .log-row.fail .log-grade { font-size: 14px; color: #e06a5a; }
 .mix-btn { margin-left: 4px; padding-inline: 10px; }
+.mix-low { display: flex; gap: 8px; align-items: flex-start; } .mix-low b { display: block; } .mix-low small { color: var(--muted); font-size: 12px; }
+body.lowfx .stage.talk .stage-sprite, body.lowfx .co-wave i, body.lowfx .police-line span { animation: none !important; }
 .mix-card { width: min(380px, 100%); }
 .mix-row { display: grid; grid-template-columns: 1fr 120px 44px; align-items: center; gap: 10px; }
 .mix-row b { display: block; } .mix-row small { color: var(--muted); font-size: 12px; }
@@ -3606,11 +3608,13 @@ function openMix() {
   ov.innerHTML = `<div class="photo-card mix-card" role="dialog" aria-label="소리 설정"><h3 style="margin:0">🎚 소리 설정</h3>
     ${row("voice", "목소리", "인물 대사·신고 전화")}${row("music", "배경음악", "오프닝 음악")}${row("fx", "효과음", "천둥·사이렌·발소리·전화벨")}
     <p class="hint" style="margin:0">맨 왼쪽으로 밀면 그 소리만 꺼져요. 전체 소리는 ‘소리 켜짐/꺼짐’ 버튼으로 켜고 꺼요.</p>
+    <label class="mix-low"><input type="checkbox" data-lowfx ${LOWFX ? "checked" : ""}> <span><b>저사양 모드</b><small>휴대폰이 느리거나 뜨거워지면 켜 보세요. 배경 비를 끄고 화면을 덜 자주 그려요.</small></span></label>
     <div class="btn-row" style="margin:0"><button class="btn ghost" data-mixtest="1">들어 보기</button><button class="btn photo-close">닫기 ✕</button></div></div>`;
   document.body.appendChild(ov);
   const close = () => { ov.remove(); document.removeEventListener("keydown", onKey, true); };
   const onKey = e => { if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); close(); } };
   document.addEventListener("keydown", onKey, true);
+  ov.addEventListener("change", e => { const c = e.target.closest("[data-lowfx]"); if (c) setLowFx(c.checked); });
   ov.addEventListener("input", e => { const r = e.target.closest("[data-mix]"); if (!r) return; Sound.setMix(r.dataset.mix, r.value / 100); r.nextElementSibling.textContent = +r.value ? r.value + "%" : "끔"; });
   ov.addEventListener("click", e => {
     if (e.target.closest("[data-mixtest]")) { Sound.init(); Sound.babble("안녕하세요 선배님, 소리 잘 들리세요?", voiceOf(N.seo, "순경").base); Sound.clue(); return; }
@@ -3641,6 +3645,10 @@ function tutorialBar() {
   if (tutSaid !== i) { tutSaid = i; setTimeout(() => Sound.babble(text, voiceOf(N.seo, "순경").base), 400); }
   return `<div class="tut-bar" role="note">${pixelFace(N.seo, 36, "순경")}<div><b>길잡이 ${i + 1}/${TUT.length} · ${esc(N.seo)} 순경</b><p>${esc(text)}</p></div><button class="btn ghost tut-skip" data-act="tut-skip">길잡이 끄기</button></div>`;
 }
+/* ---------- 저사양 모드: 느린 휴대폰에서 배경 비를 끄고 화면을 덜 자주 그린다 ---------- */
+let LOWFX = (() => { try { const v = localStorage.getItem("midnight-lowfx"); if (v) return v === "1"; } catch (e) {} return (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3; })();
+function setLowFx(v) { LOWFX = !!v; try { localStorage.setItem("midnight-lowfx", LOWFX ? "1" : "0"); } catch (e) {} document.body.classList.toggle("lowfx", LOWFX); }
+document.body.classList.toggle("lowfx", LOWFX);
 /* ---------- 이어하기: 사건 진행을 자동 저장 ---------- */
 const SAVE_KEY = "midnight-save-v1";
 function saveGame() {
@@ -5176,9 +5184,11 @@ const PX = (() => {
 
   /* ---------- 반복 ---------- */
   let heldDir = null;
+  let lastFrame = 0;
   function loop(t) {
     raf = requestAnimationFrame(loop);
     if (!cv || !document.body.contains(cv)) { cancelAnimationFrame(raf); raf = 0; return; }
+    if (LOWFX && t - lastFrame < 31) return; lastFrame = t;   /* 저사양 모드: 초당 30번만 그린다 */
     const dt = Math.min(.05, (t - last) / 1000 || 0); last = t;
     ensureMe();
     /* 키·버튼으로 걷기 */
@@ -6090,14 +6100,18 @@ app.addEventListener("submit", e => {
 (function rain() {
   const cv = document.getElementById("rain"), ctx = cv.getContext("2d");
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  let lastT = 0;
   let W, H, drops;
   const size = () => {
     W = cv.width = innerWidth; H = cv.height = innerHeight;
-    drops = Array.from({ length: Math.round(W * H / 9000) }, () => ({ x: Math.random() * W, y: Math.random() * H, l: 8 + Math.random() * 14, v: 6 + Math.random() * 6 }));
+    drops = Array.from({ length: Math.round(W * H / (W < 700 ? 16000 : 9000)) }, () => ({ x: Math.random() * W, y: Math.random() * H, l: 8 + Math.random() * 14, v: 6 + Math.random() * 6 }));
   };
   size(); addEventListener("resize", size);
   const color = getComputedStyle(document.documentElement).getPropertyValue("--muted").trim() || "#8395a2";
-  (function tick() {
+  (function tick(t) {
+    requestAnimationFrame(tick);
+    if (LOWFX) { if (cv.style.display !== "none") cv.style.display = "none"; return; } else if (cv.style.display) cv.style.display = "";
+    if (t - lastT < 33) return; lastT = t;   /* 배경 비는 초당 30번이면 충분 */
     ctx.clearRect(0, 0, W, H);
     ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.beginPath();
     for (const d of drops) {
@@ -6105,8 +6119,8 @@ app.addEventListener("submit", e => {
       d.y += d.v; d.x -= 0.6;
       if (d.y > H) { d.y = -d.l; d.x = Math.random() * W; }
     }
-    ctx.stroke(); requestAnimationFrame(tick);
-  })();
+    ctx.stroke();
+  })(0);
 })();
 
 /* 페이지 업데이트 시 진행 상태 유지 */
