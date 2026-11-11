@@ -712,6 +712,9 @@ body.shake main { animation: op-shake2 .4s; }
 .photo-btn { margin: 6px 0; }
 .continue-box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0 4px; padding: 12px 14px; border: 1px solid var(--lamp); border-radius: 8px; background: rgba(226,178,92,.08); }
 .continue-btn { font-size: 18px; }
+.rec-tag { display: block; width: 100%; font-size: 11.5px; font-weight: 700; color: #1b2a12; background: #9bdc6a; border-radius: 4px; padding: 2px 6px; margin-bottom: 4px; text-align: left; }
+.act.rec { border-color: #9bdc6a !important; box-shadow: 0 0 0 2px rgba(155,220,106,.35); flex-wrap: wrap; }
+.rec-badge { background: #9bdc6a !important; color: #1b2a12 !important; }
 .log-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
 .log-stats div { border: 1px solid var(--line); border-radius: 8px; padding: 10px; text-align: center; background: var(--surface); }
 .log-stats b { display: block; font-size: 26px; color: var(--lamp); } .log-stats span { font-size: 13px; color: var(--muted); }
@@ -3607,7 +3610,7 @@ function nextToast() {
 }
 
 /* ===================== 렌더 ===================== */
-const soundBtn = () => `<button class="sound-btn" data-act="sound" aria-pressed="${Sound.on}">${Sound.on ? "소리 켜짐" : "소리 꺼짐"}</button><button class="sound-btn mix-btn" data-act="mix" aria-label="소리 설정" title="소리 설정">🎚</button>`;
+const soundBtn = () => `<button class="sound-btn" data-act="sound" aria-pressed="${Sound.on}">${Sound.on ? "소리 켜짐" : "소리 꺼짐"}</button><button class="sound-btn mix-btn" data-act="mix" aria-label="소리 설정" title="소리 설정">음량</button>`;
 /* 소리 설정 창: 목소리 · 음악 · 효과음 */
 function openMix() {
   if (document.querySelector(".mix-ov")) return;
@@ -5342,7 +5345,7 @@ function renderPixel(out) {
     <div class="pad-row">
       <div class="pad-act"><span id="near-px" class="hint"></span>
         <span class="act-btns"><button class="btn" id="act-px" data-act="interact-px">조사</button>
-        ${!out ? `<button class="btn call-btn" data-act="sheet-open" aria-haspopup="dialog">📞 팀원 부르기${busyCount() ? ` <span class="badge">${busyCount()} 출동 중</span>` : ""}</button>` : ""}</span></div>
+        ${!out ? `<button class="btn call-btn" data-act="sheet-open" aria-haspopup="dialog">📞 팀원 부르기${busyCount() ? ` <span class="badge">${busyCount()} 출동 중</span>` : ""}${recCount() ? ` <span class="badge rec-badge">👍 ${recCount()}</span>` : ""}</button>` : ""}</span></div>
     </div>
     ${lk ? `<p class="locked-room">이 방이 잠겼다. 문으로 나가서 ${lk}턴 뒤에 다시 오자.</p>` : ""}
     <div class="room-nav"><span class="label">방 이동</span>${roomNav}</div>
@@ -5454,6 +5457,38 @@ function resolveDeptJobs() {
     toast(`<b>${esc(who)}</b> — ${esc(msg)}`);
   }
 }
+/* ---------- 👍 추천: 지금 이 팀을 부르면 좋은 이유 ---------- */
+function recFor(kind) {
+  const c = C(); if (!c || S.turns <= 0 || S.decided) return null;
+  const rid = S.room, room = c.rooms[rid], ids = room ? room.spots.map(sp => sp.id) : [];
+  const left = dept => Object.keys(c.clues).filter(id => !has(S.found, id) && clueDepts(id).has(dept));
+  if (kind === "clear") { const n = ((S.fakes || {})[rid] || []).filter(f => !has(S.searched, f.id)).length; return n ? `이 방에 헷갈리게 하는 가짜 물건 ${n}개` : null; }
+  if (kind === "fix") {
+    const bad = S.tampered.filter(id => ids.includes(id)).length + (S.lost || []).filter(id => ids.includes(id)).length;
+    if (bad) return `이 방에 망가지거나 사라진 증거 ${bad}개 — 되살릴 수 있어요`;
+    if (Object.keys(S.locks).length) return "잠긴 문을 열 수 있어요";
+    const miss = room ? room.spots.filter(sp => sp.clue && !has(S.searched, sp.id) && !has(S.found, sp.clue) && !has(S.marked || [], sp.id)).length : 0;
+    return miss && has(S.visited || [], rid) ? `이 방에 아직 놓친 단서 ${miss}개` : null;
+  }
+  if (kind === "sci") {
+    if (S.autopsy || S.missions.some(m => m.role === "autopsy")) return null;
+    const traits = Object.keys(c.clues).filter(id => /^trait_|weapon/.test(id) && !has(S.found, id)).length;
+    return has(S.found, "body") || (c.clues.body && c.clues.body.room === rid) ? `시신이 있어요 — 사인(수법)과 증거 정리${traits ? ` · 범인의 버릇·흔적 단서 ${traits}개 남음` : ""}` : null;
+  }
+  if (kind === "drug") { if (typeof drugInfo === "function" && drugInfo() && has(S.found, "body")) return "약물 사건 같아요 — 무슨 약인지 밝혀요"; const n = left("drug").length; return n ? `아직 못 찾은 약물 단서 ${n}개` : null; }
+  if (kind === "sit") return S.turns <= 8 || (S.timed && S.timeLeft <= 90) ? "시간이 얼마 안 남았어요 — 시간을 벌어요" : null;
+  if (kind === "intel") return (S.secrets || []).length === 0 && S.asked.length >= 2 ? "아직 숨은 증언이 하나도 없어요" : null;
+  const field = { digital: "CCTV·카드키·통신 기록", fin: "돈·서류", traffic: "차량·도로 동선" }[kind];
+  if (field) { const n = left(kind).length; return n ? `아직 못 찾은 ${field} 단서 ${n}개` : null; }
+  return null;
+}
+const recTag = why => why ? `<span class="rec-tag">👍 추천 · ${esc(why)}</span>` : "";
+function recCount() { if (!C()) return 0; const on = fieldOn(); let n = 0;
+  if (on.some(pid => roleOf(pid) === "clear" && canDispatch(pid)) && recFor("clear")) n++;
+  if (on.some(pid => roleOf(pid) !== "clear" && canDispatch(pid)) && recFor("fix")) n++;
+  if (deptOn("sci") && recFor("sci")) n++;
+  for (const id of ["digital", "fin", "drug", "traffic", "intel", "sit"]) if (deptOn(id) && !(S.deptJobs || {})[id] && recFor(id)) n++;
+  return n; }
 function renderDeptHelp() {
   const ids = ["digital", "fin", "drug", "traffic", "intel", "sit"].filter(deptOn);
   const guardNote = deptOn("guard") && S.depts ? `<p class="hint">🛡 ${deptName("guard")} ${N.grdL}·${N.grd} — 현장을 봉쇄 중이에요. 문을 잠그거나 증거를 망치는 방해가 일어나지 않아요.</p>` : "";
@@ -5461,7 +5496,8 @@ function renderDeptHelp() {
   const jobs = S.deptJobs || {};
   return `<div class="dispatch"><b>부서 지원 <span class="hint">· 사건마다 한 번씩 · 턴 소모 없음</span></b>${guardNote}
     <div class="q-actions">${ids.map(id => { const d = DEPTS.find(x => x.id === id), j = jobs[id], slot = DEPT_JOB[id];
-      return `<button class="act ally with-face" data-dept="${id}" ${j || S.turns <= 0 || S.decided ? "disabled" : ""}>${pixelFace(N[DEPT_LEAD[id]], 24)}${pixelFace(N[slot], 24)}${d.div} ${d.name} ${deptWho(id)}<span class="cost">${j ? (j.done ? "보고 완료" : `${Math.max(0, j.due - S.actions)}턴 뒤 보고`) : d.desc}</span></button>`; }).join("")}</div></div>`;
+      const why = !j ? recFor(id) : null;
+      return `<button class="act ally with-face${why ? " rec" : ""}" data-dept="${id}" ${j || S.turns <= 0 || S.decided ? "disabled" : ""}>${recTag(why)}${pixelFace(N[DEPT_LEAD[id]], 24)}${pixelFace(N[slot], 24)}${d.div} ${d.name} ${deptWho(id)}<span class="cost">${j ? (j.done ? "보고 완료" : `${Math.max(0, j.due - S.actions)}턴 뒤 보고`) : d.desc}</span></button>`; }).join("")}</div></div>`;
 }
 function renderPatrol() {
   if (!(S.patrol || []).length) return "";
@@ -5479,14 +5515,14 @@ function renderForensic() {
   if (S.autopsy) return `<div class="dispatch"><b>과학수사대 감식 소견</b><p class="hint">사인: <b>${esc(S.autopsy.cause)}</b> — 증거도 사람별로 정리했어요(수사 수첩). 심문 때 ‘과학수사대가 정리한 증거를 내민다’를 고르면 대신 들이밀어 줘요.</p></div>`;
   return `<div class="dispatch"><b>과학수사대</b>
     <p class="hint long">시신을 감식해 사인(죽은 원인)을 밝히고, 찾은 증거를 사람별로 정리해 줘요. 그 뒤 심문할 때 과학수사대가 증거를 직접 내밀어요. 턴은 안 줄어요.</p>
-    <div class="q-actions"><button class="act ally with-face" data-forensic="1" ${busy || S.turns <= 0 || S.decided ? "disabled" : ""}>${body}<span class="cost">${busy ? "감식 중…" : "시신 감식 · 사인 알아내기"}</span></button></div></div>`;
+    <div class="q-actions"><button class="act ally with-face${recFor("sci") ? " rec" : ""}" data-forensic="1" ${busy || S.turns <= 0 || S.decided ? "disabled" : ""}>${recTag(recFor("sci"))}${body}<span class="cost">${busy ? "감식 중…" : "시신 감식 · 사인 알아내기"}</span></button></div></div>`;
 }
 function renderDispatch(r) {
   const on = fieldOn();
   if (!on.length) return renderForensic() + renderPatrol() + renderDeptHelp();
   const btn = pid => {
-    const x = partner(pid), away = S.missions.find(m => m.pid === pid), clear = roleOf(pid) === "clear";
-    return `<button class="act ally with-face" data-dispatch="${pid}" ${canDispatch(pid) ? "" : "disabled"}>
+    const x = partner(pid), away = S.missions.find(m => m.pid === pid), clear = roleOf(pid) === "clear", why = !away && canDispatch(pid) ? recFor(clear ? "clear" : "fix") : null;
+    return `<button class="act ally with-face${why ? " rec" : ""}" data-dispatch="${pid}" ${canDispatch(pid) ? "" : "disabled"}>${recTag(why)}
       ${pixelFace(x.name, 24)}${x.title} ${x.name}<span class="cost">${away ? `${C().rooms[away.room].name}에서 ${clear ? "치우는" : "바로잡는"} 중` : clear ? "가짜 치우기" : "놓친 것 바로잡기"}</span></button>`;
   };
   const rows = FIELD_ROWS.map(row => row.filter(pid => on.includes(pid))).filter(row => row.length)
