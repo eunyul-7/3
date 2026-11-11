@@ -710,6 +710,13 @@ body.shake main { animation: op-shake2 .4s; }
 .photo-note { margin: 0; color: var(--muted); font-size: 13px; }
 .photo-close { justify-self: end; }
 .photo-btn { margin: 6px 0; }
+.cop-card { width: min(420px, 100%); }
+.cop-head { display: flex; gap: 10px; align-items: center; } .cop-head b { display: block; font-size: 17px; }
+.cop-say { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: rgba(0,0,0,.25); }
+.cop-say p { margin: 0; line-height: 1.55; }
+.cop-say.sure { border-color: #3fae6a; } .cop-say.unsure { border-color: #c9a23a; border-style: dashed; }
+.cop-clues { display: flex; flex-wrap: wrap; gap: 6px; max-height: 32vh; overflow: auto; }
+.cop-clues .chip.on { outline: 2px solid var(--lamp); }
 .stage-sprite { position: absolute; left: 2%; bottom: 0; height: 96%; max-height: 260px; width: auto; image-rendering: pixelated; image-rendering: crisp-edges; filter: drop-shadow(0 10px 14px rgba(0,0,0,.6)); transform-origin: bottom center; }
 .stage.talk .stage-sprite { animation: st-bob 2.4s ease-in-out infinite; }
 .stage.shock .stage-sprite { animation: st-shock .5s ease-out 2; }
@@ -2148,7 +2155,7 @@ const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, fou
   locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], patrol: [], patrolNotes: {}, team: null, patrolPick: null, teamPick: null, depts: null, deptJobs: {}, sheet: false, stars: [], whispers: {}, visited: [], reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
   chances: 1, penalties: 0, decided: false, advice: {}, cleared: [], persona: {}, heart: {}, secrets: [], lastLine: null, dlg: null, wrongAccuse: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
-  mode: "pixel", pos: null, dir: null, autopsyDone: false, autopsy: null, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
+  copAsk: {}, mode: "pixel", pos: null, dir: null, autopsyDone: false, autopsy: null, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
@@ -2984,6 +2991,100 @@ function addClue(id) {
   /* 이 단서로 열리는 숨겨진 진술 */
   const who = Object.values(c.suspects).filter(p => p.qs.some(q => q.need === id && !has(S.asked, q.id))).map(p => p.name);
   if (who.length) setTimeout(() => { popCard(`<span class="cc-tag">🔓 숨겨진 진술</span><b>${esc(who.join("·"))}</b><small>‘${esc(c.clues[id].name)}’ 얘기를 꺼내면 숨기던 걸 털어놓을지도 모른다. 현장에서 찾아가 대화해 보자.</small>`, "unlock"); Sound.help(); }, 900);
+}
+/* ===================== 경찰에게 단서 묻기 =====================
+   단서마다 '분야'가 있다. 그 분야 부서 경찰에게 물으면 정확히 짚어 준다.
+   다른 부서 경찰은 자기 분야와 엮어 대답하는데, 반반 확률로 맞거나 엉뚱한 쪽을 짚는다. */
+const DEPT_TALK = {
+  crime: { name: "강력팀", field: "현장과 사람 동선", lens: "현장 동선으로 보면" },
+  sci: { name: "과학수사팀", field: "시신·흉기·흔적 감식", lens: "감식 쪽으로 보면" },
+  drug: { name: "마약팀", field: "약물", lens: "약물 쪽으로 보면" },
+  prof: { name: "수사팀", field: "사람 관계와 동기", lens: "사람 관계로 보면" },
+  digital: { name: "사이버수사팀", field: "CCTV·카드키·통신 기록", lens: "기록 쪽으로 보면" },
+  fin: { name: "지능팀", field: "돈과 서류", lens: "돈 흐름으로 보면" },
+  patrol: { name: "지구대 순찰팀", field: "누가 어디 있었는지", lens: "순찰 돌며 본 걸로는" },
+  traffic: { name: "교통조사팀", field: "차량·도로 동선", lens: "동선으로 보면" },
+  intel: { name: "정보팀", field: "주변 소문과 평판", lens: "주변 소문으로는" },
+  guard: { name: "기동대", field: "출입 통제", lens: "출입 통제로 보면" },
+  sit: { name: "상황팀", field: "신고 녹취", lens: "신고 녹취로 보면" },
+};
+function copDept(who) {
+  if (who === "seo") return "crime";
+  if ((S.patrol || []).some(o => o.id === who) || PATROL_ALL.some(x => x.id === who)) return "patrol";
+  if (SLOT_DEPT[who]) return SLOT_DEPT[who];
+  const d = DEPTS.find(d => d.slots.includes(who)); return d ? d.id : "crime";
+}
+/* 단서의 분야: 이 부서들에 물으면 정답 */
+function clueDepts(id) {
+  const c = C(), k = c.clues[id], t = k.name + " " + k.text, out = new Set();
+  if (id === "body" || id === "weapon" || /^trait_/.test(id) || /흉기|핏자국|피가|자국|지문|섬유|흔적|상처|시신|얼룩|가루/.test(t)) out.add("sci");
+  if (/독약|독극물|독을|독살|약병|약물|약품|수면제|주사|디곡신|아몬드|알약/.test(t)) out.add("drug");
+  if (/CCTV|카드|기록|로그|통화|문자|단말기|센서|캡처|녹음|블랙박스|메일/.test(t) || id === "witness") out.add("digital");
+  if (/블랙박스|차량|주차|도로|트럭|버스/.test(t)) out.add("traffic");
+  if (/차용증|보험|유언장|고소장|횡령|영수증|장부|장학|회비|계약서|돈|억 원/.test(t)) out.add("fin");
+  if (/^motive_/.test(id) || id === "diary" || /편지|사진|협박|메모|수첩|신고서|일기|대화/.test(t)) out.add("prof");
+  if (id === "pair" || id === "solo" || id === "entry" || /함께|같이|혼자|출입|대장|명부|일지|진행표/.test(t)) { out.add("crime"); out.add("patrol"); }
+  if (!out.size) out.add("crime");
+  return out;
+}
+/* 이 단서가 진짜로 가리키는 것 */
+function clueTruth(id) {
+  const c = C(), k = c.clues[id];
+  for (const [sid, p] of Object.entries(c.suspects)) for (const q of p.qs) if (q.lie && q.lie.clues.includes(id))
+    return { sid, text: `${p.name} 씨가 ‘${q.a.length > 34 ? q.a.slice(0, 34) + "…" : q.a}’라고 했죠? 이 ‘${k.name}’랑은 안 맞아요. 그 말은 거짓일 가능성이 높아요.` };
+  if (id === "body") { const m = (c.methods.find(x => x.id === c.answer.method) || {}).text; if (m) return { sid: null, text: `시신 상태로 보면 수법은 ‘${m}’ 쪽이에요. 범인 지목 때 수법은 이걸로 고르세요.` }; }
+  if (id === "weapon") return { sid: null, text: `이 ‘${k.name}’에 남은 흔적을 잘 보세요. 같은 흔적이 묻은 소지품을 가진 사람이 진짜 주인이에요. 숨겨진 방의 주인은 누명일 수도 있고요.` };
+  const owner = Object.entries(c.suspects).find(([sid]) => k.room === sid || (c.rooms[k.room] && c.rooms[k.room].name.includes(c.suspects[sid].name)));
+  if (/^trait_/.test(id) && owner) return { sid: owner[0], text: `이건 ${owner[1].name} 씨 물건이에요. 현장에 남은 흔적과 같은지 꼭 비교해 보세요.` };
+  if (/^motive_/.test(id) && owner) return { sid: owner[0], text: `${owner[1].name} 씨에게 피해자와 얽힌 사정이 있었다는 서류예요. 진짜 동기인지는 심문으로 확인해야 해요.` };
+  return { sid: null, text: c.key.includes(id) ? `이 ‘${k.name}’, 사건의 핵심 같아요. 이걸 중심으로 진술들을 맞춰 보세요.` : `이 ‘${k.name}’는 사건과 직접 상관은 적어 보여요. 너무 매달리지 마세요.` };
+}
+function copAnswer(who, id) {
+  const key = who + "|" + id; if (S.copAsk[key]) return S.copAsk[key];
+  const c = C(), dept = copDept(who), D = DEPT_TALK[dept] || DEPT_TALK.crime, mine = clueDepts(id).has(dept), truth = clueTruth(id);
+  let text, right;
+  if (mine) { right = true; text = `제 분야예요, 확실합니다. ${truth.text}`; }
+  else if (Math.random() < 0.5) { right = true; text = `제 분야(${D.field})는 아니라서 장담은 못 해요. ${D.lens}… ${truth.text}`; }
+  else {
+    right = false;
+    const others = Object.entries(c.suspects).filter(([sid]) => sid !== truth.sid), [, x] = RND.pick(others);
+    const q = RND.pick(x.qs.filter(q => q.a));
+    text = `제 분야(${D.field})는 아니라서 장담은 못 해요. ${D.lens}… 이 ‘${c.clues[id].name}’, ${x.name} 씨 쪽이랑 엮여 있는 것 같아요. ‘${q.a.length > 30 ? q.a.slice(0, 30) + "…" : q.a}’라던 말이 수상해요.`;
+  }
+  return (S.copAsk[key] = { text, right, mine, dept });
+}
+function openCopAsk(who, name) {
+  document.querySelector(".cop-ov") && document.querySelector(".cop-ov").remove();
+  const c = C(), dept = copDept(who), D = DEPT_TALK[dept] || DEPT_TALK.crime, rank = rankOf(name);
+  const ov = document.createElement("div"); ov.className = "photo-ov cop-ov";
+  const draw = (sel) => {
+    const a = sel ? S.copAsk[who + "|" + sel] : null;
+    const line = a ? a.text : allyHint(who);
+    ov.innerHTML = `<div class="photo-card cop-card" role="dialog" aria-label="${esc(name)}에게 묻기">
+      <div class="cop-head">${pixelFace(name, 48, rank)}<div><b>${esc(name)} ${esc(rank)}</b><span class="hint">${esc(D.name)} · 전문: ${esc(D.field)}</span></div></div>
+      <div class="cop-say${a ? (a.mine ? " sure" : " unsure") : ""}"><p>“${esc(line)}”</p></div>
+      ${S.found.length ? `<p class="step-title">어떤 단서를 물어볼까? <small class="hint">(처음 묻는 단서는 −1턴 · 자기 분야가 아니면 반반 확률로 엉뚱한 답)</small></p>
+      <div class="cop-clues">${S.found.map(id => { const asked = !!S.copAsk[who + "|" + id]; return `<button class="chip${sel === id ? " on" : ""}" data-cq="${id}" ${!asked && (S.turns <= 0 || S.decided) ? "disabled" : ""}>${asked ? "✓ " : ""}${esc(c.clues[id].name)}</button>`; }).join("")}</div>`
+      : `<p class="hint">아직 찾은 단서가 없어요. 단서를 찾으면 물어볼 수 있어요.</p>`}
+      <button class="btn photo-close">닫기 ✕ <small>(Esc)</small></button></div>`;
+    Sound.babble(line, voiceOf(name, rank).base);
+  };
+  draw(null);
+  document.body.appendChild(ov);
+  const close = () => { ov.remove(); document.removeEventListener("keydown", onKey, true); };
+  const onKey = e => { if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); close(); } };
+  document.addEventListener("keydown", onKey, true);
+  ov.addEventListener("click", e => {
+    const b = e.target.closest("[data-cq]");
+    if (b) {
+      const id = b.dataset.cq, first = !S.copAsk[who + "|" + id];
+      if (first && (S.turns <= 0 || S.decided)) return;
+      const a = copAnswer(who, id);
+      if (first) { S.events.push({ bad: false, msg: `${name} ${rank}(${D.name})에게 ‘${c.clues[id].name}’을(를) 물었다 — “${a.text}”` }); spend(); render(); }
+      draw(id); return;
+    }
+    if (e.target === ov || e.target.closest(".photo-close")) close();
+  });
 }
 /* ===================== 시신 사진: 감식반이 찍은 현장 사진을 살펴본다 ===================== */
 const BODY_KINDS = [
@@ -4771,8 +4872,8 @@ const PX = (() => {
   function act(t) {
     if (!t) return;
     if (t.kind === "obj") { if (doSearch(t.ref.spot)) render(); }
-    else if (t.kind === "ally") say(t.name, allyHint(t.who));
-    else if (t.kind === "person" && t.ref.kind === "h") say(t.ref.name, allyHint(t.ref.id.slice(2)));
+    else if (t.kind === "ally") openCopAsk(t.who, t.name);   /* 경찰에게 말 걸기: 단서를 물어볼 수 있다 */
+    else if (t.kind === "person" && t.ref.kind === "h") openCopAsk(t.ref.id.slice(2), t.ref.name);
     else if (t.kind === "person") { S.tab = "people"; S.suspect = t.ref.id; S.dlg = null; render(); window.scrollTo(0, 0); }
   }
   function nearby() {
