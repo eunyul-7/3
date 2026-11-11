@@ -445,6 +445,18 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
 .dept { opacity: .8; } .dept.on { opacity: 1; border-color: var(--lamp); }
 .dept-toggle { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; font-size: 16px; }
 .dept-toggle input { width: 18px; height: 18px; accent-color: #e8b25c; }
+.act-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.call-btn .badge { font-size: 11px; background: var(--ok); color: #0f1a12; border-radius: 999px; padding: 1px 7px; margin-left: 4px; }
+.sheet-back { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 40; border: 0; padding: 0; cursor: default; }
+.team-sheet { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: min(100%, 760px); max-height: 78dvh; z-index: 41; display: flex; flex-direction: column;
+  background: #12171c; border: 1px solid var(--line); border-bottom: 0; border-radius: 14px 14px 0 0; box-shadow: 0 -12px 40px rgba(0,0,0,.5); animation: sheet-up .18s ease-out; }
+@supports not (height: 100dvh) { .team-sheet { max-height: 78vh; } }
+@keyframes sheet-up { from { transform: translate(-50%, 30px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+.sheet-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.sheet-head .btn { margin-left: auto; padding: 6px 12px; }
+.sheet-body { overflow-y: auto; padding: 4px 14px 18px; display: grid; gap: 4px; }
+.sheet-body .dispatch { margin: 8px 0 0; }
+.sheet-body .hint.long { display: none; }   /* 팝업에서는 버튼만 간단히 */
 .spoil-box { display: grid; gap: 14px; margin-top: 8px; padding: 18px; border: 1px solid var(--blood); border-radius: 8px; background: rgba(120,30,25,.12); }
 .spoil-box .truth p { margin: 0 0 10px; }
 .intro-sign { position: absolute; z-index: 2; left: 29.55%; top: 3.125%; width: 18.2%; height: 6.25%; display: grid; place-items: center; color: #22303c; font-weight: 800; font-size: clamp(8px, 1.6vw, 14px); letter-spacing: .1em; pointer-events: none; }
@@ -1589,7 +1601,7 @@ const turnsFor = c => {
 };
 const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, found: [], searched: [], asked: [], broken: [], wrong: 0,
   tl: [], tab: "rooms", room: null, suspect: null, challenge: null, present: "", deflectOn: null,
-  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], patrol: [], patrolNotes: {}, team: null, patrolPick: null, teamPick: null, depts: null, deptJobs: {}, reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
+  locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], patrol: [], patrolNotes: {}, team: null, patrolPick: null, teamPick: null, depts: null, deptJobs: {}, sheet: false, reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
   chances: 1, penalties: 0, decided: false, advice: {}, cleared: [], persona: {}, heart: {}, secrets: [], lastLine: null, dlg: null, wrongAccuse: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
   mode: "pixel", pos: null, dir: null, autopsyDone: false, autopsy: null, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
@@ -3767,14 +3779,23 @@ function renderPixel(out) {
         <button class="pad right" data-pad="right" aria-label="오른쪽">▶</button><button class="pad down" data-pad="down" aria-label="아래">▼</button>
       </div>
       <div class="pad-act"><span id="near-px" class="hint">방향키·WASD, 화면 터치, 방향 버튼으로 움직여요.</span>
-        <button class="btn" id="act-px" data-act="interact-px">조사</button></div>
+        <span class="act-btns"><button class="btn" id="act-px" data-act="interact-px">조사</button>
+        ${!out ? `<button class="btn call-btn" data-act="sheet-open" aria-haspopup="dialog">📞 팀원 부르기${busyCount() ? ` <span class="badge">${busyCount()} 출동 중</span>` : ""}</button>` : ""}</span></div>
     </div>
     ${lk ? `<p class="locked-room">이 방이 잠겼다. 문으로 나가서 ${lk}턴 뒤에 다시 오자.</p>` : ""}
     <div class="room-nav"><span class="label">방 이동 · 이름을 누르면 바로 가요</span>${roomNav}</div>
-    ${!out ? renderDispatch(r) : ""}
     <p class="desc">${r.desc}</p>
     ${results ? `<details class="found-list"><summary>이 방에서 찾은 것 (${found.length})</summary><div class="spots">${results}</div></details>` : ""}
-  </div>`;
+  </div>
+  ${!out && S.sheet ? `<button class="sheet-back" data-act="sheet-close" aria-label="닫기" tabindex="-1"></button>
+  <div class="team-sheet" role="dialog" aria-label="팀원 부르기">
+    <div class="sheet-head"><b>📞 팀원 부르기</b><span class="hint">${esc(r.name)}에서 부르면 이 방으로 와요</span><button class="btn ghost" data-act="sheet-close" aria-label="닫기">닫기 ✕</button></div>
+    <div class="sheet-body">${renderDispatch(r)}</div>
+  </div>` : ""}`;
+}
+/* 지금 일하는 중인 팀원 수 (버튼에 표시) */
+function busyCount() {
+  return S.missions.filter(m => !m.quiet).length + Object.values(S.deptJobs || {}).filter(j => !j.done).length;
 }
 
 function renderGong() {
@@ -3872,7 +3893,7 @@ function renderPatrol() {
   if (!(S.patrol || []).length) return "";
   const c = C();
   return `<div class="dispatch"><b>${S.depts ? "생활안전과 지구대 순찰팀" : "강력팀 순찰조"} <span class="hint">· 알아서 돌아다녀요${S.depts ? ` · 순찰팀장 ${N.patL} 경위` : ""}</span></b>
-    <p class="hint">스스로 방을 돌며 용의자를 지켜봐요. 순찰 경찰이 있는 방의 용의자는 방해로 입을 막을 수 없고, 처음 본 용의자는 ‘순찰 메모’(어떤 질문에 긴장하는지)를 남겨요. 메모는 대부분 맞지만 가끔 헛짚어요.</p>
+    <p class="hint long">스스로 방을 돌며 용의자를 지켜봐요. 순찰 경찰이 있는 방의 용의자는 방해로 입을 막을 수 없고, 처음 본 용의자는 ‘순찰 메모’(어떤 질문에 긴장하는지)를 남겨요. 메모는 대부분 맞지만 가끔 헛짚어요.</p>
     <div class="q-actions">${S.patrol.map(o => { const x = patrolOf(o.id); return `<span class="act ally with-face" style="cursor:default">${pixelFace(x.name, 22)}${x.title} ${x.name}<span class="cost">${esc(c.rooms[o.room].name)}${o.room === S.room ? " (여기)" : ""}</span></span>`; }).join("")}</div>
     <p class="hint">메모: ${Object.keys(S.patrolNotes || {}).length} / ${Object.keys(c.suspects).length}명</p></div>`;
 }
@@ -3882,7 +3903,7 @@ function renderForensic() {
   const body = `${pixelFace(N.yoon, 24)}${pixelFace(N.byun, 24)}과학수사대 ${N.yoon}·${N.byun}`;
   if (S.autopsy) return `<div class="dispatch"><b>과학수사대 감식 소견</b><p class="hint">사인: <b>${esc(S.autopsy.cause)}</b> — 증거도 사람별로 정리했어요(수사 수첩). 심문 때 ‘과학수사대가 정리한 증거를 내민다’를 고르면 대신 들이밀어 줘요.</p></div>`;
   return `<div class="dispatch"><b>과학수사대</b>
-    <p class="hint">시신을 감식해 사인(죽은 원인)을 밝히고, 찾은 증거를 사람별로 정리해 줘요. 그 뒤 심문할 때 과학수사대가 증거를 직접 내밀어요. 턴은 안 줄어요.</p>
+    <p class="hint long">시신을 감식해 사인(죽은 원인)을 밝히고, 찾은 증거를 사람별로 정리해 줘요. 그 뒤 심문할 때 과학수사대가 증거를 직접 내밀어요. 턴은 안 줄어요.</p>
     <div class="q-actions"><button class="act ally with-face" data-forensic="1" ${busy || S.turns <= 0 || S.decided ? "disabled" : ""}>${body}<span class="cost">${busy ? "감식 중…" : "시신 감식 · 사인 알아내기"}</span></button></div></div>`;
 }
 function renderDispatch(r) {
@@ -3897,7 +3918,7 @@ function renderDispatch(r) {
     .map(row => `<div class="q-actions">${row.map(btn).join("")}</div>`).join("");
   return `<div class="dispatch">
     <b>팀원 부르기 <span class="hint">· 횟수 제한 없음</span></b>
-    <p class="hint">직급이 낮은 팀원(${N.seo}${on.includes("gong") ? "·" + N.gong : ""})은 이 방의 <b>헷갈리게 하는 가짜 물건을 치워요</b>(1턴 뒤). ${on.includes("kang") ? "직급이 높은 " + EUN(N.kang) + " 대신 조사하지 않고 <b>부하들이 놓친 걸 바로잡아요</b>: 망가진 증거 복구, 사라진 단서 되찾기, 놓친 곳 짚기, 잠긴 문 열기(2턴 뒤)." : ""}</p>
+    <p class="hint long">직급이 낮은 팀원(${N.seo}${on.includes("gong") ? "·" + N.gong : ""})은 이 방의 <b>헷갈리게 하는 가짜 물건을 치워요</b>(1턴 뒤). ${on.includes("kang") ? "직급이 높은 " + EUN(N.kang) + " 대신 조사하지 않고 <b>부하들이 놓친 걸 바로잡아요</b>: 망가진 증거 복구, 사라진 단서 되찾기, 놓친 곳 짚기, 잠긴 문 열기(2턴 뒤)." : ""}</p>
     ${rows}
   </div>` + renderForensic() + renderPatrol() + renderDeptHelp();
 }
@@ -4249,6 +4270,9 @@ document.addEventListener("keyup", e => { if (inGameRooms()) PX.key(e, false); }
 addEventListener("blur", () => PX.clearKeys());
 document.addEventListener("keydown", e => {
   if (!inGameRooms()) return;
+  if (e.key === "Escape" && S.sheet) { S.sheet = false; render(); return; }
+  if (/^[tTㅅ]$/.test(e.key) && !/INPUT|SELECT|TEXTAREA/.test((document.activeElement || {}).tagName || "")) { S.sheet = !S.sheet; render(); return; }
+  if (S.sheet) return;
   const tag = (document.activeElement && document.activeElement.tagName) || "";
   if (/INPUT|SELECT|TEXTAREA/.test(tag)) return;
   if (/BUTTON/.test(tag) && /^( |enter)$/i.test(e.key)) return;   /* 버튼에 초점이 있으면 그 버튼을 누르게 둔다 */
@@ -4289,7 +4313,9 @@ app.addEventListener("click", e => {
   else if (d.random) { openRandom(); top = true; }
   else if (d.case) { openCase(d.case); top = true; }
   else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm) mm.querySelector("img").outerHTML = pixelFace(pname(), 64, "", true); return; }
-  else if (d.dept) { callDept(d.dept); }
+  else if (d.act === "sheet-open") { S.sheet = true; }
+  else if (d.act === "sheet-close") { S.sheet = false; }
+  else if (d.dept) { callDept(d.dept); S.sheet = false; }
   else if (d.act === "team-go") { confirmTeam(); top = true; }
   else if (d.act === "team-random") { S.teamPick = randomTeam(); S.teamPick.fit = true; Sound.help(); }
   else if (d.act === "team-default") { S.teamPick = { team: { ...TEAM_DEFAULT }, patrol: PATROL.map(x => x.id), depts: DEPT_DEFAULT.slice(0, DEPT_N[S.diff] || 4) }; }
@@ -4302,7 +4328,7 @@ app.addEventListener("click", e => {
   else if (d.act === "wait") { if (S.turns <= 0) return; Sound.step(); spend(); }
   else if (d.tab) { S.tab = d.tab; S.dlg = null; }
   else if (d.room) { S.room = d.room; }
-  else if (d.dispatch) { dispatch(d.dispatch); }
+  else if (d.dispatch) { dispatch(d.dispatch); S.sheet = false; }
   else if (d.vtalk) { talkVar(+d.vtalk); }
   else if (d.vaccuse) { accuseVar(+d.vaccuse); }
   else if (d.suspect) { S.suspect = d.suspect; S.dlg = null; }
@@ -4323,7 +4349,7 @@ app.addEventListener("click", e => {
   else if (d.tone) { openHeart(S.suspect, d.tone); }
   else if (d.read) { doRead(d.read, d.q); }
   else if (d.moclear) { moClear(d.moclear); }
-  else if (d.forensic) { callForensic(); }
+  else if (d.forensic) { callForensic(); S.sheet = false; }
   else if (d.present) { forensicPresent(d.present); }
   else if (d.hanfix) { hanFix(d.hanfix); }
   else if (d.counter) { counterattack(d.counter); }
