@@ -546,6 +546,8 @@ body.talking .choice { font-size: clamp(14px, 1.15vw, 17px); padding-block: 10px
   body.talking .talklog { display: none; }
 }
 /* ===== 오프닝 ===== */
+.op-music { position: absolute; top: 14px; right: 14px; z-index: 6; background: rgba(10,13,16,.7); border: 1px solid var(--line); color: var(--lamp); border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer; animation: op-fade 1s .4s both; }
+.op-music[aria-pressed="true"] { border-color: var(--lamp); }
 .opening { position: relative; min-height: min(100dvh - 40px, 900px); display: grid; place-items: center; overflow: hidden; border-radius: 10px; border: 1px solid var(--line); background: #0b0f1a; }
 .opening-stage { position: absolute; inset: 0; }
 .opening-canvas { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
@@ -2571,6 +2573,48 @@ const Sound = (() => {
     s.buffer = noiseBuf(dur + 0.1); f.type = ftype; f.frequency.value = freq; f.Q.value = q || 1;
     env(g, t, 0.005, peak, dur); s.connect(f).connect(g).connect(master); s.start(t); s.stop(t + dur + 0.1);
   }
+  /* ---------- 오프닝 배경음악: 느리고 긴장감 있는 단조 루프 (음악 파일 없이 합성) ----------
+     Am - F - Dm - E 진행, 72bpm. 화음 패드 + 심장 박동 같은 베이스 + 외로운 멜로디 + 잔향 */
+  let mus = null;
+  const EIGHTH = 60 / 72 / 2;
+  const CHORDS = [[220, 261.6, 329.6], [174.6, 220, 261.6], [146.8, 174.6, 220], [164.8, 207.7, 246.9]];
+  const BASS = [110, 87.3, 73.4, 82.4];
+  const MELODY = [
+    [659.3, 0, 523.3, 0, 493.9, 440, 0, 0], [523.3, 0, 440, 0, 349.2, 0, 440, 0],
+    [587.3, 0, 523.3, 0, 440, 0, 349.2, 0], [415.3, 0, 493.9, 0, 659.3, 0, 0, 0],
+  ];
+  function mtone(dest, freq, type, t, a, peak, dec, detune = 0) {
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = type; o.frequency.setValueAtTime(freq, t); o.detune.value = detune;
+    env(g, t, a, peak, dec); o.connect(g).connect(dest); o.start(t); o.stop(t + a + dec + 0.05);
+  }
+  function musicTick() {
+    if (!mus) return;
+    while (mus.next < now() + 0.25) {
+      const t = mus.next, step = mus.step, bar = Math.floor(step / 8) % 4, e = step % 8, round = Math.floor(step / 32);
+      if (e === 0) CHORDS[bar].forEach((f, i) => { mtone(mus.pad, f, "triangle", t, 0.7, 0.05, EIGHTH * 8, i * 4 - 4); mtone(mus.pad, f / 2, "sine", t, 0.9, 0.03, EIGHTH * 8); });
+      if (e === 0 || e === 4) { mtone(mus.dry, BASS[bar], "sine", t, 0.01, 0.22, 0.45); mtone(mus.dry, BASS[bar], "sine", t + EIGHTH * 0.55, 0.01, 0.12, 0.35); }   /* 두근- 두근 */
+      if (round > 0) { const m = MELODY[bar][e]; if (m) mtone(mus.wet, m, round % 2 ? "triangle" : "sine", t, 0.03, 0.07, EIGHTH * 2.6); }
+      if (e % 2 === 1) { const s2 = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(); s2.buffer = mus.tick; f.type = "highpass"; f.frequency.value = 6000; env(g, t, 0.002, 0.018, 0.05); s2.connect(f).connect(g).connect(mus.dry); s2.start(t); s2.stop(t + 0.1); }
+      mus.step++; mus.next += EIGHTH;
+    }
+  }
+  function musicStart() {
+    init(); if (!ctx || mus) return;
+    const bus = ctx.createGain(); bus.gain.setValueAtTime(0.0001, now()); bus.gain.exponentialRampToValueAtTime(0.9, now() + 2.5); bus.connect(master);
+    const dl = ctx.createDelay(1.5), fb = ctx.createGain(), wetOut = ctx.createGain(), lp = ctx.createBiquadFilter();
+    dl.delayTime.value = EIGHTH * 3; fb.gain.value = 0.38; wetOut.gain.value = 0.45; lp.type = "lowpass"; lp.frequency.value = 2600;
+    const wet = ctx.createGain(), dry = ctx.createGain(), pad = ctx.createBiquadFilter();
+    pad.type = "lowpass"; pad.frequency.value = 1400;
+    wet.connect(bus); wet.connect(dl); dl.connect(lp).connect(fb).connect(dl); lp.connect(wetOut).connect(bus);
+    dry.connect(bus); pad.connect(bus); pad.connect(dl);
+    mus = { bus, wet, dry, pad, step: 0, next: now() + 0.15, tick: noiseBuf(0.1), timer: setInterval(musicTick, 50) };
+    musicTick();
+  }
+  function musicStop(fade = 1.2) {
+    if (!mus) return; const m = mus; mus = null; clearInterval(m.timer);
+    const t = now(); m.bus.gain.cancelScheduledValues(t); m.bus.gain.setValueAtTime(Math.max(0.0001, m.bus.gain.value), t); m.bus.gain.exponentialRampToValueAtTime(0.0001, t + fade);
+    setTimeout(() => { try { m.bus.disconnect(); } catch {} }, fade * 1000 + 200);
+  }
   /* 빗소리 + 낮게 울리는 드론. 남은 턴이 줄수록 드론이 밝고 커진다 */
   function ambient() {
     const rain = ctx.createBufferSource(); rain.buffer = noiseBuf(3); rain.loop = true;
@@ -2609,7 +2653,8 @@ const Sound = (() => {
       on = !on; try { localStorage.setItem("midnight-sound", on ? "on" : "off"); } catch {}
       init(); if (master) master.gain.setTargetAtTime(on ? 0.9 : 0, now(), 0.05);
     },
-    tension,
+    tension, musicStart, musicStop,
+    get music() { return !!mus; },
     step() { if (ctx) noise(now(), 0.09, 0.25, "highpass", 3000); },
     ask() { if (ctx) tone(196, "triangle", now(), 0.01, 0.08, 0.25); },
     clue() { if (!ctx) return; const t = now(); tone(659, "sine", t, 0.005, 0.18, 0.6); tone(988, "sine", t + 0.12, 0.005, 0.14, 0.9); },
@@ -2790,7 +2835,7 @@ const OPENING = (() => {
     },
     go() {   /* 게임 시작: 번개 → 사이렌 → 사건 파일이 열리듯 넘어간다 */
       if (leaving) return; leaving = true;
-      Sound.init(); Sound.thunder(); setTimeout(() => Sound.siren(), 350);
+      Sound.init(); Sound.musicStop(1.4); Sound.thunder(); setTimeout(() => Sound.siren(), 350);
       const o = document.querySelector(".opening"); if (o) o.classList.add("leaving");
       setTimeout(() => { leaving = false; S.screen = "title"; render(); document.body.classList.add("arrive"); setTimeout(() => document.body.classList.remove("arrive"), 900); }, 1250);
     },
@@ -2806,10 +2851,11 @@ function renderOpening() {
       <h1 class="op-title" aria-label="${title}">${[...title].map((ch, i) => `<span style="animation-delay:${.6 + i * .14}s">${ch === " " ? "&nbsp;" : ch}</span>`).join("")}</h1>
       <p class="op-sub">비 오는 밤, 살인 사건 신고가 들어왔다.</p>
       <button class="btn op-start" data-act="opening-go">게임 시작</button>
-      <p class="hint op-hint">엔터를 눌러도 시작해요 · 소리가 나와요</p>
+      <p class="hint op-hint">엔터를 눌러도 시작해요</p>
     </div>
     <div class="police-line" aria-hidden="true"><span>${"POLICE LINE · DO NOT CROSS · 수사 중 · 출입 금지 · ".repeat(6)}</span></div>
     <div class="file-flaps" aria-hidden="true"><i></i><i></i></div>
+    <button class="op-music" data-act="op-music" aria-pressed="${Sound.music}">${Sound.music ? "♪ 음악 끄기" : "♪ 음악 켜기"}</button>
   </section>`;
   OPENING.mount(document.getElementById("opening-stage"));
 }
@@ -4664,6 +4710,16 @@ document.addEventListener("keydown", e => {
   if (/BUTTON/.test(tag) && /^( |enter)$/i.test(e.key)) return;   /* 버튼에 초점이 있으면 그 버튼을 누르게 둔다 */
   PX.key(e, true);
 });
+/* 오프닝: 화면 어디를 처음 눌러도 배경음악이 시작된다 (브라우저는 첫 조작 전엔 소리를 막는다) */
+let opMusicTried = false;
+for (const ev of ["pointerdown", "keydown"]) document.addEventListener(ev, e => {
+  if (S.screen !== "opening" || opMusicTried || !Sound.on) return;
+  const t = e.target && e.target.closest && e.target.closest("[data-act]");
+  if (t && (t.dataset.act === "opening-go" || t.dataset.act === "op-music")) return;
+  if (ev === "keydown" && (e.key === "Enter" || e.key === " ")) return;
+  opMusicTried = true; Sound.init(); Sound.musicStart();
+  const b = document.querySelector(".op-music"); if (b) { b.textContent = "♪ 음악 끄기"; b.setAttribute("aria-pressed", "true"); }
+}, true);
 /* 방향 버튼: 누르고 있으면 계속 걷는다 */
 app.addEventListener("pointerdown", e => { const b = e.target.closest("[data-pad]"); if (!b) return; e.preventDefault(); b.setPointerCapture && b.setPointerCapture(e.pointerId); PX.hold(b.dataset.pad, true); });
 for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) app.addEventListener(ev, e => { const b = e.target.closest && e.target.closest("[data-pad]"); if (b) PX.hold(b.dataset.pad, false); });
@@ -4703,6 +4759,7 @@ app.addEventListener("click", e => {
   else if (d.act === "sheet-close") { S.sheet = false; }
   else if (d.dept) { callDept(d.dept); S.sheet = false; }
   else if (d.act === "opening-go") { OPENING.go(); return; }
+  else if (d.act === "op-music") { Sound.init(); if (Sound.music) Sound.musicStop(0.8); else { if (!Sound.on) Sound.toggle(); Sound.musicStart(); } }
   else if (d.act === "team-go") { confirmTeam(); top = true; }
   else if (d.act === "team-random") { S.teamPick = randomTeam(); S.teamPick.fit = true; Sound.help(); }
   else if (d.act === "team-default") { S.teamPick = { team: { ...TEAM_DEFAULT }, patrol: PATROL.map(x => x.id), depts: DEPT_DEFAULT.slice(0, DEPT_N[S.diff] || 4) }; }
