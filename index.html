@@ -4385,7 +4385,7 @@ function resolveDeptJobs() {
       Sound.help();
     }
     if (id === "drug") {
-      const DRUG = /독|약|주사|수면|디곡신|아몬드/;
+      const DRUG = /독약|독극물|독을|독살|약병|약물|약품|수면제|주사|디곡신|아몬드|알약/;
       const hit = spots.filter(sp => c.key.includes(sp.clue) && DRUG.test(c.clues[sp.clue].name + c.clues[sp.clue].text))
         .sort((a, b) => DRUG.test(c.clues[b.clue].name) - DRUG.test(c.clues[a.clue].name) || (a.id === bodySpot().id) - (b.id === bodySpot().id));   /* 약병·주사기 같은 물건부터 */
       const viaBody = DRUG.test(Object.values(c.clues).map(x => x.name + x.text).join(" ")) && DRUG.test((c.methods.find(m => m.id === c.answer.method) || {}).text || "");
