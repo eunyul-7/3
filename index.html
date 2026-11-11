@@ -678,6 +678,15 @@ body.shake main { animation: op-shake2 .4s; }
 .ac-team { position: absolute; bottom: 14px; left: 0; right: 0; opacity: .8; }
 .ac-team .gc-p { animation: none; }
 @media (max-width: 600px) { .ac-team { display: none; } .gc-row.team .gc-p .pxface { width: 40px; height: 40px; } }
+/* ===== 심문실: 용의자만, 닫기로 현장 복귀 ===== */
+.split.solo, body.talking .split.solo { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; max-width: 1100px; margin-inline: auto; width: 100%; }
+.interro-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.interro-bar .label { color: var(--lamp); letter-spacing: .14em; }
+.interro-close { padding: 6px 14px; } .interro-close small { color: var(--muted); font-size: 11px; margin-left: 4px; }
+.choice.hidden-q { border-left-color: #7fd1a0; background: rgba(127,209,160,.08); }
+.choice.hidden-q .ck { color: #7fd1a0; }
+.clue-card.unlock { border-left-color: #2e8b57; top: 210px; } .clue-card.unlock .cc-tag { color: #2e8b57; }
+.pxl.hidden { color: #ffd36b; font-weight: 800; animation: op-blink 1.2s steps(1) infinite; }
 /* ===== 심문 무대 (비주얼 노벨식) ===== */
 .stage { position: relative; min-height: 210px; border-radius: 8px; overflow: hidden; padding: 14px 14px 12px clamp(120px, 22%, 210px);
   background: linear-gradient(180deg, color-mix(in srgb, var(--wall) 55%, #0a0c10) 0 70%, #15110e 70% 100%); box-shadow: inset 0 0 60px rgba(0,0,0,.65); display: flex; flex-direction: column; justify-content: flex-end; }
@@ -2728,7 +2737,12 @@ function addClue(id) {
   const c = C(), key = c.key.includes(id);
   popCard(`<span class="cc-tag">🔎 증거 발견${key ? " · 결정적일지도!" : ""}</span><b>${esc(c.clues[id].name)}</b><small>${esc(c.clues[id].text.slice(0, 54))}${c.clues[id].text.length > 54 ? "…" : ""}</small>`, key ? "gold" : "");
   Sound.clue(); if (key) setTimeout(() => Sound.help(), 180);
+  /* 이 단서로 열리는 숨겨진 진술 */
+  const who = Object.values(c.suspects).filter(p => p.qs.some(q => q.need === id && !has(S.asked, q.id))).map(p => p.name);
+  if (who.length) setTimeout(() => { popCard(`<span class="cc-tag">🔓 숨겨진 진술</span><b>${esc(who.join("·"))}</b><small>‘${esc(c.clues[id].name)}’ 얘기를 꺼내면 숨기던 걸 털어놓을지도 모른다. 현장에서 찾아가 대화해 보자.</small>`, "unlock"); Sound.help(); }, 900);
 }
+/* 아직 안 들은 숨겨진 진술이 있는 용의자 */
+const hasHidden = sid => { const p = C().suspects[sid]; return !!p && p.qs.some(q => q.need && has(S.found, q.need) && !has(S.asked, q.id)); };
 /* ===================== 연출: 증거 카드 · 모순 쾅 · 방 제목 · 범인 지목 ===================== */
 function popCard(html, cls = "") {
   const el = document.createElement("div"); el.className = "clue-card " + cls; el.innerHTML = html;
@@ -4353,7 +4367,7 @@ const PX = (() => {
   function placeLabels() {
     if (!labels) return;
     const L = layout(S.room), list = [];
-    for (const n of npcs) list.push([n.p.id, n.fx + .5, n.fy - .2, `${n.p.name}${S.silence[n.p.id] ? " · 침묵" : ""}`, "nm" + (S.silence[n.p.id] ? " silent" : "")]);
+    for (const n of npcs) list.push([n.p.id, n.fx + .5, n.fy - .2, `${hasHidden(n.p.id) ? "❗ " : ""}${n.p.name}${S.silence[n.p.id] ? " · 침묵" : ""}`, "nm" + (S.silence[n.p.id] ? " silent" : "") + (hasHidden(n.p.id) ? " hidden" : "")]);
     for (const h of Object.values(helpers)) if (h.room === S.room) list.push(["h" + h.pid, h.fx + .5, h.fy - .2, `${h.p.name} · ${h.state === "out" ? "보고 완료!" : (S.missions.find(m => m.pid === h.pid) || {}).role === "autopsy" ? "감식 중…" : roleOf(h.pid) === "clear" ? "치우는 중…" : "바로잡는 중…"}`, "nm ally" + (h.state === "out" ? " done" : "")]);
     for (const it of L.items) if (has(S.marked || [], it.spot) && !has(S.searched, it.spot)) list.push(["mk" + it.spot, it.x + .5, it.y - .75, "놓친 곳!", "nm silent"]);
     for (const c of cops) list.push(["cop" + c.id, c.fx + .5, c.fy - .2, `${patrolOf(c.id).name} · ${c.leaving ? "이동 중" : "순찰"}`, "nm ally"]);
@@ -4820,7 +4834,8 @@ function renderPeople(out) {
     ${S.vars.map((v, i) => `<button class="who has-face" aria-pressed="${S.suspect === "v" + i}" data-suspect="v${i}">${pixelFace(v.name, 44)}<span class="who-text"><b>${v.name}</b><span>${v.role} · 변수 인물</span>
       <span class="mono">${S.accCaught && v.acc ? "공범 체포" : has(S.accWrong, i) ? "공범 아님" : has(S.varTalked, i) ? "이야기 나눔" : "아직 모름"}</span></span></button>`).join("")}` : "";
   const extra = /^v\d$/.test(S.suspect) ? renderVar(+S.suspect[1], out) : "";
-  if (extra) return `<div class="split"><div class="people">${list}${side}</div>${extra}</div>`;
+  const closeBar = who => `<div class="interro-bar"><span class="label">심문실 · ${esc(who)}</span><button class="btn ghost interro-close" data-act="close-talk">닫기 ✕ <small>현장으로</small></button></div>`;
+  if (extra) return `<div class="split solo">${closeBar(S.vars[+S.suspect[1]] ? S.vars[+S.suspect[1]].name : "")}${extra}</div>`;
   const sid = S.suspect, p = c.suspects[sid], sl = S.silence[sid], per = PERSONAS[S.persona[sid]], show = DIFF[S.diff].persona === "show";
   /* 말풍선: 마지막 대화 */
   const L = S.lastLine && S.lastLine.sid === sid ? S.lastLine : null;
@@ -4840,7 +4855,7 @@ function renderPeople(out) {
   else if (!D) {
     const avail = p.qs.filter(q => qOpen(q) && !has(S.asked, q.id));
     const locked = p.qs.filter(q => !qOpen(q)).length;
-    choices = avail.map(q => `<button class="choice" data-ask="${q.id}"><span class="ck">질문</span><span>“${esc(q.q)}”</span><span class="cost">−1턴</span></button>`).join("")
+    choices = avail.map(q => `<button class="choice${q.need ? " hidden-q" : ""}" data-ask="${q.id}"><span class="ck">${q.need ? "🔓 숨겨진 진술" : "질문"}</span><span>“${esc(q.q)}”</span><span class="cost">−1턴</span></button>`).join("")
       + (statements.length && S.found.length ? `<button class="choice press" data-dlg="contradict"><span class="ck">추리</span><span>모순을 지적한다</span><span class="cost">틀리면 −10초</span></button>` : "")
       + (statements.length && deptOn("sci") ? (S.autopsy
           ? `<button class="choice press with-face" data-present="${sid}"><span class="ck">증거</span><span>${pixelFace(N.yoon, 22)}${pixelFace(N.byun, 22)} 과학수사대가 정리한 증거를 내민다 <small class="hint">(${evidenceAgainst(sid).filter(x => x.asked).length ? "어긋나는 증거가 있다" : "지금은 내밀 게 없어 보인다"})</small></span><span class="cost">−1턴</span></button>`
@@ -4867,9 +4882,9 @@ function renderPeople(out) {
     const broken = has(S.broken, q.id);
     return `<div class="logq"><p class="q">“${esc(q.q)}”</p><p class="answer${broken ? " retracted" : ""}">${esc(q.a)}</p>${broken ? `<span class="verdict-tag">진술 번복</span><p class="answer broken">${esc(q.lie.reply)}</p>` : readTags(q) + readBtns(q, sid)}</div>`;
   }).join("") + S.secrets.filter(x => x.sid === sid).map(x => `<div class="logq"><span class="verdict-tag ally">숨은 증언</span><p class="answer rebut">${esc(x.text)}</p></div>`).join("");
-  return `<div class="split">
-    <div class="people">${list}${side}</div>
+  return `<div class="split solo">
     <section class="panel talk" aria-live="polite">
+      ${closeBar(p.name)}
       <div class="person-head"><span class="portrait">${pixelFace(p.name, 96, p.role)}</span><div><span class="label">${p.role}</span><h3 style="font-size:24px">${p.name}</h3>
         <span class="hint">${show ? `성격: <b>${per.label}</b> · ` : "눈치: "}${per.tell}</span> ${heartLabel(sid)}
         ${S.autopsy ? `<span class="duo">${pixelFace(N.yoon, 20)}감식 소견(증거): 사인 ‘${esc(S.autopsy.cause)}’</span>` : ""}
@@ -5113,6 +5128,7 @@ const inGameRooms = () => S.screen === "game" && S.tab === "rooms";
 document.addEventListener("keyup", e => { if (inGameRooms()) PX.key(e, false); });
 addEventListener("blur", () => PX.clearKeys());
 document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && S.screen === "game" && S.tab === "people" && !/INPUT|SELECT|TEXTAREA/.test((document.activeElement || {}).tagName || "")) { S.tab = "rooms"; S.dlg = null; render(); return; }
   if (S.screen === "opening" && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); if (OPENING.revealed) OPENING.go(); else OPENING.skip(); return; }
   if (!inGameRooms()) return;
   if (e.key === "Escape" && S.sheet) { S.sheet = false; render(); return; }
@@ -5170,6 +5186,7 @@ app.addEventListener("click", e => {
   else if (d.random) { openRandom(); top = true; }
   else if (d.case) { openCase(d.case); top = true; }
   else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm) mm.querySelector("img").outerHTML = pixelFace(pname(), 64, "", true); return; }
+  else if (d.act === "close-talk") { S.tab = "rooms"; S.dlg = null; top = true; }
   else if (d.act === "sheet-open") { S.sheet = true; }
   else if (d.act === "sheet-close") { S.sheet = false; }
   else if (d.dept) { callDept(d.dept); S.sheet = false; }
