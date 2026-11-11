@@ -717,6 +717,8 @@ body.shake main { animation: op-shake2 .4s; }
 .cop-say.sure { border-color: #3fae6a; } .cop-say.unsure { border-color: #c9a23a; border-style: dashed; }
 .cop-clues { display: flex; flex-wrap: wrap; gap: 6px; max-height: 32vh; overflow: auto; }
 .cop-clues .chip.on { outline: 2px solid var(--lamp); }
+.cop-radio { display: flex; flex-wrap: wrap; gap: 6px; } .cop-radio .chip { display: inline-flex; align-items: center; gap: 4px; } .cop-radio small { color: var(--muted); }
+.cop-card { max-height: 92vh; overflow: auto; }
 .stage-sprite { position: absolute; left: 2%; bottom: 0; height: 96%; max-height: 260px; width: auto; image-rendering: pixelated; image-rendering: crisp-edges; filter: drop-shadow(0 10px 14px rgba(0,0,0,.6)); transform-origin: bottom center; }
 .stage.talk .stage-sprite { animation: st-bob 2.4s ease-in-out infinite; }
 .stage.shock .stage-sprite { animation: st-shock .5s ease-out 2; }
@@ -2264,7 +2266,10 @@ function crew(base, spots) {
   });
   return list;
 }
-const leadName = () => inCrew("kang") ? N.kang : (() => { const d = DEPTS.find(d => deptOn(d.id) && d.slots); return d ? N[d.slots[0]] : N.seo; })();
+const leadName = () => inCrew("kang") ? N.kang : (() => {   /* 강력팀장이 없으면 데려온 팀장 중 계급이 가장 높은 사람이 지휘 */
+  const order = ["경감", "경위", "경사", "경장", "순경"], heads = DEPTS.filter(d => deptOn(d.id) && d.slots && d.slots.length && N[d.slots[0]]).map(d => d.slots[0]);
+  heads.sort((a, b) => order.indexOf(rankOf(N[a])) - order.indexOf(rankOf(N[b])));
+  return heads.length ? N[heads[0]] : N.seo; })();
 const rankOf = name => { for (const r of ROSTER) if (r.people.some(p => p[0] === name)) return r.rank; const x = PATROL_ALL.find(p => p.name === name); return x ? x.title : ""; };
 const deptOn = id => (S.depts || DEPT_DEFAULT).includes(id);
 const N = new Proxy({}, { get: (_, k) => { let t = null; try { t = S && S.team; } catch {} return (t && t[k]) || TEAM_DEFAULT[k] || ""; } });
@@ -2987,7 +2992,8 @@ function addClue(id) {
   const c = C(), key = c.key.includes(id);
   popCard(`<span class="cc-tag">🔎 증거 발견${key ? " · 결정적일지도!" : ""}</span><b>${esc(c.clues[id].name)}</b><small>${esc(c.clues[id].text.slice(0, 54))}${c.clues[id].text.length > 54 ? "…" : ""}</small>`, key ? "gold" : "");
   Sound.clue(); if (key) setTimeout(() => Sound.help(), 180);
-  if (id === "body") setTimeout(openBodyPhoto, 900);   /* 시신을 처음 살피면 감식 사진을 바로 보여 준다 */
+  if (id === "body") setTimeout(openBodyPhoto, 900);
+  if (id === "body" && drugInfo()) setTimeout(() => popCard(`<span class="cc-tag">💊 약물 의심</span><b>약물 흔적이 보인다</b><small>${deptOn("drug") ? "마약팀에게 이 단서를 물어보면 무슨 약인지, 몸에 어떻게 해로운지 알려 줘요." : "약물은 마약팀 전문이에요. (이번엔 마약팀을 안 데려왔어요)"}</small>`, "unlock"), 2600);   /* 시신을 처음 살피면 감식 사진을 바로 보여 준다 */
   /* 이 단서로 열리는 숨겨진 진술 */
   const who = Object.values(c.suspects).filter(p => p.qs.some(q => q.need === id && !has(S.asked, q.id))).map(p => p.name);
   if (who.length) setTimeout(() => { popCard(`<span class="cc-tag">🔓 숨겨진 진술</span><b>${esc(who.join("·"))}</b><small>‘${esc(c.clues[id].name)}’ 얘기를 꺼내면 숨기던 걸 털어놓을지도 모른다. 현장에서 찾아가 대화해 보자.</small>`, "unlock"); Sound.help(); }, 900);
@@ -3018,7 +3024,7 @@ function copDept(who) {
 function clueDepts(id) {
   const c = C(), k = c.clues[id], t = k.name + " " + k.text, out = new Set();
   if (id === "body" || id === "weapon" || /^trait_/.test(id) || /흉기|핏자국|피가|자국|지문|섬유|흔적|상처|시신|얼룩|가루/.test(t)) out.add("sci");
-  if (/독약|독극물|독을|독살|약병|약물|약품|수면제|주사|디곡신|아몬드|알약/.test(t)) out.add("drug");
+  if (id === "body" || /독약|독극물|독을|독살|약병|약물|약품|수면제|주사|디곡신|아몬드|알약/.test(t)) out.add("drug");
   if (/CCTV|카드|기록|로그|통화|문자|단말기|센서|캡처|녹음|블랙박스|메일/.test(t) || id === "witness") out.add("digital");
   if (/블랙박스|차량|주차|도로|트럭|버스/.test(t)) out.add("traffic");
   if (/차용증|보험|유언장|고소장|횡령|영수증|장부|장학|회비|계약서|돈|억 원/.test(t)) out.add("fin");
@@ -3039,11 +3045,25 @@ function clueTruth(id) {
   if (/^motive_/.test(id) && owner) return { sid: owner[0], text: `${owner[1].name} 씨에게 피해자와 얽힌 사정이 있었다는 서류예요. 진짜 동기인지는 심문으로 확인해야 해요.` };
   return { sid: null, text: c.key.includes(id) ? `이 ‘${k.name}’, 사건의 핵심 같아요. 이걸 중심으로 진술들을 맞춰 보세요.` : `이 ‘${k.name}’는 사건과 직접 상관은 적어 보여요. 너무 매달리지 마세요.` };
 }
+/* 마약팀이 알려 주는 약물 정보: 무슨 약인지, 몸에 어떻게 해로운지 */
+function drugInfo() {
+  const c = C(), t = ((c.clues.body || {}).text || "") + " " + autopsyCause();
+  if (/디곡신/.test(t)) return { name: "디곡신", what: "심장약(강심제)이에요. 약으로는 아주 조금만 써요.", harm: "많이 먹으면 심장 박동이 엉망이 되다가(부정맥) 멈춰요. 구토가 나고, 세상이 노랗게 보이기도 해요. 찻잔 같은 데 타면 맛으로 알아채기 어렵죠." };
+  if (/인슐린|혈당|주사/.test(t)) return { name: "인슐린", what: "당뇨 환자가 맞는 혈당 조절 주사약이에요.", harm: "건강한 사람에게 많이 놓으면 혈당이 뚝 떨어져 식은땀·경련 끝에 정신을 잃고 숨져요. 원래 몸에도 있는 성분이라 놓치기 쉬워요. 목덜미 바늘 자국을 보세요." };
+  if (/수면제/.test(t)) return { name: "수면제", what: "잠이 들게 하는 약이에요. 이 사건에선 졸피뎀 계열로 보여요.", harm: "많이 먹으면 깊이 잠들어 몸을 못 가눠요. 그 자체보다, 잠든 사람이 저항하지 못하게 만드는 데 쓰였어요. 진짜 사인은 그 뒤의 질식이에요." };
+  if (/독|아몬드|푸르스름/.test(t)) return { name: "청산가리(시안화물)", what: "아주 센 독이에요. 쓴 아몬드 냄새가 나는 게 특징이죠.", harm: "몸이 산소를 쓰지 못하게 막아서 몇 분 만에 숨이 멎어요. 입술이 파래지고, 마신 잔 주위에 냄새가 남아요." };
+  return null;
+}
+function drugLine() {
+  const d = drugInfo();
+  return d ? `약물 반응 나왔습니다. ‘${d.name}’${jo(d.name, "이에요", "예요").slice(d.name.length)}. ${d.what} ${d.harm}` : "약물 반응은 없습니다. 이건 약물 사건이 아니에요. 몸에 가해진 힘이 사인이에요.";
+}
 function copAnswer(who, id) {
   const key = who + "|" + id; if (S.copAsk[key]) return S.copAsk[key];
   const c = C(), dept = copDept(who), D = DEPT_TALK[dept] || DEPT_TALK.crime, mine = clueDepts(id).has(dept), truth = clueTruth(id);
   let text, right;
-  if (mine) { right = true; text = `제 분야예요, 확실합니다. ${truth.text}`; }
+  if (mine && dept === "drug" && (id === "body" || id === "weapon" || /약|독|주사/.test(c.clues[id].name + c.clues[id].text))) { right = true; text = `제 분야예요, 확실합니다. ${drugLine()} ${id === "weapon" || id === "body" ? truth.text : ""}`.trim(); }
+  else if (mine) { right = true; text = `제 분야예요, 확실합니다. ${truth.text}`; }
   else if (Math.random() < 0.5) { right = true; text = `제 분야(${D.field})는 아니라서 장담은 못 해요. ${D.lens}… ${truth.text}`; }
   else {
     right = false;
@@ -3057,6 +3077,9 @@ function openCopAsk(who, name) {
   document.querySelector(".cop-ov") && document.querySelector(".cop-ov").remove();
   const c = C(), dept = copDept(who), D = DEPT_TALK[dept] || DEPT_TALK.crime, rank = rankOf(name);
   const ov = document.createElement("div"); ov.className = "photo-ov cop-ov";
+  /* 함께 출동한 다른 팀원 (무전) */
+  const radio = [{ slot: "seo", team: "강력팀" }].concat(DEPTS.filter(d => (S.depts ? deptOn(d.id) : DEPT_DEFAULT.includes(d.id)) && d.slots).flatMap(d => d.slots.map(sl => ({ slot: sl, team: d.name }))))
+    .filter(x => N[x.slot] && x.slot !== who && N[x.slot] !== name && inCrew(x.slot)).map(x => ({ ...x, name: N[x.slot], rank: rankOf(N[x.slot]) }));
   const draw = (sel) => {
     const a = sel ? S.copAsk[who + "|" + sel] : null;
     const line = a ? a.text : allyHint(who);
@@ -3066,6 +3089,7 @@ function openCopAsk(who, name) {
       ${S.found.length ? `<p class="step-title">어떤 단서를 물어볼까? <small class="hint">(처음 묻는 단서는 −1턴 · 자기 분야가 아니면 반반 확률로 엉뚱한 답)</small></p>
       <div class="cop-clues">${S.found.map(id => { const asked = !!S.copAsk[who + "|" + id]; return `<button class="chip${sel === id ? " on" : ""}" data-cq="${id}" ${!asked && (S.turns <= 0 || S.decided) ? "disabled" : ""}>${asked ? "✓ " : ""}${esc(c.clues[id].name)}</button>`; }).join("")}</div>`
       : `<p class="hint">아직 찾은 단서가 없어요. 단서를 찾으면 물어볼 수 있어요.</p>`}
+      ${radio.length ? `<p class="step-title">📻 무전으로 다른 팀원에게 묻기 <small class="hint">(그 분야 전문가를 골라 보세요)</small></p><div class="cop-radio">${radio.map(x => `<button class="chip" data-radio="${x.slot}">${pixelFace(x.name, 20, x.rank)} ${esc(x.name)} <small>${esc(x.team)}</small></button>`).join("")}</div>` : ""}
       <button class="btn photo-close">닫기 ✕ <small>(Esc)</small></button></div>`;
     Sound.babble(line, voiceOf(name, rank).base);
   };
@@ -3075,6 +3099,8 @@ function openCopAsk(who, name) {
   const onKey = e => { if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); close(); } };
   document.addEventListener("keydown", onKey, true);
   ov.addEventListener("click", e => {
+    const rb = e.target.closest("[data-radio]");
+    if (rb) { close(); Sound.tick(); openCopAsk(rb.dataset.radio, N[rb.dataset.radio]); return; }
     const b = e.target.closest("[data-cq]");
     if (b) {
       const id = b.dataset.cq, first = !S.copAsk[who + "|" + id];
@@ -3783,7 +3809,7 @@ const INTRO = (() => {
   /* 출동 직전, 데려온 부서마다 한마디씩 (부서 특징대로) */
   const shouts = () => {
     const L = [];
-    const add = (slot, text) => { if (N[slot]) L.push({ who: N[slot], text }); };
+    const add = (slot, text) => { if (N[slot] && N[slot] !== leadName()) L.push({ who: N[slot], text }); };   /* 이미 지휘 대사를 한 사람은 빠진다 */
     if (inCrew("gong")) add("gong", "범인이 못 빠져나가게 출입구부터 막겠습니다!");
     if (inCrew("yoon")) add("yoon", "감식 장비 챙겼습니다. 시신엔 아무도 손대지 말라고 전해 주세요.");
     if (inCrew("mo")) add("mo", "용의자들 말, 한마디도 안 놓치고 적어 둘게요!");
@@ -3846,7 +3872,7 @@ const INTRO = (() => {
       { t: 14.6, who: N.seo, text: "아무것도 만지지 마시고, 아무도 들여보내지 마세요. 그 자리에 계세요!" },
       { t: 17, who: N.seo, text: `(수화기를 내려놓으며) 선배님들! ${where()} ‘${place()}’에서 살인 사건 신고입니다!${k ? ` 신고자는 ${k.job} ${k.name} 씨예요.` : ""}` },
       { t: 20.4, who: leadName(), text: `가자. ${pname()} 형사, 이번 사건은 자네가 맡게. 처음 본 사람 말부터 들어 봐.` },
-      { t: 23, who: inCrew("han") ? N.han : null, text: "용의자 심문은 저희 수사팀 둘이 같이 들어가죠." },
+      { t: 23, who: inCrew("han") && N.han !== leadName() ? N.han : null, text: "용의자 심문은 저희 수사팀 둘이 같이 들어가죠." },
       ...shouts().map((x, i) => ({ t: SH0 + i * SHD, who: x.who, text: x.text })),
       { t: goT(), who: "", text: S.depts ? "부서별로 모인 강력팀, 출동!" : "강력팀, 출동!" },
     ].filter(b => b && b.who !== null);
@@ -3974,7 +4000,7 @@ const ENDING = (() => {
           { t: 5.8, who: inCrew("gong") ? N.gong : N.seo, text: "연행하겠습니다. 이쪽으로." },
           { t: 8.4, who: N.seo, text: "해냈어요, 선배님! 진짜 범인을 잡았어요!" },
           { t: 11, who: inCrew("mo") ? N.mo : null, text: "와… 저도 언젠가 저렇게 추리하고 싶어요!" },
-          { t: 13.6, who: inCrew("han") ? N.han : null, text: grade === "S" ? "흠잡을 데 없는 추리였어요. 완벽합니다." : "깔끔했어요. 다음엔 증거를 조금 더 챙겨 보죠." },
+          { t: 13.6, who: inCrew("han") && N.han !== leadName() ? N.han : null, text: grade === "S" ? "흠잡을 데 없는 추리였어요. 완벽합니다." : "깔끔했어요. 다음엔 증거를 조금 더 챙겨 보죠." },
           { t: 16.2, who: leadName(), text: `수고했네, ${me} 형사. 오늘 저녁은 내가 사지!` },
         ].filter(b => b.who !== null),
         walks: { cul: [5.8, [[5, 3.5], [5, 9.5]]], gong: [6.1, [[6, 3.5], [6, 6.5], [5, 6.5], [5, 9.5]]] },
@@ -3998,7 +4024,7 @@ const ENDING = (() => {
         { t: 5, who: N.seo, text: "선배님… 제가 더 꼼꼼히 봤어야 했는데요." },
         { t: 7.6, who: inCrew("mo") ? N.mo : null, text: "증거를 조금만 더 모았어도…" },
         { t: 10.2, who: leadName(), text: `고개 들게, ${me} 형사. 한 번 더 해 보지! 아직 끝난 거 아니야.` },
-        { t: 13.4, who: inCrew("han") ? N.han : null, text: "이번에 놓친 걸 기억하세요. 다음엔 안 놓칩니다." },
+        { t: 13.4, who: inCrew("han") && N.han !== leadName() ? N.han : null, text: "이번에 놓친 걸 기억하세요. 다음엔 안 놓칩니다." },
       ].filter(b => b.who !== null),
       walks: inCrew("kang") ? { kang: [9.6, [[8, 4.8], [6, 4.8]]] } : {},
       gloom: true,
