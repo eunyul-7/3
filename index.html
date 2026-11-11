@@ -3114,7 +3114,7 @@ function accuseScene(done) {
 
 /* ---------- 효과음: 파일 없이 Web Audio로 합성 ---------- */
 const Sound = (() => {
-  let ctx = null, master = null, amb = null, on = true, beatTimer = null;
+  let ctx = null, master = null, amb = null, on = true, beatTimer = null, bab = null, voiceUnlocked = false;
   try { on = localStorage.getItem("midnight-sound") !== "off"; } catch {}
   const now = () => ctx.currentTime;
   function init() {
@@ -3253,7 +3253,40 @@ const Sound = (() => {
         speechSynthesis.speak(u); return true;
       } catch (e) { if (onend) onend(); return false; }
     },
-    hush() { try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} },
+    hush() { try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} if (bab) { try { bab.gain.setTargetAtTime(0, now(), 0.02); } catch (e) {} bab = null; } },
+    /* 픽셀 게임식 목소리: 글자마다 짧은 '삐릭' 소리. 사람마다 높낮이가 다르다 (어떤 기기에서도 들린다) */
+    babble(text, base = 300, phone = false) {
+      if (!ctx || !on) return 0;
+      if (bab) { try { bab.gain.setTargetAtTime(0, now(), 0.02); } catch (e) {} }
+      const out = ctx.createGain(); out.gain.value = 1; bab = out;
+      const f = ctx.createBiquadFilter(); f.type = phone ? "bandpass" : "lowpass"; f.frequency.value = phone ? 1300 : 2600; f.Q.value = phone ? 1.6 : 0.7;
+      out.connect(f).connect(master);
+      const say = String(text).replace(/\([^)]*\)/g, "").replace(/[“”"‘’]/g, "").slice(0, 70), t0 = now() + 0.03;
+      let t = t0;
+      for (const ch of say) {
+        if (/[\s]/.test(ch)) { t += 0.05; continue; }
+        if (/[….,!?~—-]/.test(ch)) { t += 0.13; continue; }
+        const c = ch.charCodeAt(0), wob = ((c * 7) % 9 - 4) * 0.035, fr = base * (1 + wob);
+        const o = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain();
+        o.type = "square"; o2.type = "triangle"; o.frequency.setValueAtTime(fr, t); o.frequency.linearRampToValueAtTime(fr * 0.92, t + 0.05); o2.frequency.setValueAtTime(fr * 2.01, t);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(phone ? 0.09 : 0.06, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.055);
+        o.connect(g); o2.connect(g); g.connect(out); o.start(t); o2.start(t); o.stop(t + 0.07); o2.stop(t + 0.07);
+        t += 0.062;
+      }
+      return t - t0;
+    },
+    /* 말하기: 기기에 한국어 음성이 있으면 진짜 목소리, 없거나 막히면 픽셀 목소리 */
+    speak(text, base, female, phone) {
+      if (!on) return;
+      let started = false;
+      const ok = api.voice(text, female, null, () => { started = true; if (bab) { try { bab.gain.setTargetAtTime(0, now(), 0.02); } catch (e) {} bab = null; } });
+      if (!ok) { api.babble(text, base, phone); return; }
+      setTimeout(() => { if (!started) { api.hush(); api.babble(text, base, phone); } }, 450);
+    },
+    /* 브라우저가 음성 합성을 처음엔 '누른 순간'에만 허락해서, 첫 터치 때 조용히 한 번 열어 둔다 */
+    unlockVoice() {
+      try { if (voiceUnlocked || !window.speechSynthesis) return; voiceUnlocked = true; const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch (e) {}
+    },
     phoneLine(sec) {   /* 수화기 잡음: 지지직 + 숨소리 */
       if (!ctx) return; const t = now();
       noise(t, sec, 0.035, "bandpass", 1900, 0.8);
@@ -3369,6 +3402,12 @@ function fitTalk() {
 addEventListener("resize", () => fitTalk());
 
 /* ===================== 오프닝: 비 오는 밤거리, 경찰차, 번개, 제목 → 게임 시작 ===================== */
+/* 사람마다 목소리 높낮이 (여자는 높게, 남자는 낮게, 이름마다 조금씩 다르게) */
+function voiceOf(name, role = "", isPlayer = false) {
+  const F = isPlayer ? playerGender() === "f" : Face.traits(name, ageOf(role)).F, h = hashStr(name || "?") % 40;
+  const kid = ageOf(role) && ageOf(role) < 20;
+  return { base: (F ? 430 : 210) * (kid ? 1.15 : 1) * (0.9 + h / 200), female: F };
+}
 const OPENING = (() => {
   const W = 192, H = 108;
   let cv = null, g = null, raf = 0, t0 = 0, sky = null, leaving = false;
@@ -3446,7 +3485,7 @@ const OPENING = (() => {
     const loud = Sound.running && Sound.on, lead = loud ? 2200 : 900;
     if (loud) {
       Sound.ring(); coTimers.push(setTimeout(() => Sound.ring(), 700), setTimeout(() => Sound.pickup(), 1700));
-      coTimers.push(setTimeout(() => { Sound.phoneLine(CALL.length * 0.06 + 1); Sound.voice(CALL, true, null, () => { voiced = true; }); }, lead));
+      coTimers.push(setTimeout(() => { Sound.phoneLine(CALL.length * 0.06 + 1); Sound.speak(CALL, 470, true, true); voiced = true; }, lead));
     }
     [...CALL].forEach((ch, i) => coTimers.push(setTimeout(() => { const l = document.getElementById("co-line"); if (l) l.textContent = CALL.slice(0, i + 1); }, lead + i * 55)));
     const end = lead + CALL.length * 55 + (loud ? 900 : 0);
@@ -3477,7 +3516,7 @@ const OPENING = (() => {
     /* 콜드 오픈을 누르면: 아직 소리로 못 들었으면 소리와 함께 처음부터, 들었으면 건너뛰기 */
     tap() {
       if (revealed) return;
-      if (!voiced && Sound.on && !this._retried) { this._retried = true; Sound.init(); setTimeout(() => { if (!revealed) { if (Sound.running) coldOpen(); else reveal(); } }, 120); return; }
+      if (!voiced && Sound.on && !this._retried) { Sound.unlockVoice(); this._retried = true; Sound.init(); setTimeout(() => { if (!revealed) { if (Sound.running) coldOpen(); else reveal(); } }, 120); return; }
       reveal();
     },
     _th: -1, _si: -1,
@@ -3745,7 +3784,7 @@ const INTRO = (() => {
     const isMe = b.who === pname();
     el.className = "intro-cap" + (b.who ? "" : " narr");
     el.className = "intro-cap" + (b.who ? "" : " narr") + (b.tag ? " phone" : "");
-    if (b.tag && b.who) Sound.voice(b.text, Face.traits(b.who, ageOf(b.role || "")).F);   /* 신고자 목소리 */
+    if (b.who) { const v = voiceOf(b.who, b.role || "", isMe); if (b.tag) Sound.speak(b.text, v.base, v.female, true); else Sound.babble(b.text, v.base); }   /* 인물 목소리 (신고자는 전화 목소리) */
     el.innerHTML = b.who ? `${pixelFace(b.who, 40, b.role || "", isMe)}<div><b>${b.tag ? `${esc(b.tag)} · ${esc(b.who)}` : `${esc(b.who)}${isMe ? " " + PLAYER_RANK : rankOf(b.who) ? " " + rankOf(b.who) : ""}`}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
   }
   function sounds(t) {
@@ -3892,6 +3931,7 @@ const ENDING = (() => {
     capKey = k; el.dataset.k = k;
     const isMe = b.who === pname(), role = Object.values(C().suspects).find(p => p.name === b.who);
     el.className = "intro-cap" + (b.who ? "" : " narr");
+    if (b.who) Sound.babble(b.text, voiceOf(b.who, role ? role.role : "", isMe).base);
     el.innerHTML = b.who ? `${pixelFace(b.who, 40, role ? role.role : "", isMe)}<div><b>${esc(b.who)}${isMe ? " " + PLAYER_RANK : TITLE()[b.who] ? " " + TITLE()[b.who] : rankOf(b.who) ? " " + rankOf(b.who) : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
   }
   function sounds(t) {
@@ -5315,6 +5355,7 @@ function renderPeople(out) {
       ${(() => {
         const react = sl ? "silent" : !L ? "idle" : L.kind === "broken" ? "shock" : L.kind === "secret" ? "soft" : (L.kind === "deflect" || L.kind === "closed") ? "smug" : "talk";
         const key = L ? sid + "|" + L.q + "|" + L.a : sid, fresh = S._shown !== key; S._shown = key;
+        if (fresh && L && L.a && !sl) setTimeout(() => Sound.babble(L.a, voiceOf(p.name, p.role).base), 120);   /* 용의자 목소리 */
         const th = themeOf();
         return `<div class="stage ${react}${fresh ? " new" : ""}" style="--wall:${th.wallC || "#3a3346"}">
           ${bigSprite(p.name, p.role)}
@@ -5563,6 +5604,7 @@ document.addEventListener("keydown", e => {
 document.addEventListener("click", e => { if (S.screen === "opening" && e.target.closest && e.target.closest(".cold-open")) OPENING.tap(); });
 /* 오프닝: 화면 어디를 처음 눌러도 배경음악이 시작된다 (브라우저는 첫 조작 전엔 소리를 막는다) */
 let opMusicTried = false;
+for (const ev of ["pointerdown", "keydown"]) document.addEventListener(ev, () => Sound.unlockVoice(), true);
 for (const ev of ["pointerdown", "keydown"]) document.addEventListener(ev, e => {
   if (S.screen !== "opening" || opMusicTried || !Sound.on) return;
   const t = e.target && e.target.closest && e.target.closest("[data-act]");
