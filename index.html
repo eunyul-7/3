@@ -1651,6 +1651,42 @@ const SETTINGS = [
     solo: { spot: "창고 작업 일지를 본다", name: "창고 작업 일지", act: "소금 창고 문을 묶고 지켰다고 작업 반장이 적었다" },
     witness: { spot: "사무실 앞 카메라를 돌려 본다", name: "조합 사무실 카메라", text: (n, t) => `조합 사무실 앞 카메라, ${t}. ${I(n)} 비옷을 입고 사무실로 들어가는 모습이 찍혀 있다.` },
     room: "민박 방", floors: ["조합 쪽", "민박 쪽"] },
+  { title: "청송 교도소", where: "산속 교도소 · 폭설과 정전", intro: "폭설로 정전된 밤", victimRole: "교도소장",
+    brief: "당신은 폭설을 뚫고 들어온 강력팀 형사다. 교도소 문이 모두 잠겨 범인도 담장 안에 있다.",
+    crime: { name: "소장실", desc: "서류와 표창장이 걸린 소장실. 비상등만 켜져 있다. 피해자는 책상 옆에 쓰러져 있다." },
+    c1: { name: "면회실", desc: "유리 칸막이와 수화기가 줄지은 면회실. 의자 하나가 넘어져 있다.", flavor: { label: "수화기를 살핀다", text: "끊긴 수화기뿐이다. 별다른 건 없다." } },
+    pair: { spot: "면회 기록부를 본다", name: "면회 기록부", act: "면회실에서 함께 교화 프로그램을 준비했다고 교도관이 시각을 적었다" },
+    c2: { name: "교도관 대기실", desc: "무전기 충전기와 보온병이 놓인 대기실. 모니터가 꺼져 있다." },
+    solo: { spot: "근무 일지를 본다", name: "교도관 근무 일지", act: "대기실에서 정전 대응 무전을 받았다고 근무 일지에 적었다" },
+    witness: { spot: "비상 발전 CCTV를 돌려 본다", name: "비상 전원 CCTV", text: (n, t) => `비상 전원 CCTV, ${t}. ${I(n)} 손전등을 들고 소장실 복도로 들어서는 모습이 찍혀 있다.` },
+    room: "방", floors: ["관리동", "수용동"], roles: ["교도관", "수감자", "교정 상담사", "의무관", "취사반 수감자", "교화 목사"] },
+  { title: "은행나무 골목", where: "오래된 주택가 골목 · 장대비", intro: "장대비가 쏟아진 밤", victimRole: "골목 건물주",
+    brief: "당신은 빗길을 달려 골목에 도착한 강력팀 형사다. 골목 입구에 순찰차를 세워 아무도 빠져나가지 못했다.",
+    crime: { name: "건물주의 집", desc: "낡은 소파와 가족사진이 있는 거실. 피해자는 소파 앞에 쓰러져 있다." },
+    c1: { name: "골목 슈퍼", desc: "평상과 아이스크림 냉동고가 있는 작은 슈퍼. 처마 밑에 빗물이 떨어진다.", flavor: { label: "냉동고를 살핀다", text: "아이스크림뿐이다. 별다른 건 없다." } },
+    pair: { spot: "슈퍼 외상 장부를 본다", name: "슈퍼 외상 장부", act: "평상에 앉아 함께 막걸리를 마셨다고 슈퍼 주인이 장부에 시각을 적었다" },
+    c2: { name: "공영 주차장", desc: "가로등 하나가 깜빡이는 주차장. 차들이 빗물에 젖어 있다." },
+    solo: { spot: "주차 정산 영수증을 본다", name: "주차 정산 영수증", act: "주차장 차 안에서 비를 피했다고 정산기 영수증에 시각이 찍혀 있다" },
+    witness: { spot: "골목 방범 카메라를 돌려 본다", name: "골목 방범 카메라", text: (n, t) => `골목 방범 카메라, ${t}. ${I(n)} 우산을 쓰고 건물주 집 대문으로 들어가는 모습이 찍혀 있다.` },
+    room: "셋방", floors: ["골목 안쪽", "골목 입구"], roles: ["세입자", "옆집 이웃", "택배 기사", "부동산 중개인", "슈퍼 주인", "조카"] },
+  { title: "한별 고등학교", where: "고등학교 · 야간 자율학습", intro: "야간 자율학습이 끝난 밤", victimRole: "교감",
+    brief: "당신은 신고를 받고 학교로 출동한 강력팀 형사다. 교문이 잠겨 범인도 아직 학교 안에 있다.",
+    crime: { name: "교감실", desc: "상장과 트로피가 진열된 교감실. 피해자는 책상 앞에 쓰러져 있다." },
+    c1: { name: "과학실", desc: "실험대와 시약장이 늘어선 과학실. 비커가 하나 깨져 있다.", flavor: { label: "실험대를 살핀다", text: "수업 때 쓴 비커들뿐이다. 별다른 건 없다." } },
+    pair: { spot: "야자 감독 일지를 본다", name: "야간 자율학습 감독 일지", act: "야간 자율학습 교실을 함께 감독했다고 학생 출석부 옆에 시각을 적었다" },
+    c2: { name: "경비실", desc: "교문 옆 경비실. 라디오가 작게 켜져 있다." },
+    solo: { spot: "경비실 출입 대장을 본다", name: "경비실 출입 대장", act: "경비실에서 교문 열쇠를 반납하고 기다렸다고 경비원이 적었다" },
+    witness: { spot: "복도 CCTV를 돌려 본다", name: "본관 복도 CCTV", text: (n, t) => `본관 복도 CCTV, ${t}. ${I(n)} 교감실 쪽으로 서둘러 걸어가는 모습이 찍혀 있다.` },
+    room: "준비실", floors: ["본관", "별관"], roles: ["담임 교사", "체육 교사", "행정실장", "학부모회장", "경비원", "급식 조리사"] },
+  { title: "해송 아파트", where: "고층 아파트 단지 · 정전", intro: "입주자 회의가 끝난 밤", victimRole: "입주자 대표",
+    brief: "당신은 신고를 받고 아파트 단지로 출동한 강력팀 형사다. 엘리베이터가 멈춰 범인도 아직 단지 안에 있다.",
+    crime: { name: "관리사무소", desc: "회의 자료가 흩어진 관리사무소. 피해자는 회의 탁자 옆에 쓰러져 있다." },
+    c1: { name: "경비실", desc: "단지 입구 경비실. 택배 상자가 천장까지 쌓여 있다.", flavor: { label: "택배 상자를 살핀다", text: "택배뿐이다. 별다른 건 없다." } },
+    pair: { spot: "택배 수령 대장을 본다", name: "택배 수령 대장", act: "경비실에서 함께 택배를 정리했다고 경비원이 시각을 적었다" },
+    c2: { name: "지하 주차장", desc: "형광등이 깜빡이는 지하 주차장. 바닥에 물이 고여 있다." },
+    solo: { spot: "주차 출입 기록을 본다", name: "지하 주차장 출입 기록", act: "지하 주차장 차에서 통화를 했다고 차단기 기록에 시각이 남았다" },
+    witness: { spot: "엘리베이터 CCTV를 돌려 본다", name: "엘리베이터 CCTV", text: (n, t) => `엘리베이터 CCTV, ${t}. ${I(n)} 관리사무소 층 버튼을 누르는 모습이 찍혀 있다.` },
+    room: "집", floors: ["관리동", "주거동"], roles: ["관리소장", "경비원", "위층 이웃", "아랫집 이웃", "동대표", "청소 용역"] }
 ];
 const VICTIMS = ["마정호", "구선영", "탁무진", "엄혜경", "하태수", "봉미란", "편승철", "길소연"];
 const NAMES = ["서도윤", "한예린", "박준서", "김하율", "이서진", "정민재", "최유나", "오태경", "윤소이", "강지후", "문채원", "배성훈",
@@ -1780,7 +1816,7 @@ function pickSetting() {
 }
 function generateCase() {
   const st = pickSetting(), v = RND.pick(VICTIMS), vAge = RND.int(52, 74);
-  const names = RND.shuffle(NAMES).slice(0, 4), roles = RND.shuffle(ROLES).slice(0, 4);
+  const names = RND.shuffle(NAMES).slice(0, 4), roles = RND.shuffle(st.roles || ROLES).slice(0, 4);   /* 무대마다 어울리는 직업 */
   const traits = RND.shuffle(TRAITS).slice(0, 4), motives = RND.shuffle(MOTIVE_POOL).slice(0, 4);
   const method = RND.pick(METHOD_POOL);
   const P = [0, 1, 2, 3].map(i => ({ id: "p" + i, i, name: names[i], role: roles[i], age: RND.int(26, 63), trait: traits[i], motive: motives[i] }));
@@ -3800,6 +3836,10 @@ const THEMES = {
   "다온 백화점":       { wall: "damask", wallC: "#4a3d2a", floor: "stone" },
   "해오름 기숙학교":    { wall: "panel", wallC: "#5e4a36", floor: "wood" },
   "소금꽃 염전 마을":   { wall: "plain", wallC: "#9aa8ad", floor: "wood" },
+  "청송 교도소":       { wall: "stone", wallC: "#5b6068", floor: "tile" },
+  "은행나무 골목":      { wall: "stripe", wallC: "#6a5a48", floor: "wood" },
+  "한별 고등학교":      { wall: "panel", wallC: "#5e6a52", floor: "wood" },
+  "해송 아파트":       { wall: "plain", wallC: "#a9a59a", floor: "tile" },
   "새솔 연구소":       { wall: "plain", wallC: "#c9d3d6", floor: "tile", windows: "snow" },
 };
 const themeOf = () => { const c = C(); return (c.random ? THEMES[c.title.replace(/ 사건$/, "")] : THEMES[c.id]) || THEMES.default; };
