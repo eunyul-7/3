@@ -611,6 +611,10 @@ body.talking .choice { font-size: clamp(14px, 1.15vw, 17px); padding-block: 10px
 .co-alert.on { animation: op-fade .3s both, op-blink .8s .3s steps(1) 3; }
 .co-skip { position: absolute; bottom: 16px; left: 0; right: 0; font-size: 12px; color: #555c66; }
 .revealed .cold-open { display: none; }
+.co-ring { display: block; color: #ff8a7a; animation: co-shake .5s ease-in-out infinite; margin-bottom: 14px; }
+@keyframes co-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px) rotate(-1deg); } 75% { transform: translateX(3px) rotate(1deg); } }
+.co-answer { font-size: 18px; padding: 12px 22px; background: #2f8f4e; color: #fff; border-color: #2f8f4e; animation: co-pulse 1.1s ease-in-out infinite; }
+@keyframes co-pulse { 50% { box-shadow: 0 0 0 10px rgba(47,143,78,.25); } }
 .file-flaps { position: absolute; inset: 0; z-index: 5; pointer-events: none; display: grid; grid-template-columns: 1fr 1fr; }
 .file-flaps i { background: #6b5536; box-shadow: inset 0 0 0 2px #4a3a24; transform: scaleX(0); }
 .file-flaps i:first-child { transform-origin: left; } .file-flaps i:last-child { transform-origin: right; }
@@ -3475,7 +3479,7 @@ const OPENING = (() => {
     raf = requestAnimationFrame(loop);
   }
   /* ---------- 콜드 오픈: 112 신고 전화 → 번쩍 → 현장 ---------- */
-  let revealed = false, coTimers = [], voiced = false;
+  let revealed = false, coTimers = [], voiced = false, waitedOnce = false, ringing = false;
   const CALL = "“여, 여보세요… 사, 사람이… 사람이 쓰러져 있어요… 피가… 빨리 와 주세요…!”";
   function coldOpen() {
     coTimers.forEach(clearTimeout); coTimers = [];
@@ -3483,6 +3487,15 @@ const OPENING = (() => {
     line.textContent = ""; const al = document.getElementById("co-alert"); if (al) al.classList.remove("on");
     /* 소리가 켜져 있으면: 따르릉 → 딸깍 → 지지직 + 신고자 목소리 → 뚜-뚜- */
     const loud = Sound.running && Sound.on, lead = loud ? 2200 : 900;
+    /* 아직 소리가 막혀 있으면(화면을 누르기 전): 전화벨만 울리는 화면으로 기다렸다가, 눌러서 받으면 목소리와 함께 시작 */
+    if (!loud && Sound.on && !waitedOnce) {
+      waitedOnce = true; ringing = true;
+      line.innerHTML = `<span class="co-ring">📞 따르릉… 따르릉…</span><button class="btn co-answer">📞 눌러서 신고 전화 받기</button>`;
+      const sk0 = document.querySelector(".co-skip"); if (sk0) sk0.textContent = "화면 아무 곳이나 눌러도 받아요 · 받은 뒤 한 번 더 누르면 건너뛰어요";
+      coTimers.push(setTimeout(() => { if (ringing) { ringing = false; coldOpen(); } }, 12000));   /* 오래 안 누르면 소리 없이 진행 */
+      return;
+    }
+    ringing = false;
     if (loud) {
       Sound.ring(); coTimers.push(setTimeout(() => Sound.ring(), 700), setTimeout(() => Sound.pickup(), 1700));
       coTimers.push(setTimeout(() => { Sound.phoneLine(CALL.length * 0.06 + 1); Sound.speak(CALL, 470, true, true); voiced = true; }, lead));
@@ -3516,6 +3529,7 @@ const OPENING = (() => {
     /* 콜드 오픈을 누르면: 아직 소리로 못 들었으면 소리와 함께 처음부터, 들었으면 건너뛰기 */
     tap() {
       if (revealed) return;
+      if (ringing) { ringing = false; this._retried = true; Sound.unlockVoice(); Sound.init(); coTimers.forEach(clearTimeout); coTimers = []; setTimeout(() => { if (!revealed) coldOpen(); }, 150); return; }
       if (!voiced && Sound.on && !this._retried) { Sound.unlockVoice(); this._retried = true; Sound.init(); setTimeout(() => { if (!revealed) { if (Sound.running) coldOpen(); else reveal(); } }, 120); return; }
       reveal();
     },
@@ -5372,10 +5386,25 @@ function renderPeople(out) {
 function renderVar(i, out) {
   const v = S.vars[i]; if (!v) return "";
   const talked = has(S.varTalked, i), wrong = has(S.accWrong, i), caught = S.accCaught && v.acc;
-  return `<section class="panel" aria-live="polite">
-    <div class="person-head"><span class="portrait">${pixelFace(v.name, 96)}</span><div><span class="label">${v.role} · 변수 인물</span><h3 style="font-size:24px">${v.name}</h3></div></div>
-    <p class="desc">사건이 난 밤 이곳에 있던 ${v.role}. 용의자는 아니지만, 두 변수 인물 중 한 명은 범인 편 공범이다. 공범은 증거를 망치고 문을 잠그며 현장에 흔적을 남긴다.</p>
-    ${talked ? `<p class="answer">${esc(S.varNotes[i])}</p>` : `<div class="choices"><button class="choice" data-vtalk="${i}" ${out ? "disabled" : ""}><span class="ck">대화</span><span>이야기를 듣는다</span><span class="cost">−1턴</span></button></div>`}
+  /* 용의자 심문처럼: 큰 픽셀 인물 + 대화창 + 목소리 */
+  const note = S.varNotes[i] || "", said = (note.match(/“[^”]*”/) || [""])[0], narr = note.replace(said, "").trim();
+  const line = caught ? "“…네, 맞아요. 시키는 대로 했어요. 증거도, 문도… 제가 그랬어요.”"
+    : wrong ? "“거 봐요, 저 아니라니까요!”"
+    : talked ? said : `“저요? 전 그냥 ${v.role}인데요… 무슨 일이죠?”`;
+  const react = caught ? "shock" : wrong ? "smug" : talked ? "talk" : "idle";
+  const key = "v" + i + "|" + line, fresh = S._shownV !== key; S._shownV = key;
+  if (fresh) setTimeout(() => Sound.babble(line, voiceOf(v.name, v.role).base), 120);
+  return `<section class="panel talk" aria-live="polite">
+    <div class="person-head"><span class="portrait">${pixelFace(v.name, 96, v.role)}</span><div><span class="label">${v.role} · 변수 인물</span><h3 style="font-size:24px">${v.name}</h3>
+      <span class="hint">사건이 난 밤 이곳에 있던 ${v.role}. 용의자는 아니지만, 두 변수 인물 중 한 명은 범인 편 공범이다.</span></div></div>
+    <div class="stage ${react}${fresh ? " new" : ""}" style="--wall:${themeOf().wallC || "#3a3346"}">
+      ${bigSprite(v.name, v.role)}
+      ${react === "shock" ? `<i class="sweat"></i><i class="sweat s2"></i><b class="stage-fx">!!</b>` : react === "smug" ? `<b class="stage-fx smug">…</b>` : ""}
+      <div class="speech vn">${talked && !caught && !wrong ? `<div class="line mine"><span class="who-tag">${PLAYER_RANK} ${esc(pname())}</span><p>“그날 밤 본 거, 들은 거 아무거나 괜찮습니다. 얘기해 주시겠어요?”</p></div>` : ""}
+        <div class="line them"><span class="who-tag">${esc(v.name)}</span><p>${esc(line)}</p></div></div>
+    </div>
+    ${talked && narr && !caught ? `<p class="desc">🔎 ${esc(narr)}</p>` : ""}
+    ${talked ? "" : `<div class="choices"><button class="choice" data-vtalk="${i}" ${out ? "disabled" : ""}><span class="ck">대화</span><span>이야기를 듣는다</span><span class="cost">−1턴</span></button></div>`}
     ${caught ? `<p class="locked-room">공범으로 체포되었다.</p>` : wrong ? `<p class="locked">공범이 아니었다.</p>`
       : !S.accCaught ? `<div class="choices"><button class="choice press" data-vaccuse="${i}" ${out ? "disabled" : ""}><span class="ck">체포</span><span>공범으로 지목한다</span><span class="cost">틀리면 −10초</span></button></div>
         <p class="hint">수첩의 ‘방해와 도움’에 적힌 흔적과 이 사람의 모습을 비교해 보자.</p>` : ""}
@@ -5590,7 +5619,7 @@ document.addEventListener("keyup", e => { if (inGameRooms()) PX.key(e, false); }
 addEventListener("blur", () => PX.clearKeys());
 document.addEventListener("keydown", e => {
   if (e.key === "Escape" && S.screen === "game" && S.tab === "people" && !S.decided && !/INPUT|SELECT|TEXTAREA/.test((document.activeElement || {}).tagName || "")) { S.tab = "rooms"; S.dlg = null; render(); return; }   /* 심문 중 Esc = 닫기 */
-  if (S.screen === "opening" && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); if (OPENING.revealed) OPENING.go(); else OPENING.skip(); return; }
+  if (S.screen === "opening" && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); if (OPENING.revealed) OPENING.go(); else OPENING.tap(); return; }
   if (!inGameRooms()) return;
   if (e.key === "Escape" && S.sheet) { S.sheet = false; render(); return; }
   if (/^[tTㅅ]$/.test(e.key) && !/INPUT|SELECT|TEXTAREA/.test((document.activeElement || {}).tagName || "")) { S.sheet = !S.sheet; render(); return; }
