@@ -555,18 +555,59 @@ body.talking .choice { font-size: clamp(14px, 1.15vw, 17px); padding-block: 10px
 .opening-canvas { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
 .opening-shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, rgba(5,7,12,.15), rgba(5,7,12,.75) 75%); pointer-events: none; }
 .opening-text { position: relative; z-index: 2; text-align: center; display: grid; gap: 14px; justify-items: center; padding: 20px; transform: translateY(-6%); }
-.op-tag { letter-spacing: .3em; animation: op-fade 1s .2s both; }
-.op-title { font-family: var(--f-display); font-size: clamp(38px, 8vw, 92px); line-height: 1.05; text-shadow: 0 4px 30px rgba(0,0,0,.8), 0 0 18px rgba(232,178,92,.25); }
-.op-title span { display: inline-block; opacity: 0; animation: op-type .45s both; }
-.op-sub { color: #c9c3b6; font-size: clamp(14px, 1.8vw, 19px); animation: op-fade 1s 2.2s both; }
-.op-start { justify-self: center; margin-inline: auto; font-size: clamp(16px, 2vw, 22px); padding: 14px 34px; animation: op-fade .8s 2.8s both, op-pulse 1.8s 3.6s ease-in-out infinite; }
-.op-hint { animation: op-fade 1s 3.2s both; }
+.op-tag { letter-spacing: .3em; opacity: 0; }
+.revealed .op-tag { animation: op-fade 1s .1s both; }
+.op-title { font-family: var(--f-display); font-size: clamp(40px, 9vw, 104px); line-height: 1.05; text-shadow: 0 4px 30px rgba(0,0,0,.85), 0 0 22px rgba(232,178,92,.3); }
+.op-title span { display: inline-block; opacity: 0; }
+.revealed .op-title span { animation: op-slam .5s cubic-bezier(.2,1.6,.4,1) both; }
+.revealed .op-title { animation: op-glitch 4s 1.6s steps(1) infinite; }
+.op-sub { color: #d8d2c4; font-size: clamp(14px, 1.8vw, 19px); opacity: 0; }
+.revealed .op-sub { animation: op-fade 1s 1.5s both; }
+.op-start { justify-self: center; margin-inline: auto; font-size: clamp(16px, 2vw, 22px); padding: 14px 34px; opacity: 0; letter-spacing: .08em; }
+.revealed .op-start { animation: op-fade .8s 2s both, op-pulse 1.8s 2.8s ease-in-out infinite; }
+.op-hint { opacity: 0; }
+.revealed .op-hint { animation: op-fade 1s 2.6s both; }
 @keyframes op-type { from { opacity: 0; transform: translateY(14px) scale(.9); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes op-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes op-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(232,178,92,.55); } 50% { box-shadow: 0 0 0 12px rgba(232,178,92,0); } }
 .police-line { position: absolute; left: -10%; right: -10%; bottom: 9%; z-index: 3; transform: rotate(-4deg); background: repeating-linear-gradient(90deg, #f2c300 0 40px, #e0b400 40px 80px); color: #111; font-weight: 800; letter-spacing: .12em; font-size: clamp(11px, 1.4vw, 15px); padding: 6px 0; white-space: nowrap; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
 .police-line span { display: inline-block; animation: op-tape 22s linear infinite; }
 @keyframes op-tape { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+/* 타이틀 쾅 + 글리치 + 도장 */
+@keyframes op-slam { 0% { opacity: 0; transform: translateY(-40px) scale(2.2); filter: blur(6px); } 60% { opacity: 1; transform: translateY(4px) scale(.96); filter: none; } 100% { opacity: 1; transform: none; } }
+@keyframes op-glitch { 0%, 93%, 100% { text-shadow: 0 4px 30px rgba(0,0,0,.85), 0 0 22px rgba(232,178,92,.3); transform: none; }
+  94% { text-shadow: -4px 0 #ff2a4a, 4px 0 #2a7bff, 0 4px 30px rgba(0,0,0,.85); transform: translateX(2px) skewX(-4deg); }
+  96% { text-shadow: 3px 0 #ff2a4a, -3px 0 #2a7bff; transform: translateX(-2px); } }
+.opening.slam .opening-text { animation: op-shake .5s; }
+@keyframes op-shake { 0%, 100% { transform: translateY(-6%); } 20% { transform: translate(-8px, calc(-6% + 4px)); } 40% { transform: translate(7px, calc(-6% - 3px)); } 60% { transform: translate(-4px, -6%); } 80% { transform: translate(3px, -6%); } }
+.op-stamp { position: absolute; right: -4%; top: 6%; border: 4px solid #d32b2b; color: #e23a3a; font-weight: 900; font-size: clamp(18px, 2.6vw, 30px); letter-spacing: .15em; padding: 4px 14px 6px; border-radius: 6px; transform: rotate(-12deg) scale(0); opacity: 0;
+  text-align: center; line-height: 1.1; background: rgba(40,0,0,.25); box-shadow: inset 0 0 0 2px rgba(211,43,43,.4); mix-blend-mode: screen; }
+.op-stamp small { display: block; font-size: .42em; letter-spacing: .2em; }
+.revealed .op-stamp { animation: op-stamp .35s 1.1s cubic-bezier(.3,1.8,.5,1) both; }
+@keyframes op-stamp { 0% { transform: rotate(-12deg) scale(3); opacity: 0; } 100% { transform: rotate(-12deg) scale(1); opacity: .92; } }
+.opening-text { position: relative; }
+/* 돋보기 불빛 */
+.op-spot { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(circle at var(--sx, 50%) var(--sy, 62%), rgba(255,240,200,.10) 0 70px, rgba(0,0,0,0) 110px, rgba(0,0,0,.55) 180px); opacity: 0; transition: opacity .8s; }
+.revealed .op-spot { opacity: 1; }
+.op-lens { position: absolute; left: var(--sx, 50%); top: var(--sy, 62%); width: 150px; height: 150px; margin: -75px 0 0 -75px; border-radius: 50%; border: 5px solid rgba(214,196,150,.85); box-shadow: 0 0 0 2px rgba(0,0,0,.6), inset 0 0 30px rgba(255,255,255,.15); }
+.op-lens::after { content: ""; position: absolute; width: 14px; height: 70px; background: linear-gradient(#6b4a2e, #3d2a19); border-radius: 6px; right: -34px; bottom: -58px; transform: rotate(-45deg); }
+@media (max-width: 520px) { .op-lens { width: 100px; height: 100px; margin: -50px 0 0 -50px; } .op-lens::after { height: 46px; right: -22px; bottom: -38px; } }
+/* 증거 번호표 */
+.evidence-tags b { position: absolute; z-index: 2; width: 22px; height: 18px; background: #f2c300; color: #111; font-size: 12px; font-weight: 900; display: grid; place-items: center; clip-path: polygon(50% 0, 100% 100%, 0 100%); padding-top: 5px; opacity: 0; }
+.revealed .evidence-tags b { animation: op-fade .4s both; } .revealed .evidence-tags b:nth-child(2) { animation-delay: .2s; } .revealed .evidence-tags b:nth-child(3) { animation-delay: .4s; }
+/* 콜드 오픈 */
+.cold-open { position: absolute; inset: 0; z-index: 7; background: #050608; display: grid; place-content: center; gap: 18px; padding: 24px; text-align: center; cursor: pointer; }
+.co-head { font-family: var(--f-mono); color: #8a9099; letter-spacing: .12em; font-size: 13px; margin: 0; }
+.co-head .rec { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #e23a3a; margin-left: 6px; animation: op-blink 1s steps(1) infinite; }
+@keyframes op-blink { 50% { opacity: 0; } }
+.co-wave { display: flex; gap: 4px; justify-content: center; height: 46px; align-items: center; }
+.co-wave i { width: 5px; height: 100%; background: #3fd18a; border-radius: 3px; animation: op-wave .7s ease-in-out infinite alternate; transform-origin: center; }
+@keyframes op-wave { from { transform: scaleY(.12); } to { transform: scaleY(1); } }
+.co-line { font-family: var(--f-display); font-size: clamp(17px, 2.6vw, 26px); color: #f1ece2; min-height: 2.6em; max-width: 30ch; margin: 0 auto; line-height: 1.5; }
+.co-alert { color: #ff4b4b; font-weight: 800; letter-spacing: .08em; opacity: 0; margin: 0; }
+.co-alert.on { animation: op-fade .3s both, op-blink .8s .3s steps(1) 3; }
+.co-skip { position: absolute; bottom: 16px; left: 0; right: 0; font-size: 12px; color: #555c66; }
+.revealed .cold-open { display: none; }
 .file-flaps { position: absolute; inset: 0; z-index: 5; pointer-events: none; display: grid; grid-template-columns: 1fr 1fr; }
 .file-flaps i { background: #6b5536; box-shadow: inset 0 0 0 2px #4a3a24; transform: scaleX(0); }
 .file-flaps i:first-child { transform-origin: left; } .file-flaps i:last-child { transform-origin: right; }
@@ -578,7 +619,7 @@ body.talking .choice { font-size: clamp(14px, 1.15vw, 17px); padding-block: 10px
 @keyframes op-zoom { to { transform: translateY(-6%) scale(1.25); opacity: 0; filter: blur(3px); } }
 body.arrive main { animation: op-arrive .8s ease-out both; }
 @keyframes op-arrive { from { opacity: 0; transform: scale(.97); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
-@media (prefers-reduced-motion: reduce) { .op-title span, .op-sub, .op-start, .op-hint, .op-tag { animation: none; opacity: 1; } .police-line span { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .revealed .op-title span, .revealed .op-sub, .revealed .op-start, .revealed .op-hint, .revealed .op-tag, .revealed .op-stamp { animation: none; opacity: 1; } .police-line span, .revealed .op-title { animation: none; } }
 .sit-in { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
 .sit-in > b { font-size: 12.5px; color: var(--muted); font-family: var(--f-mono); }
 .sit-in .act { padding: 4px 8px; font-size: 13px; }
@@ -2816,6 +2857,13 @@ const OPENING = (() => {
     g.fillStyle = blink ? "#24346a" : "#3b6bff"; g.fillRect(cx + 22, cy - 5, 6, 2);
     g.fillStyle = blink ? "rgba(255,60,60,.16)" : "rgba(60,110,255,.16)"; g.fillRect(0, 0, W, H);
     g.fillStyle = blink ? "rgba(255,60,60,.35)" : "rgba(60,110,255,.35)"; g.fillRect(cx - 6, 98, 58, 3);   /* 젖은 길에 비친 불빛 */
+    /* 분필 시신 윤곽 */
+    g.fillStyle = "#e8e4da";
+    const bx = 60, by = 90;
+    [[0,0,6,1],[0,0,1,4],[5,0,1,4],[0,4,6,1],[6,1,10,1],[6,3,10,1],[16,0,1,1],[16,4,1,1],[17,-1,6,1],[17,5,6,1],[23,-1,1,2],[23,4,1,2],[6,1,1,0],[9,-3,1,4],[9,-3,4,1],[10,4,1,4],[10,8,4,1]].forEach(([x, y, w, h]) => g.fillRect(bx + x, by + y, w || 1, h || 1));
+    /* 감식반 카메라 플래시 */
+    const fp = t % 3.2;
+    if (fp < .12) { const gr = g.createRadialGradient(bx + 12, by, 2, bx + 12, by, 40); gr.addColorStop(0, "rgba(255,255,255,.75)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(bx - 30, by - 40, 84, 80); }
     /* 강력팀 셋: 차 옆에 서 있다 */
     [["서하루", 70, "right"], ["강무열", 140, "left"], ["한서진", 154, "left"]].forEach(([n, x, d]) => {
       const sp = charSprites(n, ""), f = 0; g.drawImage(sp[d][f], x, 72);
@@ -2831,7 +2879,7 @@ const OPENING = (() => {
     raf = 0;
     if (S.screen !== "opening" || !cv || !cv.isConnected) return;
     const t = (performance.now() - t0) / 1000;
-    draw(t);
+    draw(t); moveSpot(t);
     const thunderAt = Math.floor((t - 5.2) / 7);
     if (t > 5.2 && thunderAt >= 0 && OPENING._th !== thunderAt) { OPENING._th = thunderAt; if (Sound.on) Sound.thunder(); }
     const sirenAt = Math.floor((t - 1.5) / 11);   /* 11초마다 멀리서 사이렌 */
@@ -2839,15 +2887,47 @@ const OPENING = (() => {
     const tip = document.querySelector(".op-sound-tip"); if (tip) tip.hidden = Sound.running || !Sound.on;
     raf = requestAnimationFrame(loop);
   }
+  /* ---------- 콜드 오픈: 112 신고 전화 → 번쩍 → 현장 ---------- */
+  let revealed = false, coTimers = [];
+  const CALL = "“여, 여보세요… 사, 사람이… 사람이 쓰러져 있어요… 피가… 빨리 와 주세요…!”";
+  function coldOpen() {
+    coTimers.forEach(clearTimeout); coTimers = [];
+    const line = document.getElementById("co-line"); if (!line) return;
+    [...CALL].forEach((ch, i) => coTimers.push(setTimeout(() => { const l = document.getElementById("co-line"); if (l) l.textContent = CALL.slice(0, i + 1); }, 900 + i * 55)));
+    const end = 900 + CALL.length * 55;
+    coTimers.push(setTimeout(() => { const a = document.getElementById("co-alert"); if (a) a.classList.add("on"); if (Sound.running) Sound.wrong(); }, end + 300));
+    coTimers.push(setTimeout(reveal, end + 1500));
+  }
+  function reveal() {
+    if (revealed) return; revealed = true; coTimers.forEach(clearTimeout);
+    const o = document.querySelector(".opening"); if (!o) return;
+    o.classList.add("revealed", "slam"); setTimeout(() => o.classList.remove("slam"), 700);
+    if (Sound.running) { Sound.thunder(); setTimeout(() => Sound.sirenFar(), 500); setTimeout(() => Sound.lie(), 1150); }
+  }
+  /* ---------- 돋보기: 마우스/손가락을 따라가는 불빛 (가만있으면 혼자 훑는다) ---------- */
+  let spotX = .5, spotY = .62, lastMove = 0;
+  function moveSpot(t) {
+    const o = document.querySelector(".opening"); if (!o) return;
+    if (performance.now() - lastMove > 2500) { spotX = .5 + Math.sin(t * .45) * .3; spotY = .66 + Math.sin(t * .9) * .1; }
+    o.style.setProperty("--sx", (spotX * 100).toFixed(1) + "%"); o.style.setProperty("--sy", (spotY * 100).toFixed(1) + "%");
+  }
+  document.addEventListener("pointermove", e => {
+    const o = document.querySelector(".opening"); if (!o || S.screen !== "opening") return;
+    const r = o.getBoundingClientRect(); spotX = (e.clientX - r.left) / r.width; spotY = (e.clientY - r.top) / r.height; lastMove = performance.now();
+  });
   return {
+    get revealed() { return revealed; },
+    skip() { reveal(); },
     _th: -1, _si: -1,
     mount(el) {
       if (!el) return; if (!t0) t0 = performance.now();
       if (Sound.on && !Sound.music) { Sound.init(); setTimeout(() => { if (Sound.running && S.screen === "opening" && !Sound.music) { Sound.musicStart(); opMusicTried = true; } }, 200); }   /* 자동 재생이 허용된 브라우저면 바로 */
       cv = pxCanvas(W, H); cv.className = "opening-canvas"; el.appendChild(cv); g = cv.getContext("2d");
       if (!raf) raf = requestAnimationFrame(loop);
+      if (!revealed && !coTimers.length) coldOpen();
     },
     go() {   /* 게임 시작: 번개 → 사이렌 → 사건 파일이 열리듯 넘어간다 */
+      if (!revealed) { reveal(); return; }
       if (leaving) return; leaving = true;
       Sound.init(); Sound.musicStop(1.4); Sound.thunder(); setTimeout(() => Sound.siren(), 350);
       const o = document.querySelector(".opening"); if (o) o.classList.add("leaving");
@@ -2856,18 +2936,28 @@ const OPENING = (() => {
   };
 })();
 function renderOpening() {
-  const title = "한밤의 사건 파일";
-  app.innerHTML = `<section class="opening">
+  const title = "한밤의 사건 파일", revealed = OPENING.revealed;
+  app.innerHTML = `<section class="opening${revealed ? " revealed" : ""}">
     <div class="opening-stage" id="opening-stage"></div>
+    <div class="op-spot" aria-hidden="true"><i class="op-lens"></i></div>
     <div class="opening-shade"></div>
+    <div class="evidence-tags" aria-hidden="true"><b style="left:31%;top:79%">1</b><b style="left:44%;top:83%">2</b><b style="left:56%;top:80%">3</b></div>
     <div class="opening-text">
       <span class="label op-tag">CASE FILE · 강력팀</span>
-      <h1 class="op-title" aria-label="${title}">${[...title].map((ch, i) => `<span style="animation-delay:${.6 + i * .14}s">${ch === " " ? "&nbsp;" : ch}</span>`).join("")}</h1>
-      <p class="op-sub">비 오는 밤, 살인 사건 신고가 들어왔다.</p>
-      <button class="btn op-start" data-act="opening-go">게임 시작</button>
+      <h1 class="op-title" aria-label="${title}">${[...title].map((ch, i) => `<span style="animation-delay:${.15 + i * .07}s">${ch === " " ? "&nbsp;" : ch}</span>`).join("")}</h1>
+      <div class="op-stamp" aria-hidden="true">수사 중<small>CASE No.11-10</small></div>
+      <p class="op-sub">비 오는 밤, 살인 사건 신고가 들어왔다. 범인은 아직 이 안에 있다.</p>
+      <button class="btn op-start" data-act="opening-go"><span>▶</span> 게임 시작</button>
       <p class="hint op-hint">엔터를 눌러도 시작해요</p>
     </div>
     <div class="police-line" aria-hidden="true"><span>${"POLICE LINE · DO NOT CROSS · 수사 중 · 출입 금지 · ".repeat(6)}</span></div>
+    ${revealed ? "" : `<div class="cold-open" data-act="op-skip">
+      <p class="co-head">112 치안종합상황실 · <span id="co-clock">23:41:07</span> · 녹음 중 <i class="rec"></i></p>
+      <div class="co-wave">${Array.from({ length: 28 }, (_, i) => `<i style="animation-delay:${(i * 37 % 100) / 100}s"></i>`).join("")}</div>
+      <p class="co-line" id="co-line"></p>
+      <p class="co-alert" id="co-alert">▶ 살인 사건 신고 접수 — 강력팀 출동 요청</p>
+      <span class="co-skip">누르면 건너뛰어요</span>
+    </div>`}
     <div class="file-flaps" aria-hidden="true"><i></i><i></i></div>
     <p class="op-sound-tip" ${Sound.running ? "hidden" : ""}>🔊 화면을 누르면 소리가 나와요</p>
     <button class="op-music" data-act="op-music" aria-pressed="${Sound.music}">${Sound.music ? "♪ 음악 끄기" : "♪ 음악 켜기"}</button>
@@ -4715,7 +4805,7 @@ const inGameRooms = () => S.screen === "game" && S.tab === "rooms";
 document.addEventListener("keyup", e => { if (inGameRooms()) PX.key(e, false); });
 addEventListener("blur", () => PX.clearKeys());
 document.addEventListener("keydown", e => {
-  if (S.screen === "opening" && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); OPENING.go(); return; }
+  if (S.screen === "opening" && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); if (OPENING.revealed) OPENING.go(); else OPENING.skip(); return; }
   if (!inGameRooms()) return;
   if (e.key === "Escape" && S.sheet) { S.sheet = false; render(); return; }
   if (/^[tTㅅ]$/.test(e.key) && !/INPUT|SELECT|TEXTAREA/.test((document.activeElement || {}).tagName || "")) { S.sheet = !S.sheet; render(); return; }
@@ -4725,6 +4815,8 @@ document.addEventListener("keydown", e => {
   if (/BUTTON/.test(tag) && /^( |enter)$/i.test(e.key)) return;   /* 버튼에 초점이 있으면 그 버튼을 누르게 둔다 */
   PX.key(e, true);
 });
+/* 콜드 오픈(112 신고 장면)은 누르면 건너뛴다 */
+document.addEventListener("click", e => { if (S.screen === "opening" && e.target.closest && e.target.closest(".cold-open")) OPENING.skip(); });
 /* 오프닝: 화면 어디를 처음 눌러도 배경음악이 시작된다 (브라우저는 첫 조작 전엔 소리를 막는다) */
 let opMusicTried = false;
 for (const ev of ["pointerdown", "keydown"]) document.addEventListener(ev, e => {
@@ -4774,7 +4866,9 @@ app.addEventListener("click", e => {
   else if (d.act === "sheet-close") { S.sheet = false; }
   else if (d.dept) { callDept(d.dept); S.sheet = false; }
   else if (d.act === "opening-go") { OPENING.go(); return; }
-  else if (d.act === "op-music") { Sound.init(); if (Sound.music) Sound.musicStop(0.8); else { if (!Sound.on) Sound.toggle(); Sound.musicStart(); } }
+  else if (d.act === "op-skip") { OPENING.skip(); return; }
+  else if (d.act === "op-music") { Sound.init(); if (Sound.music) Sound.musicStop(0.8); else { if (!Sound.on) Sound.toggle(); Sound.musicStart(); }
+    b.textContent = Sound.music ? "♪ 음악 끄기" : "♪ 음악 켜기"; b.setAttribute("aria-pressed", String(Sound.music)); return; }
   else if (d.act === "team-go") { confirmTeam(); top = true; }
   else if (d.act === "team-random") { S.teamPick = randomTeam(); S.teamPick.fit = true; Sound.help(); }
   else if (d.act === "team-default") { S.teamPick = { team: { ...TEAM_DEFAULT }, patrol: PATROL.map(x => x.id), depts: DEPT_DEFAULT.slice(0, DEPT_N[S.diff] || 4) }; }
