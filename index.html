@@ -49,12 +49,12 @@ button { cursor: pointer; }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--lamp); outline-offset: 2px; }
 
 #rain { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .35; }
-#rotate { display: none; position: fixed; inset: 0; z-index: 9999; background: #07090d; color: #f1ece2; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; }
-#rotate > b { font-size: 22px; color: var(--lamp); } #rotate p { margin: 0; color: var(--muted); line-height: 1.6; } #rotate p b { color: #f1ece2; }
-.rot-phone { width: 56px; height: 96px; border: 4px solid #f1ece2; border-radius: 12px; position: relative; animation: rot-turn 2.2s ease-in-out infinite; }
-.rot-phone i { position: absolute; left: 50%; bottom: 6px; width: 10px; height: 4px; margin-left: -5px; border-radius: 2px; background: #f1ece2; }
+#rotate { display: none; position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 9999; background: rgba(10,13,18,.96); color: #f1ece2; border: 1px solid var(--lamp-dim); border-radius: 10px; align-items: center; gap: 12px; padding: 10px 12px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+#rotate b { font-size: 14px; color: var(--lamp); display: block; } #rotate p { margin: 0; color: var(--muted); font-size: 12.5px; } #rotate .btn { margin-left: auto; flex: none; padding: 6px 10px; font-size: 13px; }
+.rot-phone { width: 18px; height: 30px; flex: none; border: 3px solid #f1ece2; border-radius: 5px; position: relative; animation: rot-turn 2.2s ease-in-out infinite; }
+.rot-phone i { position: absolute; left: 50%; bottom: 2px; width: 6px; height: 2px; margin-left: -3px; border-radius: 1px; background: #f1ece2; }
 @keyframes rot-turn { 0%, 25% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
-@media (orientation: portrait) and (pointer: coarse) and (max-width: 900px) { #rotate { display: flex; } body { overflow: hidden; } }
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 900px) { #rotate:not([hidden]) { display: flex; } body .opening { min-height: calc(100dvh - 72px); } }
 @media (prefers-reduced-motion: reduce) { #rain { display: none; } }
 
 .btn { background: var(--lamp); color: #1a1408; border: 0; border-radius: 4px; padding: 11px 20px; font-weight: 600; justify-self: start; }
@@ -998,7 +998,7 @@ body.talking .person-head .portrait { display: none; }
 </head>
 <body>
 <canvas id="rain" aria-hidden="true"></canvas>
-<div id="rotate" role="alert" aria-live="assertive"><div class="rot-phone"><i></i></div><b>휴대폰을 가로로 돌려 주세요</b><p>이 게임은 휴대폰에서 <b>가로 모드</b>로만 할 수 있어요.<br>화면 자동 회전이 꺼져 있다면 켜 주세요.</p></div>
+<div id="rotate" role="note" hidden><div class="rot-phone"><i></i></div><div><b>가로로 돌리면 화면이 더 커요</b><p>세로로도 할 수 있어요.</p></div><button class="btn ghost" id="rot-ok">알겠어요</button></div>
 <div class="wrap" id="app"></div>
 <div class="toast" id="toast" role="status" hidden></div>
 <div id="flash" aria-hidden="true"></div>
@@ -3301,7 +3301,7 @@ function hideDecisionOverlay() { const o = document.getElementById("decision"); 
 
 /* ---------- 시간 제한: 실제 초가 흐른다 ---------- */
 setInterval(() => {
-  if (S.screen !== "game" || !S.timed || S.turns <= 0 || document.hidden || S.paused || isPortraitPhone()) return;
+  if (S.screen !== "game" || !S.timed || S.turns <= 0 || document.hidden || S.paused) return;
   S.timeLeft = Math.max(0, S.timeLeft - 1);
   if (S.timeLeft === 0) { decisionTime("시간이 다 됐다"); render(); return; }
   if (S.timeLeft <= 30) Sound.tick();
@@ -3978,20 +3978,20 @@ function tutorialBar() {
   if (tutSaid !== i) { tutSaid = i; setTimeout(() => Sound.babble(text, voiceOf(N.seo, "순경").base), 400); }
   return `<div class="tut-bar" role="note">${pixelFace(N.seo, 36, "순경")}<div><b>길잡이 ${i + 1}/${TUT.length} · ${esc(N.seo)} 순경</b><p>${esc(text)}</p></div><button class="btn ghost tut-skip" data-act="tut-skip">길잡이 끄기</button></div>`;
 }
-/* ---------- 휴대폰은 가로 모드로만: 세로면 돌려 달라는 화면을 띄우고, 시간도 멈춘다 ---------- */
+/* ---------- 휴대폰 방향: 세로·가로 모두 된다 ---------- */
 const PORTRAIT_MQ = matchMedia("(orientation: portrait) and (pointer: coarse) and (max-width: 900px)");
 const isPortraitPhone = () => PORTRAIT_MQ.matches;
 PORTRAIT_MQ.addEventListener ? PORTRAIT_MQ.addEventListener("change", () => { if (!isPortraitPhone() && S.screen) render(); }) : 0;
-/* 안드로이드 등에서는 첫 터치 때 전체 화면 + 가로 고정을 시도한다 (안 되는 기기는 그냥 넘어간다) */
-let triedLock = false;
-document.addEventListener("pointerdown", () => {
-  if (triedLock || !matchMedia("(pointer: coarse)").matches) return; triedLock = true;
-  try {
-    const el = document.documentElement, fs = el.requestFullscreen || el.webkitRequestFullscreen;
-    const lock = () => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock("landscape").catch(() => {}); } catch (e) {} };
-    if (fs && !document.fullscreenElement) { const r = fs.call(el); if (r && r.then) r.then(lock).catch(() => {}); else lock(); } else lock();
-  } catch (e) {}
-}, true);
+/* 세로 휴대폰이면 처음 한 번만 '가로가 더 커요' 안내 (닫으면 다시 안 나온다) */
+(() => {
+  const el = document.getElementById("rotate"); if (!el) return;
+  let seen = false; try { seen = !!localStorage.getItem("midnight-rotate-tip"); } catch (e) {}
+  if (!seen && isPortraitPhone()) el.hidden = false;
+  const hide = () => { el.hidden = true; try { localStorage.setItem("midnight-rotate-tip", "1"); } catch (e) {} };
+  document.getElementById("rot-ok").addEventListener("click", hide);
+  PORTRAIT_MQ.addEventListener && PORTRAIT_MQ.addEventListener("change", () => { if (!isPortraitPhone()) hide(); });
+  setTimeout(hide, 9000);
+})();
 /* ---------- 저사양 모드: 느린 휴대폰에서 배경 비를 끄고 화면을 덜 자주 그린다 ---------- */
 let LOWFX = (() => { try { const v = localStorage.getItem("midnight-lowfx"); if (v) return v === "1"; } catch (e) {} return (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3; })();
 function setLowFx(v) { LOWFX = !!v; try { localStorage.setItem("midnight-lowfx", LOWFX ? "1" : "0"); } catch (e) {} document.body.classList.toggle("lowfx", LOWFX); }
