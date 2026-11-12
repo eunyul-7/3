@@ -836,6 +836,7 @@ html.app .title > .label { display: none; } html.app .title .lede { font-size: 1
 .sd-stage { min-height: 220px; }
 .sd-ask { margin: 0; font-size: 16px; } .sd-ask b { color: #ff8b7d; } .sd-ask small { color: var(--muted); }
 .dd-pick { display: flex; flex-wrap: wrap; gap: 6px; } .dd-pick .chip.on { outline: 2px solid var(--lamp); background: rgba(226,178,92,.15); }
+.sd-only { margin: 0; font-size: 12.5px; }
 .sd-desc-btn { justify-self: start; padding: 4px 10px; font-size: 13px; }
 .sd-ev.desc { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 .sd-ev.desc .chip { text-align: left; border-radius: 8px; display: grid; gap: 3px; } .sd-ev.desc .chip small { color: var(--muted); font-size: 12px; line-height: 1.45; font-weight: 400; }
@@ -3659,6 +3660,8 @@ function showdown(done) {
   const fin = c.key.filter(k => !used.has(k));
   R.push({ claim: "그래서요? 제가 그 사람을 해쳤다는 결정적인 증거라도 있나요? 없으면 저는 돌아가겠어요.", need: fin.length ? fin : c.key, reply: "……. 그건…." });
   let i = 0, hearts = 3, busy = false, showDesc = false, cur = ["talk", ""];
+  /* 내밀 수 있는 증거: 이 사람과 관련된 것(그 사람을 가리키는 단서 + 사건의 핵심 단서)만 */
+  const mine = S.found.filter(id => cluePoints(id).has(sid) || c.key.includes(id));
   const ov = document.createElement("div"); ov.className = "showdown"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "최종 추궁");
   document.body.appendChild(ov); document.body.classList.add("in-showdown");
   const end = won => {
@@ -3678,9 +3681,9 @@ function showdown(done) {
         ${react === "shock" ? `<i class="sweat"></i><i class="sweat s2"></i><b class="stage-fx">!!</b>` : react === "smug" ? `<b class="stage-fx smug">…</b>` : ""}
         <div class="speech vn"><div class="line them"><span class="who-tag">${esc(cul.name)}</span><p>“${esc(line)}”</p></div></div></div>
       ${final ? "" : `<p class="sd-ask">이 말과 <b>맞지 않는 증거</b>를 내밀어라! <small>틀리면 ♥ 하나가 깨져요</small></p>
-      ${S.found.length ? `<button class="btn ghost sd-desc-btn" data-sddesc="1">${showDesc ? "📖 증거 이름만 보기" : "📖 증거 내용도 보기"}</button>` : ""}
-      <div class="sd-ev${showDesc ? " desc" : ""}">${S.found.map(id => `<button class="chip" data-sd="${id}"><b>${esc(c.clues[id].name)}</b>${showDesc ? `<small>${esc(c.clues[id].text)}</small>` : ""}</button>`).join("") || `<p class="hint">찾은 증거가 없다…</p>`}</div>
-      ${S.found.length ? "" : `<button class="btn ghost" data-sd="__none">아무것도 내밀 수 없다</button>`}`}`;
+      ${mine.length ? `<p class="hint sd-only">🔎 ${esc(cul.name)}${jt(cul.name, "과", "와")} 관련된 증거 ${mine.length}개만 보여요</p><button class="btn ghost sd-desc-btn" data-sddesc="1">${showDesc ? "📖 증거 이름만 보기" : "📖 증거 내용도 보기"}</button>` : ""}
+      <div class="sd-ev${showDesc ? " desc" : ""}">${mine.map(id => `<button class="chip" data-sd="${id}"><b>${esc(c.clues[id].name)}</b>${showDesc ? `<small>${esc(c.clues[id].text)}</small>` : ""}</button>`).join("") || `<p class="hint">찾은 증거가 없다…</p>`}</div>
+      ${mine.length ? "" : `<button class="btn ghost" data-sd="__none">아무것도 내밀 수 없다</button>`}`}`;
     if (!final && !quiet) Sound.babble(line, voiceOf(cul.name, cul.role).base);
   };
   draw("talk", R[0].claim);
