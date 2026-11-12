@@ -49,6 +49,12 @@ button { cursor: pointer; }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--lamp); outline-offset: 2px; }
 
 #rain { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .35; }
+#rotate { display: none; position: fixed; inset: 0; z-index: 9999; background: #07090d; color: #f1ece2; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; }
+#rotate > b { font-size: 22px; color: var(--lamp); } #rotate p { margin: 0; color: var(--muted); line-height: 1.6; } #rotate p b { color: #f1ece2; }
+.rot-phone { width: 56px; height: 96px; border: 4px solid #f1ece2; border-radius: 12px; position: relative; animation: rot-turn 2.2s ease-in-out infinite; }
+.rot-phone i { position: absolute; left: 50%; bottom: 6px; width: 10px; height: 4px; margin-left: -5px; border-radius: 2px; background: #f1ece2; }
+@keyframes rot-turn { 0%, 25% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 900px) { #rotate { display: flex; } body { overflow: hidden; } }
 @media (prefers-reduced-motion: reduce) { #rain { display: none; } }
 
 .btn { background: var(--lamp); color: #1a1408; border: 0; border-radius: 4px; padding: 11px 20px; font-weight: 600; justify-self: start; }
@@ -447,6 +453,57 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
   body.field .play-side .room-nav { display: grid; } body.field .play-side .room-nav .nav-rooms { display: grid; grid-template-columns: 1fr; gap: 3px; }
   body.field .play-side .desc { display: none; }
 }
+/* ===== 휴대폰 가로 모드: 모든 장면이 한 화면에 ===== */
+@media (orientation: landscape) and (max-height: 560px) and (pointer: coarse) {
+  body { padding: 6px 10px; }
+  .opening { min-height: calc(100dvh - 14px); }
+  /* 경찰서·엔딩 장면: 그림은 왼쪽, 대사는 오른쪽 */
+  .intro { padding-block: 4px; gap: 6px; }
+  .intro > .label { font-size: 11px; }
+  body .intro-scene { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 12px; margin: 0; }
+  body .intro-scene .pxview { width: min(56vw, calc((100dvh - 46px) * 11 / 8)); grid-row: span 2; }
+  body .intro-scene .intro-cap { min-height: 0; align-self: end; padding: 8px 10px; }
+  body .intro-scene .intro-cap p { font-size: 13.5px; line-height: 1.5; } body .intro-scene .intro-cap .pxface { display: none; }
+  .toast { font-size: 13px; max-width: 70vw; }
+  body .intro-scene .btn-row { align-self: start; margin: 0; }
+  /* 헤더 한 줄 (현장·심문 공통) */
+  body.playing .tabs { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  body.playing .tabs::-webkit-scrollbar { display: none; }
+  /* 심문: 머리말을 줄이고 무대와 선택지 위주로 */
+  body.talking { padding: 4px 8px; }
+  body.talking .wrap { max-width: none; gap: 4px; }
+  body.talking .board { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; padding: 0 0 2px; }
+  body.talking .board-top { display: contents; }
+  body.talking .board-top > div:first-child .label, body.talking .pips, body.talking .diff-chip { display: none; }
+  body.talking .board-top h2 { font-size: 14px; white-space: nowrap; margin: 0; order: 1; }
+  body.talking .tabs { order: 2; flex: 1 1 auto; border: 0; margin: 0; padding: 0; }
+  body.talking .clock { order: 3; flex: none; } body.talking .clock .mono { font-size: 11px; }
+  body.talking .tab, body.talking .sound-btn { padding: 3px 7px; font-size: 12px; }
+  body.talking .person-head .hint, body.talking .person-head .duo, body.talking .sit-in, body.talking .person-head h3 + .label { display: none; }
+  body.talking .person-head h3 { font-size: 17px !important; margin: 0; }
+  body.talking .stage { min-height: 120px; padding: 6px 8px 6px 86px; }
+  body.talking .stage-sprite { max-height: 130px; }
+  body.talking .line p { font-size: 13.5px; line-height: 1.5; }
+  body.talking .choice { padding: 6px 10px; }
+  body.talking .interro-bar { padding-block: 2px; }
+  /* 무대는 왼쪽, 질문은 오른쪽 */
+  body.talking .panel.talk { display: grid !important; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-auto-rows: min-content; column-gap: 10px; row-gap: 6px; align-content: start; }
+  body.talking .panel.talk > * { grid-column: 1; }
+  body.talking .panel.talk > .interro-bar { grid-column: 1 / -1; }
+  body.talking .panel.talk > .person-head { display: none; }
+  body.talking .panel.talk > .choices { grid-column: 2; grid-row: 2 / span 4; align-self: stretch; overflow-y: auto; max-height: calc(100dvh - 96px); align-content: start; }
+  body.talking .panel.talk > .stage { min-height: calc(100dvh - 120px); }
+}
+@media (orientation: landscape) and (max-height: 400px) and (max-width: 700px) and (pointer: coarse) {
+  body.field .board-top h2 { display: none; }
+  body.field .play-grid { grid-template-columns: minmax(0, 1fr) 200px; gap: 8px; }
+  body.field .play-main .pxview { width: min(100%, calc((100dvh - 68px) * 11 / 8)); }
+}
+@media (orientation: landscape) and (max-height: 560px) and (pointer: coarse) { body.field .room-bar .hint { display: none; } body.field .room-bar { padding: 2px 10px; }
+  body.playing { padding: 4px 8px !important; } body.field .play-side { max-height: calc(100dvh - 62px); }
+  body.field .play-main .pxview { width: min(100%, calc((100dvh - 64px) * 11 / 8)); }
+  body.playing .board-top h2 { max-width: 26vw; overflow: hidden; text-overflow: ellipsis; }
+  body.playing .board { flex-wrap: nowrap !important; } }
 /* 휴대폰 세로: 지도를 화면 가로 끝까지 */
 @media (max-width: 559px) { body.field .playfield .pxview { width: calc(100% + 24px); margin-inline: -12px; max-width: none; border-radius: 0; } }
 .nav-floor { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -919,6 +976,7 @@ body.talking .person-head .portrait { display: none; }
 </head>
 <body>
 <canvas id="rain" aria-hidden="true"></canvas>
+<div id="rotate" role="alert" aria-live="assertive"><div class="rot-phone"><i></i></div><b>휴대폰을 가로로 돌려 주세요</b><p>이 게임은 휴대폰에서 <b>가로 모드</b>로만 할 수 있어요.<br>화면 자동 회전이 꺼져 있다면 켜 주세요.</p></div>
 <div class="wrap" id="app"></div>
 <div class="toast" id="toast" role="status" hidden></div>
 <div id="flash" aria-hidden="true"></div>
@@ -3072,7 +3130,7 @@ function hideDecisionOverlay() { const o = document.getElementById("decision"); 
 
 /* ---------- 시간 제한: 실제 초가 흐른다 ---------- */
 setInterval(() => {
-  if (S.screen !== "game" || !S.timed || S.turns <= 0 || document.hidden || S.paused) return;
+  if (S.screen !== "game" || !S.timed || S.turns <= 0 || document.hidden || S.paused || isPortraitPhone()) return;
   S.timeLeft = Math.max(0, S.timeLeft - 1);
   if (S.timeLeft === 0) { decisionTime("시간이 다 됐다"); render(); return; }
   if (S.timeLeft <= 30) Sound.tick();
@@ -3701,6 +3759,20 @@ function tutorialBar() {
   if (tutSaid !== i) { tutSaid = i; setTimeout(() => Sound.babble(text, voiceOf(N.seo, "순경").base), 400); }
   return `<div class="tut-bar" role="note">${pixelFace(N.seo, 36, "순경")}<div><b>길잡이 ${i + 1}/${TUT.length} · ${esc(N.seo)} 순경</b><p>${esc(text)}</p></div><button class="btn ghost tut-skip" data-act="tut-skip">길잡이 끄기</button></div>`;
 }
+/* ---------- 휴대폰은 가로 모드로만: 세로면 돌려 달라는 화면을 띄우고, 시간도 멈춘다 ---------- */
+const PORTRAIT_MQ = matchMedia("(orientation: portrait) and (pointer: coarse) and (max-width: 900px)");
+const isPortraitPhone = () => PORTRAIT_MQ.matches;
+PORTRAIT_MQ.addEventListener ? PORTRAIT_MQ.addEventListener("change", () => { if (!isPortraitPhone() && S.screen) render(); }) : 0;
+/* 안드로이드 등에서는 첫 터치 때 전체 화면 + 가로 고정을 시도한다 (안 되는 기기는 그냥 넘어간다) */
+let triedLock = false;
+document.addEventListener("pointerdown", () => {
+  if (triedLock || !matchMedia("(pointer: coarse)").matches) return; triedLock = true;
+  try {
+    const el = document.documentElement, fs = el.requestFullscreen || el.webkitRequestFullscreen;
+    const lock = () => { try { screen.orientation && screen.orientation.lock && screen.orientation.lock("landscape").catch(() => {}); } catch (e) {} };
+    if (fs && !document.fullscreenElement) { const r = fs.call(el); if (r && r.then) r.then(lock).catch(() => {}); else lock(); } else lock();
+  } catch (e) {}
+}, true);
 /* ---------- 저사양 모드: 느린 휴대폰에서 배경 비를 끄고 화면을 덜 자주 그린다 ---------- */
 let LOWFX = (() => { try { const v = localStorage.getItem("midnight-lowfx"); if (v) return v === "1"; } catch (e) {} return (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3; })();
 function setLowFx(v) { LOWFX = !!v; try { localStorage.setItem("midnight-lowfx", LOWFX ? "1" : "0"); } catch (e) {} document.body.classList.toggle("lowfx", LOWFX); }
@@ -3811,7 +3883,7 @@ function fitTalk() {
   if (!sp) return;
   const top = sp.getBoundingClientRect().top + window.scrollY;
   const padB = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
-  sp.style.height = Math.max(300, window.innerHeight - top - padB - 4) + "px";
+  sp.style.height = Math.max(innerHeight < 500 ? 150 : 300, window.innerHeight - top - padB - 4) + "px";
 }
 addEventListener("resize", () => fitTalk());
 
