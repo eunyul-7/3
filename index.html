@@ -804,6 +804,12 @@ body.shake main { animation: op-shake2 .4s; }
 .photo-btn { margin: 6px 0; }
 .continue-box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0 4px; padding: 12px 14px; border: 1px solid var(--lamp); border-radius: 8px; background: rgba(226,178,92,.08); }
 .continue-btn { font-size: 18px; }
+.coat-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 4px; width: 100%; }
+.coat-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 8px; }
+.coat-chip i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(255,255,255,.3); display: inline-block; }
+.coat-chip:disabled { opacity: .45; }
+.title-chip { font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--lamp-dim); color: var(--lamp); vertical-align: middle; }
+.ach.unl.on { border-color: #9bdc6a; background: rgba(155,220,106,.07); }
 .continue-box { flex-direction: column; align-items: flex-start; }
 .cb-title { font-size: 17px; color: var(--lamp); }
 .newgame-confirm, .pz-confirm { display: grid; gap: 8px; padding: 10px; border: 1px solid #e06a5a; border-radius: 8px; background: rgba(224,106,90,.08); }
@@ -1973,7 +1979,35 @@ const SETTINGS = [
     c2: { name: "연회장 주방", desc: "뷔페 접시가 산더미인 연회장 주방. 식기세척기가 돌아간다." },
     solo: { spot: "주방 출입 기록을 본다", name: "주방 출입 기록", act: "연회장 주방에서 혼자 남은 음식을 정리했다. 출입 기록에 시각이 남았다" },
     witness: { spot: "로비 CCTV를 돌려 본다", name: "로비 CCTV", text: (n, t) => `로비 CCTV, ${t}. ${I(n)} 대표실 쪽 계단을 오르는 모습이 찍혀 있다.` },
-    room: "대기실", stay: "쓰던", floors: ["2층", "1층"], roles: ["웨딩 플래너", "사진 기사", "연회 매니저", "축가 가수", "하객", "대표의 사위"] }
+    room: "대기실", stay: "쓰던", floors: ["2층", "1층"], roles: ["웨딩 플래너", "사진 기사", "연회 매니저", "축가 가수", "하객", "대표의 사위"] },
+  /* ---------- 🗝 비밀 무대 (업적 ‘무작위의 달인’으로 해금) ---------- */
+  { secret: true, title: "별빛분교", where: "산골 폐교 · 20년 만의 동창회", intro: "폐교된 분교에서 동창회가 열린 밤", victimRole: "동창회장",
+    brief: "당신은 신고를 받고 산골 폐교로 출동한 강력팀 형사다. 하나뿐인 다리가 폭우에 잠겨 범인도 아직 학교 안에 있다.",
+    crime: { name: "옛 교무실", desc: "먼지 쌓인 옛 교무실. 낡은 출석부가 펼쳐져 있다. 피해자는 난로 옆에 쓰러져 있다." },
+    c1: { name: "강당", desc: "‘환영 별빛분교 동창회’ 현수막이 걸린 강당. 도시락 상자가 쌓여 있다.", flavor: { label: "타임캡슐 상자를 연다", text: "20년 전 편지들뿐이다. 별다른 건 없다." } },
+    pair: { spot: "동창회 방명록을 본다", name: "동창회 방명록", act: "강당에서 함께 옛 사진 슬라이드를 틀었다. 방명록 옆에 시각을 적었다" },
+    c2: { name: "숙직실", desc: "삐걱대는 숙직실. 석유난로가 꺼져 있다." },
+    solo: { spot: "숙직 일지를 본다", name: "숙직 일지", act: "숙직실에서 혼자 누워 있었다고 관리인이 적었다" },
+    witness: { spot: "관리인의 블랙박스를 돌려 본다", name: "관리인 트럭 블랙박스", text: (n, t) => `관리인 트럭 블랙박스, ${t}. ${I(n)} 손전등을 들고 옛 교무실로 들어가는 모습이 찍혀 있다.` },
+    room: "교실", stay: "쓰던", floors: ["본관", "별관"], roles: ["동창", "옛 담임 선생님", "폐교 관리인", "동창의 배우자", "사진사", "마을 이장"] },
+  { secret: true, title: "중앙경찰서 증거보관실", where: "경찰서 · 야간 당직", intro: "당직만 남은 경찰서의 밤", victimRole: "증거관리 계장",
+    brief: "경찰서 안에서 경찰관이 숨졌다. 당신은 감찰과 함께 사건을 맡은 강력팀 형사다. 경찰서 출입문은 모두 잠겼다.",
+    crime: { name: "증거보관실", desc: "번호표가 붙은 증거 상자가 빽빽한 보관실. 상자 하나가 열려 있다. 피해자는 철제 선반 아래 쓰러져 있다." },
+    c1: { name: "당직실", desc: "무전기가 지직대는 당직실. 컵라면이 식어 있다.", flavor: { label: "무전 기록을 듣는다", text: "평범한 순찰 보고뿐이다. 별다른 건 없다." } },
+    pair: { spot: "당직 근무표를 본다", name: "당직 근무표", act: "당직실에서 함께 112 신고를 받았다. 근무표에 시각을 적었다" },
+    c2: { name: "주차장 출입구", desc: "순찰차가 늘어선 지하 주차장 출입구. 셔터가 반쯤 내려와 있다." },
+    solo: { spot: "출입카드 기록을 본다", name: "주차장 출입카드 기록", act: "주차장 출입구에서 혼자 순찰차를 점검했다. 출입카드에 시각이 찍혔다" },
+    witness: { spot: "복도 CCTV를 돌려 본다", name: "3층 복도 CCTV", text: (n, t) => `3층 복도 CCTV, ${t}. ${I(n)} 증거보관실 문 비밀번호를 누르는 모습이 찍혀 있다.` },
+    room: "사무실", stay: "쓰던", floors: ["3층", "1층"], roles: ["당직 경위", "교통계 순경", "감찰관", "청소 용역", "견인차 기사", "민원인"] },
+  { secret: true, title: "폐쇄된 지하철역", where: "공사 중인 지하철역 · 막차 이후", intro: "막차가 끊긴 지하철역의 밤", victimRole: "공사 현장 소장",
+    brief: "당신은 신고를 받고 폐쇄된 지하철역으로 출동한 강력팀 형사다. 셔터가 내려가 범인도 아직 역 안에 있다.",
+    crime: { name: "현장 사무소", desc: "도면이 벽을 덮은 컨테이너 사무소. 안전모가 굴러다닌다. 피해자는 책상 옆에 쓰러져 있다." },
+    c1: { name: "승강장", desc: "불 꺼진 승강장. 스크린도어 너머로 찬바람이 분다.", flavor: { label: "선로 쪽을 비춘다", text: "자갈과 쥐 한 마리뿐이다. 별다른 건 없다." } },
+    pair: { spot: "작업 일보를 본다", name: "야간 작업 일보", act: "승강장에서 함께 스크린도어를 고쳤다. 작업 일보에 시각을 적었다" },
+    c2: { name: "역무실", desc: "모니터가 꺼진 역무실. 분실물 상자가 놓여 있다." },
+    solo: { spot: "개찰구 기록을 본다", name: "개찰구 통과 기록", act: "역무실 앞 개찰구를 혼자 지나갔다. 교통카드 기록에 시각이 남았다" },
+    witness: { spot: "역 CCTV를 돌려 본다", name: "대합실 CCTV", text: (n, t) => `대합실 CCTV, ${t}. ${I(n)} 현장 사무소 쪽 계단을 내려가는 모습이 찍혀 있다.` },
+    room: "작업 대기실", stay: "쓰던", floors: ["대합실", "승강장층"], roles: ["야간 작업자", "역무원", "감리 기사", "청소 반장", "하청업체 대표", "노숙인"] },
 ];
 const VICTIMS = ["마정호", "구선영", "탁무진", "엄혜경", "하태수", "봉미란", "편승철", "길소연"];
 const NAMES = ["서도윤", "한예린", "박준서", "김하율", "이서진", "정민재", "최유나", "오태경", "윤소이", "강지후", "문채원", "배성훈",
@@ -2145,7 +2179,8 @@ const METHOD_POOL = [
 /* 최근에 한 무대는 피해서 고른다 (최근 12곳 기억) */
 function pickSetting() {
   let recent = []; try { recent = JSON.parse(localStorage.getItem("midnight-recent-settings") || "[]"); } catch {}
-  const fresh = SETTINGS.filter(x => !recent.includes(x.title)), st = RND.pick(fresh.length ? fresh : SETTINGS);
+  const pool = SETTINGS.filter(x => !x.secret || isUnlocked("secret"));   /* 비밀 무대는 해금 뒤에만 */
+  const fresh = pool.filter(x => !recent.includes(x.title)), st = RND.pick(fresh.length ? fresh : pool);
   recent = [st.title, ...recent.filter(t => t !== st.title)].slice(0, Math.min(12, SETTINGS.length - 1));
   try { localStorage.setItem("midnight-recent-settings", JSON.stringify(recent)); } catch {}
   return st;
@@ -2306,7 +2341,8 @@ const loadAch = () => { try { return JSON.parse(localStorage.getItem(ACH_KEY) ||
 const ACH = [
   { id: "first", icon: "🔰", name: "첫 출동", desc: "사건을 처음으로 해결했다", ok: e => e.win },
   { id: "s", icon: "🏅", name: "명탐정", desc: "S 등급으로 해결했다", ok: e => e.win && e.grade === "S" },
-  { id: "hard", icon: "🔥", name: "강철 형사", desc: "어려움 난이도에서 해결했다", ok: e => e.win && e.diff === "hard" },
+  { id: "hard", icon: "🔥", name: "강철 형사", desc: "어려움 난이도에서 해결했다", ok: e => e.win && (e.diff === "hard" || e.diff === "nightmare") },
+  { id: "nightmare", icon: "🌑", name: "악몽을 이긴 형사", desc: "악몽 난이도에서 해결했다", ok: e => e.win && e.diff === "nightmare" },
   { id: "clean", icon: "🎯", name: "한 치의 실수도 없이", desc: "모순 지적을 한 번도 틀리지 않고 해결했다", ok: e => e.win && e.wrong === 0 },
   { id: "fast", icon: "⏱", name: "번개 수사", desc: "시간을 2분 넘게 남기고 해결했다", ok: e => e.win && e.timeLeft >= 120 },
   { id: "nodrug", icon: "💊", name: "약 없이도 안다", desc: "마약팀 없이 약물 사건을 해결했다", ok: e => e.win && e.drug && !e.drugTeam },
@@ -2319,28 +2355,57 @@ const ACH = [
   { id: "all4", icon: "📁", name: "사건 파일 완결", desc: "고정 사건 4개를 모두 해결했다", ok: (e, log) => CASES.every(c => log.some(x => x.win && x.id === c.id)) },
   { id: "comeback", icon: "💪", name: "다시 일어선 형사", desc: "실패했던 사건을 다시 도전해 해결했다", ok: (e, log) => e.win && !e.random && log.some(x => !x.win && x.id === e.id) },
 ];
+/* ---------- 🎁 업적 보상: 업적을 따면 새 콘텐츠가 열린다 ---------- */
+const UNLOCKS = [
+  { id: "coat_black", kind: "coat", icon: "🧥", name: "검은 롱코트", desc: "주인공 옷", need: "s", cloth: "#1d2026" },
+  { id: "coat_red", kind: "coat", icon: "🧥", name: "붉은 트렌치코트", desc: "주인공 옷", need: "hard", cloth: "#7a2a26" },
+  { id: "coat_gray", kind: "coat", icon: "🧥", name: "회색 정장", desc: "주인공 옷", need: "acc", cloth: "#5a5e66" },
+  { id: "coat_navy", kind: "coat", icon: "🧥", name: "남색 점퍼", desc: "주인공 옷", need: "student", cloth: "#283552" },
+  { id: "coat_white", kind: "coat", icon: "🧥", name: "흰 코트", desc: "주인공 옷", need: "all4", cloth: "#d9d4c8" },
+  { id: "nightmare", kind: "diff", icon: "🌑", name: "악몽 난이도", desc: "시간 8분·지목 기회 1번·가짜 물건과 방해가 가장 많고 점수 보너스가 가장 큰 난이도", need: "hard" },
+  { id: "secret", kind: "setting", icon: "🗝", name: "비밀 무대 3곳", desc: "무작위 사건에 ‘별빛분교’, ‘중앙경찰서 증거보관실’, ‘폐쇄된 지하철역’이 나와요", need: "r5" },
+  { id: "legend", kind: "member", icon: "🎖", name: "전설의 형사 유진혁", desc: "팀 고르기의 강력팀장 자리에 고를 수 있어요. 어떤 사건이든 ⭐ 인재", need: "count:8" },
+  { id: "title", kind: "title", icon: "🏷", name: "형사 칭호", desc: "업적 수에 따라 이름 앞 칭호가 올라가요 (신참 → 형사 → 베테랑 → 명탐정 → 전설)", need: "first" },
+];
+const TITLES = [[0, "신참"], [2, "형사"], [4, "베테랑"], [7, "명탐정"], [11, "전설의 형사"]];
+function isUnlocked(id) {
+  const u = UNLOCKS.find(x => x.id === id); if (!u) return true;
+  const got = loadAch();
+  if (u.need.startsWith("count:")) return Object.keys(got).length >= +u.need.slice(6);
+  return !!got[u.need];
+}
+const unlockNeed = u => u.need.startsWith("count:") ? `업적 ${u.need.slice(6)}개 달성` : `업적 ‘${(ACH.find(a => a.id === u.need) || {}).name}’`;
+const playerTitle = () => { const n = Object.keys(loadAch()).length; return TITLES.filter(([k]) => n >= k).pop()[1]; };
+let PLAYER_COAT = (() => { try { return localStorage.getItem("midnight-coat") || ""; } catch (e) { return ""; } })();
+const coatColor = () => { const u = UNLOCKS.find(x => x.id === PLAYER_COAT); return u && isUnlocked(u.id) ? u.cloth : "#8a6a48"; };
 /* 사건이 끝나면 기록하고, 새로 딴 업적을 돌려준다 */
 function logCase(win, grade) {
   const c = C(), cul = c.suspects[c.answer.culprit] || {};
   const e = { at: Date.now(), id: c.id, random: !!c.random, title: c.title, win, grade: win ? grade : "F", diff: S.diff,
     culprit: cul.name || "", role: cul.role || "", wrong: S.wrong, timeLeft: S.timed ? S.timeLeft : 0, turnsLeft: S.turns,
     drug: typeof drugInfo === "function" && !!drugInfo(), drugTeam: !!(S.depts && deptOn("drug")), acc: !!S.accCaught,
-    studentCul: isStudent(cul.role || ""), secrets: (S.secrets || []).length, calls: (S.calls || 0) + (S.dispatched || []).length + Object.keys(S.copAsk || {}).length, twist: !!c.twist };
+    studentCul: isStudent(cul.role || "") && /학교|학원/.test(c.where + c.title), secrets: (S.secrets || []).length, calls: (S.calls || 0) + (S.dispatched || []).length + Object.keys(S.copAsk || {}).length, twist: !!c.twist };
   const log = loadLog(); log.unshift(e); try { localStorage.setItem(LOG_KEY, JSON.stringify(log.slice(0, 60))); } catch (err) {}
   const got = loadAch(), fresh = [];
   for (const a of ACH) if (!got[a.id] && a.ok(e, log)) { got[a.id] = e.at; fresh.push(a); }
   try { localStorage.setItem(ACH_KEY, JSON.stringify(got)); } catch (err) {}
   fresh.forEach((a, i) => setTimeout(() => { popCard(`<span class="cc-tag">🏆 업적 달성</span><b>${a.icon} ${esc(a.name)}</b><small>${esc(a.desc)}</small>`, "unlock"); Sound.help(); }, 1800 + i * 2500));
+  /* 이번에 새로 열린 보상 */
+  const before = Object.keys(got).length - fresh.length;
+  const opened = UNLOCKS.filter(u => u.need.startsWith("count:") ? before < +u.need.slice(6) && Object.keys(got).length >= +u.need.slice(6) : fresh.some(a => a.id === u.need));
+  opened.forEach((u, i) => setTimeout(() => { popCard(`<span class="cc-tag">🎁 새 콘텐츠 해금</span><b>${u.icon} ${esc(u.name)}</b><small>${esc(u.desc)}</small>`, "unlock"); Sound.clue(); }, 1800 + (fresh.length + i) * 2500));
   return fresh;
 }
 function renderLog() {
   const log = loadLog(), got = loadAch(), wins = log.filter(x => x.win);
   const ss = wins.filter(x => x.grade === "S").length;
   app.innerHTML = `<section class="files casebook">
-    <span class="label">사건 기록장</span><h1>📒 ${esc(pname())} 형사의 기록</h1>
+    <span class="label">사건 기록장 · 칭호 ‘${esc(playerTitle())}’</span><h1>📒 ${esc(pname())} 형사의 기록</h1>
     <div class="log-stats"><div><b>${wins.length}</b><span>해결</span></div><div><b>${log.length - wins.length}</b><span>실패</span></div><div><b>${ss}</b><span>S 등급</span></div><div><b>${Object.keys(got).length}/${ACH.length}</b><span>업적</span></div></div>
     <h2>🏆 업적</h2>
     <div class="ach-grid">${ACH.map(a => `<div class="ach${got[a.id] ? " on" : ""}"><span class="ach-ic">${got[a.id] ? a.icon : "🔒"}</span><div><b>${esc(a.name)}</b><small>${esc(a.desc)}</small></div></div>`).join("")}</div>
+    <h2>🎁 해금 콘텐츠</h2>
+    <div class="ach-grid">${UNLOCKS.map(u => { const on = isUnlocked(u.id); return `<div class="ach unl${on ? " on" : ""}"><span class="ach-ic">${on ? u.icon : "🔒"}</span><div><b>${esc(u.name)}</b><small>${on ? esc(u.desc) : `${esc(unlockNeed(u))} 하면 열려요`}</small></div></div>`; }).join("")}</div>
     <h2>🗂 최근 사건</h2>
     ${log.length ? `<div class="log-list">${log.slice(0, 20).map(x => `<div class="log-row${x.win ? "" : " fail"}">
       ${x.culprit ? pixelFace(x.culprit, 40, x.role) : ""}
@@ -2373,7 +2438,7 @@ const ROSTER = [
   { slot: "seo", label: "동행 파트너", rank: "순경", job: "늘 내 뒤를 따라다니며 방의 가짜 물건을 치워요", people: [
     ["서하루", "f", "신고 전화를 제일 먼저 받는 열혈 순경"], ["김태린", "f", "눈썰미가 좋은 막내 순경"], ["박우진", "m", "말수는 적지만 성실한 순경"], ["정한결", "m", "체력 하나는 자신 있는 순경"]] },
   { slot: "kang", label: "강력팀장", rank: "경감", job: "부하들이 놓친 걸 바로잡고 잠긴 문을 열어요 (보통·어려움)", people: [
-    ["강무열", "m", "현장 20년 차 베테랑"], ["백인경", "f", "강력팀 최초의 여성 팀장"], ["조석훈", "m", "원칙대로만 하는 깐깐한 팀장"]] },
+    ["강무열", "m", "현장 20년 차 베테랑"], ["백인경", "f", "강력팀 최초의 여성 팀장"], ["조석훈", "m", "원칙대로만 하는 깐깐한 팀장"], ["유진혁", "m", "🎖 은퇴를 미룬 전설의 형사 (업적 해금 · 어떤 사건이든 ⭐)"]] },
   { slot: "gong", label: "강력팀 형사", rank: "순경", job: "가짜 물건을 치우고 용의자에게 겁을 줘요 (보통·어려움)", people: [
     ["공태하", "m", "덩치 큰 강력팀 순경"], ["우강산", "m", "목소리가 우렁찬 순경"], ["안소라", "f", "눈빛 하나로 기선을 잡는 순경"]] },
   { slot: "yoon", label: "과학수사팀장", rank: "경사", job: "시신 감식·사건 정리·심문 때 증거 내밀기", people: [
@@ -2428,6 +2493,7 @@ const TALENT = {
   마석진: ["poison"], 연수경: ["poison"], 방태율: ["poison"], 설아린: ["poison"],
   길주원: ["storm"], 국선영: ["storm"], 임도진: ["violent"], 반하린: ["storm"], 왕지석: ["secret"], 손예담: ["secret"], 감도윤: ["secret"], 추은솔: ["money"],
   곽정민: ["storm"], 태수연: ["storm"], 봉하람: ["poison"], 육서윤: ["secret"], 범태호: ["violent"], 진미라: ["storm"], 여강민: ["violent"], 담소윤: ["storm"],
+  유진혁: ["poison", "violent", "money", "secret", "storm"],
   주강우: ["storm"], 성미래: ["secret"], 도현수: ["violent"], 나예림: ["secret"], 권하준: ["storm"], 오지민: ["money"], 신재호: ["storm"], 함소연: ["secret"], 육지훈: ["violent"], 방수아: ["poison"],
 };
 const DEPT_TAG = { drug: "poison", sci: "violent", digital: "secret", fin: "money", intel: "secret", traffic: "storm", guard: "storm" };
@@ -2456,8 +2522,8 @@ const DEPTS = [
   { id: "sit", div: "112치안종합상황실", name: "상황팀", slots: ["sitL", "sit"], desc: "윗선과 연락해 수사 시간을 벌어 줘요. 부르면 바로 3턴과 1분이 늘어나요(한 번)." },
 ];
 const DEPT_DEFAULT = ["crime", "sci", "prof", "patrol"];
-const DEPT_N = { easy: 5, normal: 7, hard: 9 };   /* 11개 팀 중 */
-const PATROL_RANDOM = { easy: 3, normal: 4, hard: 6 };   /* 무작위 사건에서 나가는 순찰 대원 수 */
+const DEPT_N = { easy: 5, normal: 7, hard: 9, nightmare: 9 };   /* 11개 팀 중 */
+const PATROL_RANDOM = { easy: 3, normal: 4, hard: 6, nightmare: 6 };   /* 무작위 사건에서 나가는 순찰 대원 수 */
 const patrolCount = () => S.depts ? (PATROL_RANDOM[S.diff] || 4) : (PATROL_N[S.diff] || 2);
 /* 장면(출동·끝)에 고른 팀만 나오게 */
 const SLOT_DEPT = { kang: "crime", gong: "crime", yoon: "sci", byun: "sci", han: "prof", mo: "prof" };
@@ -2600,20 +2666,22 @@ const DIFF = {
             desc: "가짜 물건과 방해, 공범이 있어요. 시간은 7분. 팀원 모두 횟수 제한 없이 부를 수 있어요." },
   hard:   { label: "어려움", turns: 35, time: 720, bonus: 6, chances: 2, fakes: 2, sab: { start: 0.2, base: 0.12, k: 0.4, cd: 3, late: 0.6 }, villains: true, persona: "hint", lieTags: false, helpMax: 6,
             desc: "아주 어려워요. 가짜 물건이 많고 방해가 거세며, 용의자 성격도 눈치로 알아내야 해요. 대신 시간 12분, 지목 기회 2번, 팀원 모두 횟수 제한 없이 불러요." },
+  nightmare: { label: "악몽", turns: 30, time: 480, bonus: 10, chances: 1, fakes: 3, sab: { start: 0.1, base: 0.16, k: 0.45, cd: 2, late: 0.5 }, villains: true, persona: "hint", lieTags: false, helpMax: 6,
+            desc: "🌑 업적 해금 난이도. 가짜 물건이 가장 많고 방해가 처음부터 거세요. 시간 8분, 지목 기회 1번뿐. 대신 점수 보너스가 가장 커요." },
 };
 /* 팀원 출동 횟수 */
 /* 계급별 호출 횟수: 순경·경장·경사는 쉬움 2 · 보통 3 · 어려움 5, 경위·경감은 쉬움 없음 · 보통 3 · 어려움 5 */
 /* 직급 역할(횟수 제한 없음)
    - 부하(서하루·공태하): 쓸모없거나 헷갈리게 하는 것(가짜 물건)을 치운다
    - 상관(강무열): 대신 조사하지 않고, 부하들이 놓친 부분을 바로잡는다(망가진 증거 복구·사라진 단서 되찾기·놓친 곳 짚기, 강무열은 잠긴 문까지) */
-const FIELD_ON = { easy: ["seo"], normal: ["seo", "gong", "kang"], hard: ["seo", "gong", "kang"] };
+const FIELD_ON = { easy: ["seo"], normal: ["seo", "gong", "kang"], hard: ["seo", "gong", "kang"], nightmare: ["seo", "gong", "kang"] };
 /* 과학수사대(윤도경·변주원)는 시신 감식만 한다: 사인을 밝혀 수사·심문에 쓸 증거로 넘겨준다 */
 const JUNIOR = ["seo", "gong"];
 const roleOf = pid => JUNIOR.includes(pid) ? "clear" : "fix";
 const FIELD_ROWS = [["seo"], ["gong", "kang"]];
 const PLAYER_RANK = "경장";
 /* 강력계 순경 공태하: 강무열과 다니며 쓸데없는 물건을 치우고, 비협조적인 용의자를 압박한다 */
-const GONG = { easy: { clear: 2 }, normal: { clear: 3 }, hard: { clear: 5 } };   /* 순경 공태하 */
+const GONG = { easy: { clear: 2 }, normal: { clear: 3 }, hard: { clear: 5 }, nightmare: { clear: 5 } };   /* 순경 공태하 */
 const PRESS_RISK = [0, 0.15, 0.5, 0.85];   /* 같은 사람을 몇 번째로 압박하나 → 역효과 확률 */
 const gongOn = () => S.depts ? deptOn("crime") : S.diff !== "easy";
 const clearLeft = () => gongOn() ? GONG[S.diff].clear - (S.cleared2 || 0) : 0;
@@ -2668,7 +2736,7 @@ function pressure(sid) {
 }
 /* 반박 횟수 */
 /* 심문 짝: 모은재(부하)는 헷갈리는 대답을 치우고, 한서진(상관)은 모은재가 놓친 걸 바로잡는다. 횟수 제한 없음, 한 번에 1턴 */
-const PROF_ON = { easy: ["psy"], normal: ["psy", "prof"], hard: ["psy", "prof"] };
+const PROF_ON = { easy: ["psy"], normal: ["psy", "prof"], hard: ["psy", "prof"], nightmare: ["psy", "prof"] };
 const rebutLeft = id => (S.depts ? deptOn("prof") : (PROF_ON[S.diff] || []).includes(id)) ? 99 : 0;
 /* 현장 팀원: 고른 부서에 따라 (고정 사건은 난이도 규칙) */
 const fieldOn = () => S.depts ? ["seo", ...(deptOn("crime") ? ["gong", "kang"] : [])] : (FIELD_ON[S.diff] || []);
@@ -2779,7 +2847,7 @@ function lastTeam() {
   return { team, patrol: (t && t.patrol && t.patrol.length) ? t.patrol : PATROL.map(x => x.id), depts: (t && t.depts) || null };
 }
 function randomTeam() {
-  const team = {}; for (const r of ROSTER) team[r.slot] = RND.pick(r.people)[0];
+  const team = {}; for (const r of ROSTER) team[r.slot] = RND.pick(r.people.filter(([n]) => n !== "유진혁" || isUnlocked("legend")))[0];
   return { team, patrol: RND.shuffle(PATROL_ALL).slice(0, 6).map(x => x.id), depts: RND.shuffle(DEPTS.map(d => d.id)).slice(0, DEPT_N[S.diff] || 4) };
 }
 function confirmTeam() {
@@ -2800,7 +2868,7 @@ function renderTeam() {
   }
   const tags = caseTags(c);
   const star = n => { const t = talentOf(n, tags); return t.length ? `<em class="star" title="이 사건에 유용">⭐ ${t.map(x => CASE_TAG[x]).join("·")}에 강함</em>` : ""; };
-  const people = slot => { const r = ROSTER.find(x => x.slot === slot); return `<div class="pick-row">${r.people.map(([n, g, note]) => `<label class="pick${talentOf(n, tags).length ? " talent" : ""}"><input type="radio" name="team-${slot}" value="${n}" ${tp.team[slot] === n ? "checked" : ""}>
+  const people = slot => { const r = ROSTER.find(x => x.slot === slot); return `<div class="pick-row">${r.people.filter(([n]) => n !== "유진혁" || isUnlocked("legend")).map(([n, g, note]) => `<label class="pick${talentOf(n, tags).length ? " talent" : ""}"><input type="radio" name="team-${slot}" value="${n}" ${tp.team[slot] === n ? "checked" : ""}>
       <span>${pixelFace(n, 44)}<b>${n}</b><small>${r.label} · ${r.rank}</small>${star(n)}<small class="hint">${note}</small></span></label>`).join("")}</div>`; };
   const patrolPick = `<p class="hint">순찰 대원 (6명까지, 고른 순서대로 ${DIFF[S.diff].label}에선 ${pd}명이 나가요)</p><div class="pick-row">${PATROL_ALL.map(x => { const i = tp.patrol.indexOf(x.id); return `<label class="pick"><input type="checkbox" name="team-patrol" value="${x.id}" ${i >= 0 ? "checked" : ""} ${i < 0 && tp.patrol.length >= 6 ? "disabled" : ""}>
       <span>${pixelFace(x.name, 44)}<b>${x.name}</b><small>${x.title}${i >= 0 ? ` · ${i + 1}번째` : ""}</small>${star(x.name)}</span></label>`; }).join("")}</div>`;
@@ -2840,7 +2908,7 @@ const PATROL = [
   { id: "do", name: "도현수", title: "경장" }, { id: "na", name: "나예림", title: "순경" },
   { id: "kw", name: "권하준", title: "순경" }, { id: "oh", name: "오지민", title: "경장" },
 ];
-const PATROL_N = { easy: 2, normal: 3, hard: 4 };
+const PATROL_N = { easy: 2, normal: 3, hard: 4, nightmare: 4 };
 const PATROL_ALL = PATROL.concat([
   { id: "sj", name: "신재호", title: "순경" }, { id: "hs", name: "함소연", title: "경장" },
   { id: "yj", name: "육지훈", title: "순경" }, { id: "bs", name: "방수아", title: "순경" },
@@ -2925,8 +2993,8 @@ function spend(n = 1) {
 function maybeHelp() {
   const p = progress(), max = DIFF[S.diff].helpMax;
   if (!max || S.turns <= 0 || p < 0.3 || S.helps >= max || !S.events.some(e => e.bad)) return;
-  if (S.sinceHelp < (S.diff === "hard" ? 3 : 4)) return;
-  if (Math.random() > (S.diff === "hard" ? 0.3 : 0.15) + 0.35 * p) return;
+  if (S.sinceHelp < (S.diff === "hard" || S.diff === "nightmare" ? 3 : 4)) return;
+  if (Math.random() > (S.diff === "hard" || S.diff === "nightmare" ? 0.3 : 0.15) + 0.35 * p) return;
   help();
 }
 function help() {
@@ -4064,8 +4132,12 @@ function renderOpening() {
 function mePreview() {
   const g = playerGender(), auto = PLAYER_G === "auto";
   const btn = (v, t) => `<button type="button" class="chip" data-pg="${v}" aria-pressed="${PLAYER_G === v}">${t}</button>`;
-  return `${pixelFace(pname(), 48, "", true)}<span><b>${g === "f" ? "여자" : "남자"} ${PLAYER_RANK}</b>${auto ? " · 이름을 보고 정했어요" : ""}</span>
-    <span class="chips">${btn("auto", "자동")}${btn("f", "여자")}${btn("m", "남자")}</span>`;
+  const coats = [{ id: "", name: "기본 갈색 코트", cloth: "#8a6a48" }].concat(UNLOCKS.filter(u => u.kind === "coat"));
+  const coatBtn = u => { const on = !u.id || isUnlocked(u.id), sel = (PLAYER_COAT || "") === u.id && on;
+    return `<button type="button" class="chip coat-chip" data-coat="${u.id}" aria-pressed="${sel}" ${on ? "" : "disabled"} title="${esc(on ? u.name : unlockNeed(u) + " 하면 열려요")}"><i style="background:${on ? u.cloth : "#333"}"></i>${on ? esc(u.name) : "🔒"}</button>`; };
+  return `${pixelFace(pname(), 48, "", true)}<span><b>${g === "f" ? "여자" : "남자"} ${PLAYER_RANK}</b> <span class="title-chip">${esc(playerTitle())}</span>${auto ? " · 이름을 보고 정했어요" : ""}</span>
+    <span class="chips">${btn("auto", "자동")}${btn("f", "여자")}${btn("m", "남자")}</span>
+    <span class="chips coat-row"><small class="hint">옷:</small>${coats.map(coatBtn).join("")}</span>`;
 }
 function renderTitle() {
   app.innerHTML = `
@@ -4480,7 +4552,7 @@ function renderBrief() {
       <div class="brief"><p><b>${esc(pname())} ${PLAYER_RANK}</b>, ${c.brief}</p></div>
       <fieldset class="setup">
         <legend>난이도</legend>
-        ${Object.entries(DIFF).map(([k, d]) => `<label class="opt"><input type="radio" name="diff" id="diff-${k}" value="${k}" ${S.diff === k ? "checked" : ""}><span><b>${d.label}</b> · ${mmss(d.time)} · ${d.turns}턴${d.chances > 1 ? ` · 지목 기회 ${d.chances}번` : ""} — ${d.desc}</span></label>`).join("")}
+        ${Object.entries(DIFF).filter(([k]) => k !== "nightmare" || isUnlocked("nightmare")).map(([k, d]) => `<label class="opt"><input type="radio" name="diff" id="diff-${k}" value="${k}" ${S.diff === k ? "checked" : ""}><span><b>${d.label}</b> · ${mmss(d.time)} · ${d.turns}턴${d.chances > 1 ? ` · 지목 기회 ${d.chances}번` : ""} — ${d.desc}</span></label>`).join("")}
       </fieldset>
       <div class="cast">
         ${Object.values(c.suspects).map(p => `<div class="person">${pixelFace(p.name, 64, p.role)}<b>${p.name}</b><span>${p.role}</span><span>${p.intro}</span></div>`).join("")}
@@ -4712,6 +4784,9 @@ const THEMES = {
   "새벽배송 물류센터":  { wall: "plain", wallC: "#6b7078", floor: "stone" },
   "토닥 동물병원":      { wall: "plain", wallC: "#d0dcd6", floor: "tile" },
   "라온 웨딩홀":        { wall: "damask", wallC: "#e0d6c8", floor: "carpet", carpetC: "#7a3a4a" },
+  "별빛분교":           { wall: "panel", wallC: "#6b5a44", floor: "wood" },
+  "중앙경찰서 증거보관실": { wall: "plain", wallC: "#7d858c", floor: "tile" },
+  "폐쇄된 지하철역":     { wall: "stone", wallC: "#5c6166", floor: "tile" },
   "새솔 연구소":       { wall: "plain", wallC: "#c9d3d6", floor: "tile", windows: "snow" },
 };
 const themeOf = () => { const c = C(); return (c.random ? THEMES[c.title.replace(/ 사건$/, "")] : THEMES[c.id]) || THEMES.default; };
@@ -4765,8 +4840,8 @@ const LOOK_OVERRIDE = {
 })();
 function lookFor(name, role, isPlayer) {
   if (isPlayer) return playerGender() === "f"
-    ? { skin: "#edcbad", hair: "#2a1f1b", cloth: "#8a6a48", pants: "#2a2d33", F: true, style: "long", glasses: null, facial: null, top: "coat", skirt: false }
-    : { skin: "#e4bd9b", hair: "#241c18", cloth: "#8a6a48", pants: "#2a2d33", F: false, style: "short", glasses: null, facial: null, top: "coat", skirt: false };
+    ? { skin: "#edcbad", hair: "#2a1f1b", cloth: coatColor(), pants: "#2a2d33", F: true, style: "long", glasses: null, facial: null, top: "coat", skirt: false }
+    : { skin: "#e4bd9b", hair: "#241c18", cloth: coatColor(), pants: "#2a2d33", F: false, style: "short", glasses: null, facial: null, top: "coat", skirt: false };
   const T = Face.traits(name, ageOf(role));
   return { ...T, skirt: T.F && hashStr(name) % 2 === 0, ...(LOOK_OVERRIDE[name] || {}) };
 }
@@ -4858,7 +4933,7 @@ function drawChar(g, L, dir, frame) {
 }
 const spriteCache = new Map();
 function charSprites(name, role, isPlayer) {
-  const key = (isPlayer ? "@" + playerGender() : "") + name + "|" + role;
+  const key = (isPlayer ? "@" + playerGender() + coatColor() : "") + name + "|" + role;
   if (spriteCache.has(key)) return spriteCache.get(key);
   const L = lookFor(name, role, isPlayer), out = {};
   for (const dir of ["down", "up", "right"]) out[dir] = [0, 1, 2].map(f => { const cv = pxCanvas(16, 20); drawChar(cv.getContext("2d"), L, dir, f); return outlinePass(cv); });
@@ -4885,7 +4960,7 @@ function bigSprite(name, role = "") {
 }
 /* 작은 픽셀 얼굴(목록·대화창용) */
 function pixelFace(name, size = 40, role = "", isPlayer = false) {
-  const key = (isPlayer ? "@" + playerGender() : "") + name + "|" + role;
+  const key = (isPlayer ? "@" + playerGender() + coatColor() : "") + name + "|" + role;
   const i = pxRef(key, () => { const sp = charSprites(name, role, isPlayer).down[0], cv = pxCanvas(16, 16); cv.getContext("2d").drawImage(sp, 0, 0, 16, 16, 0, 0, 16, 16); return cv; });
   return `<canvas class="pxface" data-pxf="${i}" width="${size}" height="${size}"></canvas>`;
 }
@@ -6201,7 +6276,8 @@ app.addEventListener("click", e => {
   else if (d.act === "title") { S = fresh(); top = true; }
   else if (d.random) { openRandom(); top = true; }
   else if (d.case) { openCase(d.case); top = true; }
-  else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm) mm.querySelector("img").outerHTML = pixelFace(pname(), 64, "", true); return; }
+  else if (d.pg) { PLAYER_G = d.pg; try { localStorage.setItem("midnight-player-g", PLAYER_G); } catch {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm) mm.querySelector(".pxface").outerHTML = pixelFace(pname(), 64, "", true); return; }
+  else if ("coat" in d) { PLAYER_COAT = d.coat; try { localStorage.setItem("midnight-coat", PLAYER_COAT); } catch (e) {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm && mm.querySelector(".pxface")) mm.querySelector(".pxface").outerHTML = pixelFace(pname(), 64, "", true); return; }
   else if (d.act === "body-photo") { openBodyPhoto(); return; }
   else if (d.act === "continue") { continueGame(); return; }
   else if (d.act === "pause") { openPause(); return; }
