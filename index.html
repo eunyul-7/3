@@ -809,13 +809,16 @@ body.shake main { animation: op-shake2 .4s; }
 .coat-chip i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(255,255,255,.3); display: inline-block; }
 .coat-chip:disabled { opacity: .45; }
 .coat-ab { font-size: 10.5px; color: #9bdc6a; margin-left: 4px; }
-.showdown { position: fixed; inset: 0; z-index: 85; background: radial-gradient(ellipse at 50% 30%, #2a1418, #07080b 70%); display: grid; grid-template-rows: auto auto auto 1fr; gap: 10px; padding: 14px max(14px, calc(50vw - 460px)); overflow: auto; animation: ph-in .3s both; }
+.showdown { position: fixed; inset: 0; z-index: 85; background: radial-gradient(ellipse at 50% 30%, #2a1418, #07080b 70%); display: grid; align-content: start; gap: 10px; padding: 14px max(14px, calc(50vw - 460px)); overflow: auto; animation: ph-in .3s both; }
 .showdown.hit { animation: sd-shake .35s; } @keyframes sd-shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
 .sd-head { display: flex; align-items: center; gap: 12px; } .sd-head b { font-size: 20px; color: #e2b25c; } .sd-head span { color: var(--muted); }
 .sd-hearts { margin-left: auto; color: #ff5a6a !important; font-size: 22px; letter-spacing: 2px; } .sd-hearts i { color: #555; font-style: normal; }
 .sd-stage { min-height: 220px; }
 .sd-ask { margin: 0; font-size: 16px; } .sd-ask b { color: #ff8b7d; } .sd-ask small { color: var(--muted); }
 .dd-pick { display: flex; flex-wrap: wrap; gap: 6px; } .dd-pick .chip.on { outline: 2px solid var(--lamp); background: rgba(226,178,92,.15); }
+.sd-desc-btn { justify-self: start; padding: 4px 10px; font-size: 13px; }
+.sd-ev.desc { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.sd-ev.desc .chip { text-align: left; border-radius: 8px; display: grid; gap: 3px; } .sd-ev.desc .chip small { color: var(--muted); font-size: 12px; line-height: 1.45; font-weight: 400; }
 .sd-ev { display: flex; flex-wrap: wrap; gap: 6px; align-content: start; } .sd-ev .chip { font-size: 14px; padding: 7px 12px; }
 .showdown .ac-stamp { position: fixed; z-index: 2; }
 body.in-showdown .slam-word, body.in-showdown .clue-card, body.in-showdown .toast { z-index: 95; }
@@ -1644,6 +1647,7 @@ const mug = (name, age = 0) => `<span class="mug">${Face(name, 96, "big", age)}<
    무작위 사건 생성기 — 무대 · 사람 · 흔적 · 동기 · 수법 · 범인을 매번 새로 뽑는다
    ===================================================================== */
 const jo = (w, a, b) => { const ch = w.charCodeAt(w.length - 1); return w + ((ch >= 0xAC00 && ch <= 0xD7A3 && (ch - 0xAC00) % 28) ? a : b); };
+const jt = (w, a, b) => { w = String(w); return jo(w, a, b).slice(w.length); };
 const I = w => jo(w, "이", "가"), EUN = w => jo(w, "은", "는"), EUL = w => jo(w, "을", "를"), WA = w => jo(w, "과", "와");
 const RND = {
   pick: a => a[Math.floor(Math.random() * a.length)],
@@ -2035,7 +2039,7 @@ const ROLES = ["비서", "조카", "동업자", "요리사", "주치의", "관�
 const INTRO_TAILS = ["오늘 저녁 피해자와 같은 식탁에 앉았다.", "피해자와 오래 알고 지낸 사이라고 한다.", "오늘 오후 늦게 도착했다.",
   "피해자의 초대를 받고 왔다고 한다.", "식사 내내 말이 거의 없었다.", "피해자와 단둘이 이야기하는 모습이 몇 번 보였다."];
 const TRAITS = [
-  { item: "라벤더 향수", has: n => `${n}의 화장대 위 라벤더 향수병. 향이 진하다. 오늘도 뿌린 듯하다.`, trace: "은은한 라벤더 향이 배어 있다", whiff: "라벤더 향" },
+  { item: "라벤더 향수", has: n => `${n}의 가방 속 작은 라벤더 향수병. 향이 진하다. 오늘도 뿌린 듯하다.`, trace: "은은한 라벤더 향이 배어 있다", whiff: "라벤더 향" },
   { item: "붉은 진흙 묻은 구두", has: n => `${n}의 구두 밑창에 붉은 진흙이 말라붙어 있다. 오후에 뒤뜰 공사장에 다녀왔다고 한다.`, trace: "붉은 진흙 부스러기가 묻어 있다", whiff: "젖은 흙냄새" },
   { item: "체리 향 파이프 담배", has: n => `${n}의 탁자 위 체리 향 파이프 담배 쌈지. 방 안에 달큰한 냄새가 배어 있다.`, trace: "체리 향 파이프 담뱃재가 묻어 있다", whiff: "달큰한 체리 담배 냄새" },
   { item: "청록색 유화 물감", has: n => `${n}의 가방 속 붓과 팔레트. 청록색 물감이 아직 덜 말랐다.`, trace: "청록색 유화 물감 얼룩이 묻어 있다", whiff: "물감 기름 냄새" },
@@ -2058,13 +2062,13 @@ const SCHOOL_KID_MOTIVES = [
     story: (n, v) => `${I(v)} ${n}의 괴롭힘을 낱낱이 적은 학교폭력 신고서를 내일 제출하려 했다.` },
   { key: "cheat", opt: "시험 부정행위가 들통날까 봐", docName: "부정행위 목격 메모",
     doc: (n, v) => `${I(v)} 적어 둔 메모. “시험 때 ${I(n)} 커닝 쪽지 쓰는 걸 봤다. 내일 선생님께 말씀드릴 것.”`,
-    lieA: "시험이요? 저 실력으로 본 거예요. 아무 문제 없어요.",
+    lieA: "같은 반이라 얼굴만 아는 사이예요. 저 시험도 다 제 실력으로 봤어요.",
     inno: "…그 메모 봤어요. 근데 그거 제가 아니라 옆자리 애였어요. 감독 선생님이 이미 확인해 주셨어요.",
     guilty: "…딱 한 번이었어요. 그게 알려지면 전부 끝이에요. 그만 물어보세요.",
     story: (n, v) => `${EUN(v)} ${n}의 시험 부정행위를 보았고, 내일 선생님께 알리겠다고 했다.` },
   { key: "rank", opt: "장학생 자리를 빼앗겨서", docName: "장학생 선정 통보서",
     doc: (n, v) => `장학생 최종 선정 통보서. 선정자 ${v}, 차점자 ${n}. ${n}의 이름 옆에 볼펜으로 세게 그은 자국이 있다.`,
-    lieA: "장학금이요? 전 그런 거 관심 없어요.",
+    lieA: "그냥 같이 공부하는 사이였어요. 사이 나쁠 일도 없었고요.",
     inno: "…떨어진 건 맞아요. 근데 저 다른 장학금에 붙었어요. 오늘 합격 문자 왔어요. 보여 드릴게요.",
     guilty: "…그 자리는 원래 제 거였어요. 그거 없으면 저희 집은… 더는 말 안 할래요.",
     story: (n, v) => `${EUN(n)} 장학생 자리를 두고 ${v}에게 밀려났다. 그 장학금이 없으면 공부를 이어 가기 어려웠다.` },
@@ -2078,7 +2082,7 @@ const SCHOOL_KID_MOTIVES = [
 const SCHOOL_ADULT_MOTIVES = [
   { key: "tgrade", opt: "성적 조작이 들통날까 봐", docName: "제보 메일 초안",
     doc: (n, v) => `${v}의 노트북에 저장된 제보 메일 초안. “${I(n)} 특정 학생 성적을 몰래 고쳐 줬습니다. 증거 첨부.”`,
-    lieA: "그 학생이요? 성실한 아이였죠. 문제 될 일은 없었어요.",
+    lieA: "가르치던 학생이었죠. 성실한 아이였어요. 문제 될 일은 없었어요.",
     inno: "…제보 얘기는 들었어요. 그런데 감사는 이미 끝났고 전산 오류로 결론 났어요. 공문도 있어요.",
     guilty: "…이십 년 쌓은 게 그 메일 한 통으로 끝나는 거였어요. 더는 말하지 않겠어요.",
     story: (n, v) => `${EUN(v)} ${n}의 성적 조작을 알아내고 교육청에 제보하려 했다.` },
@@ -2090,7 +2094,7 @@ const SCHOOL_ADULT_MOTIVES = [
     story: (n, v) => `${EUN(v)} ${n}의 폭언을 몰래 녹음해 두었고, 내일 신고하겠다고 했다.` },
   { key: "fee", opt: "빼돌린 돈이 들킬까 봐", docName: "영수증 사진",
     doc: (n, v) => `${I(v)} 찍어 둔 영수증 사진들. 걷은 회비와 실제로 쓴 돈이 맞지 않는다. “${n} — 내일 학부모님들께 알리기.”`,
-    lieA: "회비 관리는 깔끔했어요. 아무 문제 없어요.",
+    lieA: "학부모 모임 일로 자주 봤어요. 다 깔끔하게 처리했고요.",
     inno: "…차액은 제가 다 채워 넣었어요. 오늘 오후 입금 내역 보여 드릴게요.",
     guilty: "…잠깐 쓰고 채워 넣으려 했어요. 변호사가 오면 얘기하겠어요.",
     story: (n, v) => `${EUN(v)} ${n}의 회비 횡령을 알아내고 내일 학부모들에게 알리려 했다.` },
@@ -2104,19 +2108,19 @@ const MOTIVE_POOL = [
     story: (n, v) => `${EUN(n)} ${v}에게 진 빚을 갚을 길이 없었다. ${EUN(v)} 내일 차용증을 집행하겠다고 통보했다.` },
   { key: "inherit", opt: "유산 상속에서 밀려나게 되어", docName: "유언장 초안",
     doc: (n, v) => `${v}의 새 유언장 초안. ${n}에게 가기로 했던 몫을 모두 재단에 넘긴다는 내용. 서명 예정일은 내일.`,
-    lieA: "유산이요? 그런 얘기는 들어 본 적도 없어요.",
+    lieA: "가족처럼 지냈어요. 재산 같은 건 관심도 없고요.",
     inno: "…알고 있었어요. 그런데 서명은 이미 지난주에 끝났대요. 그건 사본일 뿐이에요. 지금 와서 제가 뭘 하든 달라질 게 없어요.",
     guilty: "…서명이 내일이었어요. 하루만 더… 아니요, 아무 말도 안 했어요.",
     story: (n, v) => `${v}의 새 유언장이 내일 서명되면 ${EUN(n)} 모든 몫을 잃게 되어 있었다.` },
   { key: "blackmail", opt: "협박당하던 과거를 지키려고", docName: "협박 편지",
     doc: (n, v) => `${I(v)} ${n}에게 보낸 편지. “네가 숨긴 일을 이번 주 안에 세상에 알리겠다.”`,
-    lieA: "협박이요? 저는 숨길 게 없는 사람이에요.",
+    lieA: "평범한 사이였어요. 저는 숨길 게 없는 사람이에요.",
     inno: "…맞아요, 오래전 실수예요. 그런데 이미 제 입으로 가족들에게 다 털어놨어요. 그 사람이 쥔 패는 이제 아무것도 아니었어요.",
     guilty: "…그 편지를 어디서… 그 일이 알려지면 저는 끝이에요. 더는 말하지 않겠어요.",
     story: (n, v) => `${EUN(v)} ${n}의 오래된 비밀을 쥐고 이번 주 안에 폭로하겠다고 협박하고 있었다.` },
   { key: "embezzle", opt: "횡령이 드러나 고소당하게 되어", docName: "고소장 초안",
     doc: (n, v) => `${v} 명의의 고소장 초안. 피고소인 ${n}, 혐의는 공금 횡령. 제출 예정일은 다음 주 월요일.`,
-    lieA: "일은 잘 풀리고 있어요. 아무 문제 없어요.",
+    lieA: "같이 일하는 사이죠. 일은 잘 풀리고 있었어요. 아무 문제 없어요.",
     inno: "…고소 얘기는 들었어요. 그래서 오늘 돈을 전부 돌려놨어요. 입금 영수증 보여 드릴까요? 그 사람도 취하하겠다고 했어요.",
     guilty: "…다 갚을 생각이었어요. 시간이 조금만 더 있었으면… 변호사가 오면 얘기하겠어요.",
     story: (n, v) => `${EUN(v)} ${n}의 공금 횡령을 알아내고 다음 주에 고소장을 낼 참이었다.` },
@@ -2128,19 +2132,19 @@ const MOTIVE_POOL = [
     story: (n, v) => `${EUN(v)} 십 년을 함께한 ${n}에게 다른 사람이 생겼다며 이별을 통보했다.` },
   { key: "insurance", opt: "거액의 생명 보험금을 노리고", docName: "보험 증권",
     doc: (n, v) => `${v}의 생명 보험 증권. 수익자는 ${n}, 보험금 10억 원. 가입일은 불과 석 달 전.`,
-    lieA: "보험이요? 그런 건 전혀 모르는 일이에요.",
+    lieA: "가끔 안부나 묻는 사이였어요. 서로 돈 얽힐 일은 없었죠.",
     inno: "…수익자인 건 알아요. 그런데 이 보험, 지난주에 해지됐어요. 해지 확인서도 있어요. 받을 돈은 한 푼도 없어요.",
     guilty: "…석 달이면 충분하다고 생각했어요. 아니, 아무것도 아니에요. 더는 말 안 하겠어요.",
     story: (n, v) => `${EUN(n)} 석 달 전 ${v} 앞으로 거액의 생명 보험을 들고 자신을 수익자로 해 두었다.` },
   { key: "fired", opt: "해고와 업계 퇴출을 막으려고", docName: "해고 통지서",
     doc: (n, v) => `${v} 명의의 해고 통지서. 대상자 ${n}, 사유는 ‘중대한 비위’. 업계에 공유하겠다는 메모가 붙어 있다.`,
-    lieA: "회사에서는 다들 저를 인정해 줘요. 문제없어요.",
+    lieA: "같이 일하는 사이죠. 회사에서 저만큼 인정받는 사람도 없어요.",
     inno: "…해고 통지는 받았어요. 그래서 이미 다른 곳에 이직이 확정됐어요. 계약서도 있어요. 그 사람한테 더 매달릴 이유가 없었어요.",
     guilty: "…그 통지서가 업계에 돌면 저는 다시는 일 못 해요. 그만 물어보세요.",
     story: (n, v) => `${EUN(v)} ${EUL(n)} 해고하고, 그 사유를 업계 전체에 알리겠다고 통보했다.` },
   { key: "spy", opt: "회사 기밀을 빼돌린 게 들통나서", docName: "기밀 유출 보고서",
     doc: (n, v) => `${I(v)} 작성한 내부 보고서. “기밀 설계도를 경쟁사에 넘긴 사람은 ${n}.” 내일 아침 이사회 보고 예정.`,
-    lieA: "회사 기밀이요? 저는 그런 데 손댈 위치가 아니에요.",
+    lieA: "같은 회사 사람일 뿐이에요. 저는 중요한 일엔 손댈 위치도 아니고요.",
     inno: "…보고서는 봤어요. 그런데 진짜 유출자는 따로 잡혔어요. 오늘 오후에 정정 메일도 왔고요. 확인해 보세요.",
     guilty: "…이사회에 올라가면 저는 감옥이에요. 그 이상은 말하지 않겠어요.",
     story: (n, v) => `${EUN(v)} ${I(n)} 회사 기밀을 경쟁사에 넘긴 사실을 알아내고 내일 이사회에 보고할 참이었다.` },
@@ -2152,7 +2156,7 @@ const MOTIVE_POOL = [
     story: (n, v) => `20년 전 ${v} 소유 공장의 화재로 ${EUN(n)} 가족을 잃었고, ${EUN(v)} 끝내 책임을 지지 않았다.` },
   { key: "credit", opt: "작품을 빼앗긴 원한", docName: "권리 양도 계약서",
     doc: (n, v) => `${n}의 작품 권리를 ${v} 명의로 넘기는 계약서. ${n}의 서명 옆에 ‘강요에 의한 서명’이라는 메모.`,
-    lieA: "제 작품은 전부 제 이름으로 나가요.",
+    lieA: "존경하는 선배였어요. 제 작품도 전부 제 이름으로 잘 나가고 있고요.",
     inno: "…빼앗긴 거 맞아요. 그래서 소송을 걸었고, 다음 달에 판결이 나요. 이길 재판인데 제가 왜 일을 그르치겠어요.",
     guilty: "…제 인생 전부였어요. 그걸 그 사람이… 더는 말 안 하겠어요.",
     story: (n, v) => `${EUN(v)} ${n}의 작품 권리를 억지로 자기 이름으로 가져갔다.` },
@@ -2226,8 +2230,8 @@ function generateCase() {
     diary:   { name: "피해자의 수첩", room: "crime", text: `${v}의 수첩, 오늘 칸: “${hm(T - 70)} ${rh.role} — 상의 / ${hm(T - 10)} ${cul.role} — 면담”.` },
     entry:   { name: "침입 흔적 없음", room: "crime", text: "창문은 모두 안에서 잠겨 있고 문에도 억지로 연 흔적이 없다. 피해자가 직접 들인 사람, 아는 사람의 짓이다." },
     weapon:  { name: method.weaponName, room: framed.id, text: `${method.desc}. 자세히 보니 ${cul.trait.trace}.` },
-    pair:    { name: st.pair.name, room: "c1", text: `${st.pair.name}. ${hm(T - 40)}부터 ${hm(T + 30)}까지 ${pair[0].name}·${pair[1].name} 두 사람이 ${st.pair.act}.` },
-    solo:    { name: st.solo.name, room: "c2", text: `${st.solo.name}. ${hm(T - 30)}~${hm(T + 20)}, ${EUN(liar.name)} ${st.solo.act}.` },
+    pair:    { name: st.pair.name, room: "c1", text: `${hm(T - 40)}부터 ${hm(T + 30)}까지 ${pair[0].name}·${pair[1].name} 두 사람이 ${st.pair.act}.` },
+    solo:    { name: st.solo.name, room: "c2", text: `${hm(T - 30)}~${hm(T + 20)}, ${EUN(liar.name)} ${st.solo.act}.` },
     witness: { name: st.witness.name, room: "c2", text: st.witness.text(cul.name, hm(T - 12)) },
   };
   const rooms = {
@@ -2283,14 +2287,14 @@ function generateCase() {
       qs.push({ id: p.id + "_3", need: "weapon", q: Q(`${EUL(method.weaponName)} 본 적 있습니까?`, `혹시 ${EUL(method.weaponName)} 본 적 있어?`), a: "처음 보는 물건이에요. 저랑은 아무 상관 없어요.",
         lie: { clues: ["trait_" + p.id], reply: kid ? "……. 부모님 오시기 전엔… 아무 말도 안 할래요." : "……. 변호사를 불러 주세요. 그 전엔 아무 말도 하지 않겠어요." } });
     } else if (p === framed) {
-      qs.push({ id: p.id + "_3", need: "weapon", q: Q(`${EUL(method.weaponName)} 본 적 있습니까?`, `혹시 ${EUL(method.weaponName)} 본 적 있어?`), a: `제 ${roomOf(p)}에서요? 처음 봐요! 누가 일부러 갖다 놓은 거예요. 제 방은 낮에 문이 열려 있었다고요.` });
+      qs.push({ id: p.id + "_3", need: "weapon", q: Q(`${roomOf(p)}에서 ${I(method.weaponName)} 나왔습니다. 어떻게 된 거죠?`, `네 ${roomOf(p)}에서 ${I(method.weaponName)} 나왔어. 어떻게 된 거야?`), a: `제 ${roomOf(p)}에서요? 처음 봐요! 누가 일부러 갖다 놓은 거예요. 제 방은 낮에 문이 열려 있었다고요.` });
     } else {
       qs.push({ id: p.id + "_3", need: "weapon", q: Q(`${EUL(method.weaponName)} 본 적 있습니까?`, `혹시 ${EUL(method.weaponName)} 본 적 있어?`),
         a: RND.pick(["처음 봐요. 저는 그런 걸 만질 일도 없어요.", "아뇨. 그런데 그 냄새… 아니, 잘 모르겠어요.", "처음 봐요. 그게 왜 그 방에서 나왔대요?"]) });
     }
     const o = RND.pick(others);
-    qs.push({ id: p.id + "_4", need: "body", q: sch ? Q(`오늘 ${v} 학생이 누구와 다퉜습니까?`, `오늘 ${I(v)} 누구랑 다투는 거 봤어?`) : `오늘 ${v} 씨가 누구와 다퉜습니까?`, a: `낮에 ${o.name} 씨와 언성을 높이는 걸 봤어요. 무슨 내용인지는 몰라요.` });
-    suspects[p.id] = { name: p.name, role: `${p.role} · ${p.age}세`, intro: sch ? (kid ? `피해자와 같은 ${st.school}에 다니는 ${p.role}. ${RND.pick([`오늘 밤 늦게까지 ${st.school}에 남아 있었다.`, "피해자와 자주 어울렸다고 한다.", "친구들 사이에서 모범생으로 통한다."])}` : `피해자가 다니는 ${st.school}의 ${p.role}. ${RND.pick([`오늘 밤 늦게까지 ${st.school}에 남아 있었다.`, "피해자를 오래 가르쳤다고 한다.", "학생들 사이에서 깐깐하기로 유명하다."])}`) : `피해자의 ${p.role}. ${RND.pick(INTRO_TAILS)}`,
+    qs.push({ id: p.id + "_4", need: "body", q: sch ? Q(`오늘 ${v} 학생이 누구와 다퉜습니까?`, `오늘 ${I(v)} 누구랑 다투는 거 봤어?`) : `오늘 ${v} 씨가 누구와 다퉜습니까?`, a: sch ? `낮에 ${I(v)} ${o.name}${jt(o.name, "이랑", "랑")} 크게 다투는 걸 봤어요. 무슨 일인지는 몰라요.` : `낮에 ${v} 씨가 ${o.name} 씨와 언성을 높이는 걸 봤어요. 무슨 내용인지는 몰라요.` });
+    suspects[p.id] = { name: p.name, role: `${p.role} · ${p.age}세`, intro: sch ? (kid ? `피해자와 같은 ${st.school}에 다니는 ${p.role}. ${RND.pick([`오늘 밤 늦게까지 ${st.school}에 남아 있었다.`, "피해자와 자주 어울렸다고 한다.", "친구들 사이에서 모범생으로 통한다."])}` : `피해자가 다니는 ${st.school}의 ${p.role}. ${RND.pick([`오늘 밤 늦게까지 ${st.school}에 남아 있었다.`, "피해자를 오래 가르쳤다고 한다.", "학생들 사이에서 깐깐하기로 유명하다."])}`) : `${st.roles ? `${st.title}의 ${p.role}` : /비서|조카|동업자|오랜 친구|전 배우자|주치의|변호사|회계사|운전기사|관리인|요리사|후배|제자|가정부|집사|매니저/.test(p.role) ? `피해자의 ${p.role}` : `피해자와 알고 지낸 ${p.role}`}. ${RND.pick(INTRO_TAILS)}`,
       deflect: RND.pick(["그게 무슨 상관이죠? 제 말엔 틀린 게 없어요.", "그런 걸로 절 몰아세우지 마세요.", "말도 안 돼요. 그건 아무 의미 없어요.", "…그래서요? 그게 뭘 증명하는데요?"]), qs };
   }
   const secrets = inn.map(p => `${p.name}의 ${p.motive.docName}`).join(", ");
@@ -3215,7 +3219,7 @@ function forensicPresent(sid) {
   S.dlg = null;
   S.broken.push(hit.q.id); addTl(hit.q.lie.tl);
   S.lastLine = { sid, who: "과학수사 경사 " + N.yoon, q: isStudent(p.role) ? `(서류철을 펼친다) “감식 결과야. ‘${hit.name}’ — 아까 ‘${hit.q.a}’라고 했지? 이건 어떻게 된 건지 말해 줄래?”` : `(서류철을 펼친다) “감식 결과와 정리한 증거입니다. ‘${hit.name}’ — ‘${hit.q.a}’라고 하셨죠? 이건 어떻게 설명하시겠습니까?”`, a: hit.q.lie.reply, kind: "broken" };
-  S.events.push({ bad: false, msg: `과학수사대가 ${p.name}에게 ‘${hit.name}’을(를) 내밀어 진술을 무너뜨렸다.` });
+  S.events.push({ bad: false, msg: `과학수사대가 ${p.name}에게 ‘${hit.name}’${jt(hit.name, "을", "를")} 내밀어 진술을 무너뜨렸다.` });
   toast(`<b>과학수사대의 증거 제시</b> — ${esc(EUN(p.name))} 진술을 바꿨다!`); Sound.lie(); flash(); slam("모순!", `${p.name}의 진술이 무너졌다`);
   spend();
 }
@@ -3488,7 +3492,7 @@ function openCopAsk(who, name) {
       const id = b.dataset.cq, first = !S.copAsk[who + "|" + id];
       if (first && (S.turns <= 0 || S.decided)) return;
       const a = copAnswer(who, id);
-      if (first) { S.events.push({ bad: false, msg: `${name} ${rank}(${D.name})에게 ‘${c.clues[id].name}’을(를) 물었다 — “${a.text}”` }); spend(); render(); }
+      if (first) { S.events.push({ bad: false, msg: `${name} ${rank}(${D.name})에게 ‘${c.clues[id].name}’${jt(c.clues[id].name, "을", "를")} 물었다 — “${a.text}”` }); spend(); render(); }
       draw(id); return;
     }
     if (e.target === ov || e.target.closest(".photo-close")) close();
@@ -3634,7 +3638,7 @@ function showdown(done) {
   for (const q of cul.qs) if (q.lie && R.length < 2) { R.push({ claim: q.a, need: q.lie.clues, reply: q.lie.reply }); q.lie.clues.forEach(k => used.add(k)); }
   const fin = c.key.filter(k => !used.has(k));
   R.push({ claim: "그래서요? 제가 그 사람을 해쳤다는 결정적인 증거라도 있나요? 없으면 저는 돌아가겠어요.", need: fin.length ? fin : c.key, reply: "……. 그건…." });
-  let i = 0, hearts = 3, busy = false;
+  let i = 0, hearts = 3, busy = false, showDesc = false, cur = ["talk", ""];
   const ov = document.createElement("div"); ov.className = "showdown"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "최종 추궁");
   document.body.appendChild(ov); document.body.classList.add("in-showdown");
   const end = won => {
@@ -3646,19 +3650,22 @@ function showdown(done) {
     won ? Sound.verdict(true) : Sound.wrong();
     setTimeout(() => { ov.remove(); document.body.classList.remove("in-showdown"); done(); }, 3600);
   };
-  const draw = (react, line, final) => {
+  const draw = (react, line, final, quiet) => {
+    if (!final) cur = [react, line];
     const r = R[Math.min(i, R.length - 1)];
     ov.innerHTML = `<div class="sd-head"><b>⚖ 최종 추궁</b><span>${final ? "결말" : `반박 ${i + 1} / ${R.length}`}</span><span class="sd-hearts">${"♥".repeat(hearts)}<i>${"♡".repeat(3 - hearts)}</i></span></div>
       <div class="stage sd-stage ${react}" style="--wall:${themeOf().wallC || "#3a3346"}">${bigSprite(cul.name, cul.role)}
         ${react === "shock" ? `<i class="sweat"></i><i class="sweat s2"></i><b class="stage-fx">!!</b>` : react === "smug" ? `<b class="stage-fx smug">…</b>` : ""}
         <div class="speech vn"><div class="line them"><span class="who-tag">${esc(cul.name)}</span><p>“${esc(line)}”</p></div></div></div>
       ${final ? "" : `<p class="sd-ask">이 말과 <b>맞지 않는 증거</b>를 내밀어라! <small>틀리면 ♥ 하나가 깨져요</small></p>
-      <div class="sd-ev">${S.found.map(id => `<button class="chip" data-sd="${id}">${esc(c.clues[id].name)}</button>`).join("") || `<p class="hint">찾은 증거가 없다…</p>`}</div>
+      ${S.found.length ? `<button class="btn ghost sd-desc-btn" data-sddesc="1">${showDesc ? "📖 증거 이름만 보기" : "📖 증거 내용도 보기"}</button>` : ""}
+      <div class="sd-ev${showDesc ? " desc" : ""}">${S.found.map(id => `<button class="chip" data-sd="${id}"><b>${esc(c.clues[id].name)}</b>${showDesc ? `<small>${esc(c.clues[id].text)}</small>` : ""}</button>`).join("") || `<p class="hint">찾은 증거가 없다…</p>`}</div>
       ${S.found.length ? "" : `<button class="btn ghost" data-sd="__none">아무것도 내밀 수 없다</button>`}`}`;
-    if (!final) Sound.babble(line, voiceOf(cul.name, cul.role).base);
+    if (!final && !quiet) Sound.babble(line, voiceOf(cul.name, cul.role).base);
   };
   draw("talk", R[0].claim);
   ov.addEventListener("click", e => {
+    if (e.target.closest("[data-sddesc]")) { showDesc = !showDesc; draw(cur[0], cur[1], false, true); return; }
     const b = e.target.closest("[data-sd]"); if (!b || busy) return;
     const r = R[i], id = b.dataset.sd;
     if (r.need.includes(id)) {
@@ -5444,7 +5451,7 @@ const PX = (() => {
   }
   function goDoor(d) {
     if (!S.locks[d.to]) { S.visited = S.visited || []; if (!S.visited.includes(d.to)) { S.visited.push(d.to); setTimeout(() => roomCard(d.to), 60); } }
-    if (S.locks[d.to]) { toast(`${esc(C().rooms[d.to].name)}은(는) 잠겨 있다. ${S.locks[d.to]}턴 뒤에 열린다.`, true); Sound.wrong(); me.path = null; return; }
+    if (S.locks[d.to]) { toast(`${esc(C().rooms[d.to].name)}${jt(esc(C().rooms[d.to].name), "은", "는")} 잠겨 있다. ${S.locks[d.to]}턴 뒤에 열린다.`, true); Sound.wrong(); me.path = null; return; }
     const from = S.room; S.room = d.to;
     const back = doorsOf(d.to).find(x => x.to === from);
     S.pos = { room: d.to, x: back ? (back.side === "b" ? back.x : 1) : 5, y: back ? (back.side === "b" ? EXH - 2 : back.y) : 6 };
@@ -5808,7 +5815,7 @@ function resolveDeptJobs() {
       const first = docs[0], pick = docs.slice(1, 3);
       if (first) { S.found.push(first.clue); S.searched.push(first.id); }
       pick.forEach(sp => { S.marked = (S.marked || []).concat(sp.id); });
-      msg = first ? `“${N.finL} 팀장님이 ‘${c.clues[first.clue].name}’을(를) 직접 찾아오셨습니다.${pick.length ? ` 그리고 ${pick.map(sp => `${c.rooms[sp.rid].name}의 ‘${sp.label.replace(/(을|를) .*$/, "")}’`).join(", ")} 쪽도 수상합니다. ‘놓친 곳!’으로 표시해 뒀어요.` : ""}”` : "“수상한 서류는 이미 다 확보하셨습니다.”";
+      msg = first ? `“${N.finL} 팀장님이 ‘${c.clues[first.clue].name}’${jt(c.clues[first.clue].name, "을", "를")} 직접 찾아오셨습니다.${pick.length ? ` 그리고 ${pick.map(sp => `${c.rooms[sp.rid].name}의 ‘${sp.label.replace(/(을|를) .*$/, "")}’`).join(", ")} 쪽도 수상합니다. ‘놓친 곳!’으로 표시해 뒀어요.` : ""}”` : "“수상한 서류는 이미 다 확보하셨습니다.”";
       Sound.help();
     }
     if (id === "drug") {
@@ -5816,7 +5823,7 @@ function resolveDeptJobs() {
       const hit = spots.filter(sp => c.key.includes(sp.clue) && DRUG.test(c.clues[sp.clue].name + c.clues[sp.clue].text))
         .sort((a, b) => DRUG.test(c.clues[b.clue].name) - DRUG.test(c.clues[a.clue].name) || (a.id === bodySpot().id) - (b.id === bodySpot().id));   /* 약병·주사기 같은 물건부터 */
       const viaBody = DRUG.test(Object.values(c.clues).map(x => x.name + x.text).join(" ")) && DRUG.test((c.methods.find(m => m.id === c.answer.method) || {}).text || "");
-      if (hit.length) { const sp = hit[0]; S.found.push(sp.clue); S.searched.push(sp.id); msg = `“약물 반응 나왔습니다. ${c.rooms[sp.rid].name}에서 ‘${c.clues[sp.clue].name}’을(를) 찾아 왔어요.”`; Sound.clue(); }
+      if (hit.length) { const sp = hit[0]; S.found.push(sp.clue); S.searched.push(sp.id); msg = `“약물 반응 나왔습니다. ${c.rooms[sp.rid].name}에서 ‘${c.clues[sp.clue].name}’${jt(c.clues[sp.clue].name, "을", "를")} 찾아 왔어요.”`; Sound.clue(); }
       else msg = viaBody ? "“약물이 쓰인 건 확실합니다. 관련 흔적은 이미 다 찾으셨네요.”" : "“시약 반응이 없습니다. 이번 사건엔 약물이 쓰이지 않았어요. 다른 수법을 보세요.”";
     } else if (id === "traffic") {
       const ali = spots.filter(sp => !has(S.searched, sp.id) && ["board"].includes(furnType(sp.label))).slice(0, 2);
@@ -6214,12 +6221,12 @@ function deduce(a, b) {
   const c = C(), A = cluePoints(a), B = cluePoints(b), both = [...A].filter(x => B.has(x));
   if (both.length) {
     const names = both.map(x => c.suspects[x].name).join("·");
-    const d = { a, b, sids: both, text: `‘${c.clues[a].name}’와(과) ‘${c.clues[b].name}’ — 둘 다 ${names} 쪽을 가리킨다.` };
+    const d = { a, b, sids: both, text: `‘${c.clues[a].name}’${jt(c.clues[a].name, "과", "와")} ‘${c.clues[b].name}’ — 둘 다 ${names} 쪽을 가리킨다.` };
     S.deductions.push(d); slam("추리 성립!", names); Sound.clue(); flash();
     S.events.push({ bad: false, msg: `🧩 추리 — ${d.text}` });
   } else {
     S.timeLeft = Math.max(0, S.timeLeft - 5);
-    toast(`<b>이어지지 않는다</b> — ‘${esc(c.clues[a].name)}’와(과) ‘${esc(c.clues[b].name)}’ 사이엔 공통점이 없다. (−5초)`, true); Sound.wrong();
+    toast(`<b>이어지지 않는다</b> — ‘${esc(c.clues[a].name)}’${jt(esc(c.clues[a].name), "과", "와")} ‘${esc(c.clues[b].name)}’ 사이엔 공통점이 없다. (−5초)`, true); Sound.wrong();
   }
   S.deduceSel = [];
 }
@@ -6448,12 +6455,12 @@ function confront(qid, clueId) {
   const clueName = C().clues[clueId] ? C().clues[clueId].name : "";
   if (q.lie && q.lie.clues.includes(clueId)) {
     S.broken.push(q.id); addTl(q.lie.tl);
-    S.lastLine = { sid, q: `‘${clueName}’을(를) 들이밀었다.`, a: q.lie.reply, kind: "broken" };
+    S.lastLine = { sid, q: `‘${clueName}’${jt(clueName, "을", "를")} 들이밀었다.`, a: q.lie.reply, kind: "broken" };
     toast(`<b>모순!</b> ${esc(p.name)}의 진술이 무너졌다.`); Sound.lie(); flash(); slam("모순!", `${p.name}의 진술이 무너졌다`);
     spend();
   } else {
     S.wrong += 1;
-    S.lastLine = { sid, q: `‘${clueName}’을(를) 들이밀었다.`, a: p.deflect, kind: "deflect" };
+    S.lastLine = { sid, q: `‘${clueName}’${jt(clueName, "을", "를")} 들이밀었다.`, a: p.deflect, kind: "deflect" };
     toast(`${esc(EUN(p.name))} 꿈쩍도 하지 않는다.`, true); Sound.wrong();
     spend();
     if (coatOn("coat_black") && !S.coatUsed.black) { S.coatUsed.black = true; toast("<b>🧥 검은 롱코트</b> — 침착하게 넘겼다. 이번엔 시간이 줄지 않았다."); }
