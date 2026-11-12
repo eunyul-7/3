@@ -809,6 +809,9 @@ body.shake main { animation: op-shake2 .4s; }
 .coat-chip i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(255,255,255,.3); display: inline-block; }
 .coat-chip:disabled { opacity: .45; }
 .coat-ab { font-size: 10.5px; color: #9bdc6a; margin-left: 4px; }
+.vet-card { width: min(440px, 100%); border-color: #e2b25c; box-shadow: 0 0 0 2px rgba(226,178,92,.3), 0 20px 50px rgba(0,0,0,.6); animation: vet-in .5s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes vet-in { from { transform: translateY(30px) scale(.9); opacity: 0; } }
+.vet-tag { font-size: 12px; font-weight: 800; color: #1a1a1a; background: #e2b25c; border-radius: 4px; padding: 3px 8px; justify-self: start; }
 .coat-badge { font-size: 11px; color: #9bdc6a; border: 1px solid rgba(155,220,106,.5); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
 .title-chip { font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--lamp-dim); color: var(--lamp); vertical-align: middle; }
 .ach.unl.on { border-color: #9bdc6a; background: rgba(155,220,106,.07); }
@@ -1491,7 +1494,7 @@ const CASES = [
    - 성별은 등장인물마다 직접 정해 둔다(GENDER). 이름이 같으면 늘 같은 얼굴
    - 나이가 많으면 흰머리와 주름
    ===================================================================== */
-const GENDER = {
+const GENDER = { 권혜림: "f", 장필두: "m", 한도윤: "m", 오금숙: "f",
   /* 청람장 */ 서지현: "f", 최강호: "m", 박만수: "m", 윤채린: "f",
   /* 달빛극장 */ 문태준: "m", 오세나: "f", 강민혁: "m", 장경수: "m",
   /* 야간열차 */ 이현우: "m", 김도겸: "m", 류미선: "f", 정유나: "f",
@@ -2366,6 +2369,8 @@ const UNLOCKS = [
   { id: "coat_white", kind: "coat", icon: "🧥", name: "흰 코트", desc: "능력: 수사 시간 +1분", ab: "시간 +1분", need: "all4", cloth: "#d9d4c8" },
   { id: "nightmare", kind: "diff", icon: "🌑", name: "악몽 난이도", desc: "시간 8분·지목 기회 1번·가짜 물건과 방해가 가장 많고 점수 보너스가 가장 큰 난이도", need: "hard" },
   { id: "secret", kind: "setting", icon: "🗝", name: "비밀 무대 3곳", desc: "무작위 사건에 ‘별빛분교’, ‘중앙경찰서 증거보관실’, ‘폐쇄된 지하철역’이 나와요", need: "r5" },
+  { id: "vet1", kind: "vet", icon: "🆘", name: "베테랑 지원 1명", desc: "어려움·악몽에서 수사가 막히면 베테랑 형사 1명이 나타나 도와줘요", need: "count:3" },
+  { id: "vet2", kind: "vet", icon: "🆘", name: "베테랑 지원 2명", desc: "막힐 때 베테랑 형사가 한 판에 2명까지 나타나요", need: "count:6" },
   { id: "legend", kind: "member", icon: "🎖", name: "전설의 형사 유진혁", desc: "팀 고르기의 강력팀장 자리에 고를 수 있어요. 어떤 사건이든 ⭐ 인재", need: "count:8" },
   { id: "title", kind: "title", icon: "🏷", name: "형사 칭호", desc: "업적 수에 따라 이름 앞 칭호가 올라가요 (신참 → 형사 → 베테랑 → 명탐정 → 전설)", need: "first" },
 ];
@@ -2997,6 +3002,83 @@ function spend(n = 1) {
   resolveDeptJobs();
   maybeSabotage();
   maybeHelp();
+  maybeVeteran();
+}
+
+/* ===================== 🆘 베테랑 지원: 막혔을 때만 나타나는 숨은 조력자 =====================
+   팀 고르기에는 없다. 업적으로 해금, 어려움·악몽에서만, 한 판에 1~2명. */
+const VETERANS = [
+  { id: "profV", name: "권혜림", rank: "경정", field: "범죄 프로파일러", g: "f", line: "막혔군요. 사람 말은 제가 읽죠." },
+  { id: "drugV", name: "장필두", rank: "경감", field: "마약 수사 베테랑", g: "m", line: "시신 상태만 봐도 감이 옵니다. 제가 보죠." },
+  { id: "cyberV", name: "한도윤", rank: "경위", field: "사이버범죄 베테랑", g: "m", line: "지워진 기록이요? 30초면 살립니다." },
+  { id: "finV", name: "오금숙", rank: "경정", field: "금융사기 베테랑", g: "f", line: "돈이 흐른 곳에 범인이 있어요. 서류 좀 보죠." },
+];
+const vetLimit = () => !["hard", "nightmare"].includes(S.diff) ? 0 : isUnlocked("vet2") ? 2 : isUnlocked("vet1") ? 1 : 0;
+function vetHelp(v) {
+  const c = C(), cul = c.suspects[c.answer.culprit];
+  const unfound = Object.keys(c.clues).filter(id => !has(S.found, id));
+  const give = id => { if (!id) return null; for (const r of Object.values(c.rooms)) for (const sp of r.spots) if (sp.clue === id && !has(S.searched, sp.id)) S.searched.push(sp.id); S.found.push(id); return c.clues[id]; };
+  if (v.id === "profV") {   /* 아직 안 무너진 거짓말 하나를 짚어 준다 */
+    for (const [sid, p] of Object.entries(c.suspects)) for (const q of p.qs) if (q.lie && !has(S.broken, q.id)) {
+      const k = q.lie.clues.find(x => has(S.found, x)) || q.lie.clues[0]; const got = has(S.found, k) ? null : give(k);
+      const nm = c.clues[k].name, ch = nm.charCodeAt(nm.length - 1), fin = ch >= 0xAC00 && ch <= 0xD7A3 ? (ch - 0xAC00) % 28 : 0, ro = fin && fin !== 8 ? "으로" : "로";
+      return `${p.name} 씨의 ‘${q.a.length > 30 ? q.a.slice(0, 30) + "…" : q.a}’ — 거짓말이에요. ‘${nm}’${ro} 찔러 보세요.${got ? " (그 단서는 방금 제가 찾아 뒀어요)" : ""}`;
+    }
+    return `거짓말은 이미 다 드러났네요. 이제 동기와 수법만 맞추면 됩니다.`;
+  }
+  if (v.id === "drugV") {
+    const d = typeof drugInfo === "function" ? drugInfo() : null, m = (c.methods.find(x => x.id === c.answer.method) || {}).text;
+    if (!has(S.found, "body") && c.clues.body) give("body");
+    return d ? `약물입니다. ‘${d.name}’. ${d.harm} 수법은 ‘${m}’ 쪽이 확실해요.` : `약물 사건은 아니에요. 몸에 남은 흔적으로 보면 수법은 ‘${m}’ 쪽입니다.`;
+  }
+  if (v.id === "cyberV") {
+    const id = unfound.find(k => clueDepts(k).has("digital")) || unfound.find(k => c.key.includes(k)) || unfound[0];
+    const k = give(id); return k ? `복구했습니다. ‘${k.name}’ — ${k.text.slice(0, 60)}${k.text.length > 60 ? "…" : ""}` : "기록은 이미 다 모으셨네요. 남은 건 추리입니다.";
+  }
+  if (v.id === "finV") {
+    const id = "motive_" + c.answer.culprit;
+    if (c.clues[id] && !has(S.found, id)) { const k = give(id); return `이 서류, 냄새가 나요. ‘${k.name}’ — 범행 동기와 이어질 수 있어요.`; }
+    const mo = (c.motives.find(x => x.id === c.answer.motive) || {}).text;
+    const id2 = unfound.find(k => clueDepts(k).has("fin")); const k2 = give(id2);
+    return k2 ? `돈 흐름에서 ‘${k2.name}’를 찾았어요. ${mo ? `동기는 ‘${mo}’ 쪽을 보세요.` : ""}` : `서류는 다 모으셨어요. ${mo ? `동기는 ‘${mo}’ 쪽이 유력해요.` : ""}`;
+  }
+  return "";
+}
+function maybeVeteran() {
+  if (S.decided || S.turns <= 0 || !vetLimit()) return;
+  S.vets = S.vets || [];
+  const score = S.found.length + S.broken.length;
+  if (S.vetScore !== score) { S.vetScore = score; S.vetAt = S.actions; return; }   /* 진전이 있으면 막힌 게 아니다 */
+  if (S.vets.length >= vetLimit() || S.actions - (S.vetLast || -99) < 6) return;
+  const stuck = S.actions - (S.vetAt || 0) >= 5 || (S.turns <= S.maxTurns * 0.35 && S.found.length < Object.keys(C().clues).length * 0.5) || (S.timed && S.timeLeft <= 90);
+  if (!stuck) return;
+  const c = C(), drug = typeof drugInfo === "function" && drugInfo();
+  /* 지금 가장 도움이 될 베테랑부터 */
+  const order = VETERANS.filter(v => !S.vets.includes(v.id)).sort((a, b) => {
+    const w = v => v.id === "profV" ? (Object.values(c.suspects).some(p => p.qs.some(q => q.lie && !has(S.broken, q.id))) ? 3 : 0)
+      : v.id === "drugV" ? (drug ? 4 : 1) : v.id === "cyberV" ? (Object.keys(c.clues).some(k => !has(S.found, k) && clueDepts(k).has("digital")) ? 2 : 0)
+      : (c.clues["motive_" + c.answer.culprit] && !has(S.found, "motive_" + c.answer.culprit) ? 2 : 1);
+    return w(b) - w(a) + (Math.random() - .5) * .5; });
+  const v = order[0]; if (!v) return;
+  S.vets.push(v.id); S.vetLast = S.actions; S.vetAt = S.actions;
+  const text = vetHelp(v);
+  S.events.push({ bad: false, msg: `🆘 베테랑 지원 — ${v.field} ${v.name} ${v.rank}: “${text}”` });
+  setTimeout(() => showVeteran(v, text), 300);
+}
+function showVeteran(v, text) {
+  document.querySelector(".vet-ov") && document.querySelector(".vet-ov").remove();
+  const ov = document.createElement("div"); ov.className = "photo-ov vet-ov";
+  ov.innerHTML = `<div class="photo-card vet-card" role="dialog" aria-label="베테랑 지원">
+    <span class="vet-tag">🆘 베테랑 지원 · 수사가 막힌 순간</span>
+    <div class="cop-head">${pixelFace(v.name, 56, v.rank)}<div><b>${esc(v.name)} ${esc(v.rank)}</b><span class="hint">${esc(v.field)}</span></div></div>
+    <div class="cop-say sure"><p>“${esc(v.line)}”</p><p style="margin-top:6px">“${esc(text)}”</p></div>
+    <button class="btn photo-close">고맙습니다! 계속 수사하기</button></div>`;
+  document.body.appendChild(ov); Sound.help(); flash();
+  Sound.babble(v.line + " " + text, v.g === "f" ? 400 : 200);
+  const close = () => { ov.remove(); document.removeEventListener("keydown", onKey, true); render(); };
+  const onKey = e => { if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); close(); } };
+  document.addEventListener("keydown", onKey, true);
+  ov.addEventListener("click", e => { if (e.target === ov || e.target.closest(".photo-close")) close(); });
 }
 
 /* ---------- 동료의 자동 도움: 어려울수록 자주 ---------- */
@@ -4841,6 +4923,7 @@ const LOOK_OVERRIDE = {
     grdL: { cloth: "#1c2430", pants: "#12161c", top: "suit", cap: true }, grd: { cloth: "#1c2430", pants: "#12161c", top: "suit", cap: true }, finL: { cloth: "#2b2622", top: "suit" }, schL: { cloth: "#3e5566", top: "jacket" }, patL: { cloth: "#1c2a44", pants: "#141c2c", top: "suit", cap: true } };
   for (const r of ROSTER) for (const [n] of r.people) if (!LOOK_OVERRIDE[n]) { const { style, ...rest } = own[r.slot] || LOOK_OVERRIDE[dress[r.slot]] || {}; LOOK_OVERRIDE[n] = rest; }
   for (const x of PATROL_ALL) if (!LOOK_OVERRIDE[x.name]) LOOK_OVERRIDE[x.name] = { cloth: "#26344d", pants: "#1a2233", top: "suit", cap: true };
+  Object.assign(LOOK_OVERRIDE, { 권혜림: { cloth: "#3b2e4a", top: "suit" }, 장필두: { cloth: "#4a3a2a", top: "jacket" }, 한도윤: { cloth: "#22303a", top: "jacket", glasses: "rect" }, 오금숙: { cloth: "#2e3b33", top: "suit", glasses: "round" } });
   /* 경찰 제복(모자)은 순경만 입는다. 경장 이상은 사복 정장 */
   const rankOf = {}; for (const r of ROSTER) for (const [n] of r.people) rankOf[n] = r.rank; for (const x of PATROL_ALL) rankOf[x.name] = x.title;
   const PLAIN = ["#3a3f47", "#4a4038", "#2f3a33", "#463a40"];
