@@ -837,6 +837,22 @@ html.app .title > .label { display: none; } html.app .title .lede { font-size: 1
 .sd-ask { margin: 0; font-size: 16px; } .sd-ask b { color: #ff8b7d; } .sd-ask small { color: var(--muted); }
 .dd-pick { display: flex; flex-wrap: wrap; gap: 6px; } .dd-pick .chip.on { outline: 2px solid var(--lamp); background: rgba(226,178,92,.15); }
 .sd-only { margin: 0; font-size: 12.5px; }
+.recon { position: fixed; inset: 0; z-index: 85; overflow: auto; display: grid; align-content: start; gap: 12px; padding: 14px max(14px, calc(50vw - 520px)); background: radial-gradient(ellipse at 50% 20%, #1f2a3a, #07080b 70%); animation: ph-in .4s both; }
+.recon.hit { animation: sd-shake .35s; }
+.rc-head { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; } .rc-head b { font-size: 20px; color: #7fd8ff; } .rc-head span { color: var(--muted); font-size: 13px; }
+.rc-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.rc-panel { background: #f3ead6; color: #2b2116; border: 3px solid #111; border-radius: 4px; padding: 8px; display: grid; gap: 6px; align-content: start; min-height: 170px; transform: rotate(-.6deg); opacity: .5; }
+.rc-panel:nth-child(even) { transform: rotate(.6deg); }
+.rc-panel.now { opacity: 1; box-shadow: 0 0 0 3px #7fd8ff, 0 10px 30px rgba(0,0,0,.5); animation: rc-pop .4s ease-out; } .rc-panel.done { opacity: 1; }
+@keyframes rc-pop { from { transform: scale(.9); } }
+.rc-panel small { font-weight: 800; font-size: 11.5px; color: #8a2a1a; }
+.rc-art { height: 64px; display: flex; align-items: center; justify-content: center; gap: 6px; background: repeating-linear-gradient(45deg, #e6dcc4 0 6px, #efe6d0 6px 12px); border: 2px solid #2b2116; font-size: 30px; color: #8a7a5a; font-weight: 900; }
+.rc-panel p { margin: 0; font-size: 12.5px; line-height: 1.45; } .rc-panel.done p b { color: #1a4a8a; }
+.rc-q { margin: 0; font-size: 17px; font-family: var(--f-display); }
+.rc-choices { display: grid; gap: 6px; } .rc-choices .choice.ok { border-color: #3fae6a; background: rgba(63,174,106,.15); } .rc-choices .choice.no { opacity: .35; text-decoration: line-through; }
+.rc-final { position: fixed; inset: 0; display: grid; place-content: center; text-align: center; background: rgba(0,0,0,.6); animation: ph-in .4s both; pointer-events: none; }
+.rc-final b { font-family: var(--f-display); font-size: clamp(32px, 6vw, 64px); color: #f2d16a; text-shadow: 4px 4px 0 #000; } .rc-final small { color: #f1ece2; }
+@media (max-width: 700px) { .rc-strip { grid-template-columns: repeat(2, 1fr); } .rc-panel { min-height: 130px; } }
 .showdown { transition: background .6s; }
 .showdown[data-round="1"] { background: radial-gradient(ellipse at 50% 30%, #3a1418, #07080b 70%); }
 .showdown[data-round="2"] { background: radial-gradient(ellipse at 50% 30%, #561418, #0a0607 72%); animation: sd-pulse 1s ease-in-out infinite; }
@@ -3760,6 +3776,52 @@ function showdown(done) {
   });
 }
 
+/* ===================== 🎞 사건 재구성: 자백 뒤, 사건의 전말을 4컷 만화로 맞춘다 =====================
+   (클라이맥스 추리처럼) 컷마다 빈칸에 맞는 답을 고른다. 처음에 맞히면 점수, 틀리면 다시 고른다. */
+function reconstruct(done) {
+  const c = C(), sid = c.answer.culprit, cul = c.suspects[sid], crimeId = crimeRoomId(), crime = c.rooms[crimeId].name;
+  const pick3 = (arr, n = 3) => RND.shuffle(arr).slice(0, n);
+  const motive = c.motives.find(m => m.id === c.answer.motive), method = c.methods.find(m => m.id === c.answer.method);
+  const keyClue = c.key.find(k => cluePoints(k).has(sid) && has(S.found, k)) || c.key.find(k => has(S.found, k)) || c.key[0];
+  const otherRooms = Object.keys(c.rooms).filter(r => r !== crimeId).map(r => c.rooms[r].name);
+  const otherClues = S.found.filter(k => k !== keyClue && !c.key.includes(k)).map(k => c.clues[k].name);
+  const P = [
+    { icon: "💢", cap: "① 왜 — 시작은 이것이었다", q: `${cul.name}에게는 피해자를 해칠 이유가 있었다. 그것은…`, ans: motive.text, opts: pick3(c.motives.filter(m => m.id !== motive.id).map(m => m.text)) },
+    { icon: "🚪", cap: "② 어디서 — 그날 밤", q: `사건 시각, ${cul.name}은(는) 몰래 이곳으로 향했다.`, ans: crime, opts: pick3(otherRooms) },
+    { icon: "🩸", cap: "③ 어떻게 — 범행", q: `그리고 ${cul.name}은(는) 피해자를…`, ans: method.text, opts: pick3(c.methods.filter(m => m.id !== method.id).map(m => m.text)) },
+    { icon: "🔎", cap: "④ 그러나 — 남은 흔적", q: `완벽한 범행이라 믿었지만, 결정적인 흔적이 남았다. 그것은…`, ans: c.clues[keyClue].name, opts: pick3(otherClues.length >= 3 ? otherClues : otherClues.concat(Object.keys(c.clues).filter(k => k !== keyClue).map(k => c.clues[k].name))) },
+  ].map(x => ({ ...x, q: x.q.replace(/(\S+)은\(는\)/g, (m, w) => w + jt(w, "은", "는")), choices: RND.shuffle([x.ans, ...x.opts.filter((o, i, a) => o !== x.ans && a.indexOf(o) === i).slice(0, 3)]) }));
+  let k = 0, firstTry = 0, missed = false, busy = false;
+  const ov = document.createElement("div"); ov.className = "recon"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "사건 재구성");
+  document.body.appendChild(ov); document.body.classList.add("in-showdown");
+  Sound.sdMusic(1);
+  const draw = () => {
+    ov.innerHTML = `<div class="rc-head"><b>🎞 사건 재구성</b><span>범인의 행동을 처음부터 끝까지 맞춰라 — ${Math.min(k + 1, P.length)} / ${P.length}</span></div>
+      <div class="rc-strip">${P.map((x, j) => `<div class="rc-panel${j < k ? " done" : j === k ? " now" : ""}">
+        <small>${x.cap}</small><div class="rc-art">${j <= k ? `<span class="rc-ic">${x.icon}</span>${j === 0 || j === 2 ? pixelFace(cul.name, 54, cul.role) : ""}` : "?"}</div>
+        <p>${j < k ? `<b>${esc(x.ans)}</b>` : j === k ? esc(x.q) : "…"}</p></div>`).join("")}</div>
+      ${k < P.length ? `<p class="rc-q">${esc(P[k].q)}</p><div class="rc-choices">${P[k].choices.map(o => `<button class="choice" data-rc="${esc(o)}"><span>${esc(o)}</span></button>`).join("")}</div>` : ""}`;
+  };
+  const finish = () => {
+    S.recon = { first: firstTry, total: P.length };
+    ov.insertAdjacentHTML("beforeend", `<div class="rc-final"><b>이것이 사건의 전말이다!</b><small>처음에 맞힌 컷 ${firstTry} / ${P.length}</small></div>`);
+    Sound.sdMusic(-1); Sound.gavel(); flash();
+    setTimeout(() => { ov.remove(); document.body.classList.remove("in-showdown"); done(); }, 2800);
+  };
+  draw();
+  setTimeout(() => Sound.babble(P[0].q, voiceOf(pname(), "", true).base), 300);
+  ov.addEventListener("click", e => {
+    const b = e.target.closest("[data-rc]"); if (!b || busy || k >= P.length) return;
+    if (b.dataset.rc === P[k].ans) {
+      busy = true; if (!missed) firstTry++; missed = false;
+      b.classList.add("ok"); Sound.clue(); slam("그렇다!", P[k].ans.length > 18 ? P[k].ans.slice(0, 18) + "…" : P[k].ans);
+      setTimeout(() => { k++; busy = false; draw(); if (k >= P.length) finish(); else Sound.babble(P[k].q, voiceOf(pname(), "", true).base); }, 1300);
+    } else {
+      missed = true; b.disabled = true; b.classList.add("no"); Sound.wrong(); ov.classList.remove("hit"); void ov.offsetWidth; ov.classList.add("hit");
+    }
+  });
+}
+
 /* ---------- 효과음: 파일 없이 Web Audio로 합성 ---------- */
 const Sound = (() => {
   let ctx = null, master = null, amb = null, on = true, beatTimer = null, bab = null, voiceUnlocked = false, fxBus = null, musicBus = null, voiceBus = null, sdTimer = null;
@@ -6445,6 +6507,7 @@ function judge() {
     + DIFF[S.diff].bonus + (S.timeLeft > 0 ? 5 : 0) + (S.accCaught ? 4 : 0) + Math.min(S.secrets.length, 2) * 2 - S.wrongAccuse * 10;
   if (S.showdown) score += S.showdown.won ? 4 + S.showdown.hearts * 2 : -15;   /* 최종 추궁 */
   score += Math.min((S.deductions || []).length, 3) * 2;   /* 단서 연결 */
+  if (S.recon) score += S.recon.first - 1;   /* 사건 재구성: 처음에 맞힌 컷만큼 (4컷 다 맞히면 +3) */
   score = Math.max(0, Math.min(100, score));
   let grade = score >= 92 ? "S" : score >= 78 ? "A" : score >= 62 ? "B" : "C";
   if (S.showdown && !S.showdown.won && (grade === "S" || grade === "A")) grade = "B";   /* 자백을 못 받으면 최고 B */
@@ -6533,6 +6596,7 @@ function renderResult() {
       ${S.showdown ? row("최종 추궁", S.showdown.won, S.showdown.won ? `자백 받음 · 남은 ♥ ${S.showdown.hearts}` : "자백 실패 (최고 B 등급)") : ""}
       ${row("무너뜨린 거짓말", S.broken.length > 0, `${S.broken.length}개`)}
       ${row("단서 연결 추리", (S.deductions || []).length > 0, `${(S.deductions || []).length}개`)}
+      ${S.recon ? row("사건 재구성", S.recon.first === S.recon.total, `처음에 맞힌 컷 ${S.recon.first} / ${S.recon.total}`) : ""}
       ${row("숨은 증언", S.secrets.length > 0, `${S.secrets.length}개`)}
       ${row("틀린 추리", S.penalties === 0, `${S.penalties}회 (−${S.penalties * PENALTY_SEC}초)`)}
       ${S.wrongAccuse ? row("잘못된 지목", false, `${S.wrongAccuse}회`) : ""}
@@ -6722,7 +6786,7 @@ app.addEventListener("submit", e => {
   const pk = S.pick; if (!(pk.culprit && pk.motive && pk.method)) return;
   accuseScene(() => {
     const go = () => { judge(); render(); window.scrollTo(0, 0); };
-    if (pk.culprit === C().answer.culprit) showdown(go); else go();
+    if (pk.culprit === C().answer.culprit) showdown(() => (S.showdown && S.showdown.won ? reconstruct(go) : go())); else go();
   });
 });
 
