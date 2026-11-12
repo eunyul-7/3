@@ -1,0 +1,18 @@
+{
+  "name": "한밤의 사건 파일",
+  "short_name": "사건 파일",
+  "description": "비 오는 밤, 강력팀이 출동하는 픽셀 추리 게임",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#11171c",
+  "theme_color": "#11171c",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

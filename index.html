@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>한밤의 사건 파일</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#11171c">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="사건 파일">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: 수사 수첩 — 상단 상황판(남은 턴), 탭 네비, 본문은 현장 평면도 + 조사 패널 */
@@ -804,6 +811,8 @@ body.shake main { animation: op-shake2 .4s; }
 .photo-btn { margin: 6px 0; }
 .continue-box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0 4px; padding: 12px 14px; border: 1px solid var(--lamp); border-radius: 8px; background: rgba(226,178,92,.08); }
 .continue-btn { font-size: 18px; }
+.off-card { width: min(440px, 100%); }
+.off-way { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; } .off-way b { color: var(--lamp); } .off-way p { margin: 0; font-size: 13.5px; color: var(--muted); }
 .coat-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 4px; width: 100%; }
 .coat-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 8px; }
 .coat-chip i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(255,255,255,.3); display: inline-block; }
@@ -4003,6 +4012,41 @@ PORTRAIT_MQ.addEventListener ? PORTRAIT_MQ.addEventListener("change", () => { if
 let LOWFX = (() => { try { const v = localStorage.getItem("midnight-lowfx"); if (v) return v === "1"; } catch (e) {} return (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3; })();
 function setLowFx(v) { LOWFX = !!v; try { localStorage.setItem("midnight-lowfx", LOWFX ? "1" : "0"); } catch (e) {} document.body.classList.toggle("lowfx", LOWFX); }
 document.body.classList.toggle("lowfx", LOWFX);
+/* ---------- 📥 데이터 없이 하기: 오프라인 저장 ---------- */
+/* 웹 주소(https)로 열었을 때: 한 번 열면 게임 파일을 휴대폰에 저장해 두고, 다음부터 데이터 없이도 열린다 */
+try {
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost") && window.top === window)
+    addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+} catch (e) {}
+/* 게임을 파일 하나로 내려받기: 받은 파일은 인터넷 없이 브라우저로 열면 된다 */
+function saveOfflineFile() {
+  try {
+    const doc = document.documentElement.cloneNode(true);
+    doc.querySelectorAll(".photo-ov, .showdown, .clue-card, .slam-word, .accuse-cine, .gather-cine, #toast").forEach(e => e.remove());
+    const app0 = doc.querySelector("#app"); if (app0) app0.innerHTML = "";
+    doc.querySelectorAll("canvas").forEach(cv => { if (cv.id !== "rain") cv.remove(); });
+    const html = "<!DOCTYPE html>\n" + doc.outerHTML;
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    a.download = "midnight-case-file.html"; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    toast("<b>📥 파일을 저장했어요</b> — 다운로드 폴더의 ‘midnight-case-file.html’을 열면 데이터 없이 할 수 있어요.");
+  } catch (e) { toast("이 화면에서는 파일 저장이 막혀 있어요. 아래 안내대로 저장해 주세요.", true); }
+}
+function openOfflineHelp() {
+  if (document.querySelector(".off-ov")) return;
+  const ov = document.createElement("div"); ov.className = "photo-ov off-ov";
+  ov.innerHTML = `<div class="photo-card off-card" role="dialog" aria-label="데이터 없이 하기">
+    <h3 style="margin:0">📥 데이터 없이 하기</h3>
+    <p class="hint" style="margin:0">그림·소리·목소리는 모두 게임 안에서 만들어서, 한 번 저장해 두면 인터넷 없이도 처음부터 끝까지 할 수 있어요. 기록·업적·이어하기도 휴대폰에 그대로 남아요.</p>
+    <div class="off-way"><b>방법 1 · 파일로 저장</b><p>아래 버튼으로 게임 파일(약 0.5MB)을 받아 두고, 데이터가 없을 때 그 파일을 브라우저로 여세요.</p><button class="btn" data-off="file">📥 게임 파일 저장</button></div>
+    <div class="off-way"><b>방법 2 · 앱처럼 설치</b><p>게임 웹 주소로 열었을 때, 브라우저 메뉴의 <b>‘홈 화면에 추가’</b>(아이폰은 공유 ⬆ → 홈 화면에 추가)를 누르면 앱처럼 아이콘이 생기고, 한 번 연 뒤로는 데이터 없이도 열려요.</p></div>
+    <p class="hint" style="margin:0">글꼴만 인터넷에서 받아 오는데, 없으면 휴대폰 기본 글꼴로 보여요.</p>
+    <button class="btn ghost photo-close">닫기 ✕</button></div>`;
+  document.body.appendChild(ov);
+  const close = () => { ov.remove(); document.removeEventListener("keydown", onKey, true); };
+  const onKey = e => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
+  document.addEventListener("keydown", onKey, true);
+  ov.addEventListener("click", e => { if (e.target.closest("[data-off=file]")) { saveOfflineFile(); return; } if (e.target === ov || e.target.closest(".photo-close")) close(); });
+}
 /* ---------- 이어하기: 사건 진행을 자동 저장 ---------- */
 const SAVE_KEY = "midnight-save-v1";
 function saveGame() {
@@ -4314,6 +4358,7 @@ function renderTitle() {
       </form>
       <div class="btn-row">
         ${loadSave() ? "" : `<button class="btn" data-act="enter">사건 파일 열기</button>`}
+        <button class="btn ghost" data-act="offline">📥 데이터 없이 하기</button>
         ${soundBtn()}
       </div>
       <h2>강력팀</h2>
@@ -6481,6 +6526,7 @@ app.addEventListener("click", e => {
   else if ("coat" in d) { PLAYER_COAT = d.coat; try { localStorage.setItem("midnight-coat", PLAYER_COAT); } catch (e) {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm && mm.querySelector(".pxface")) mm.querySelector(".pxface").outerHTML = pixelFace(pname(), 64, "", true); return; }
   else if (d.act === "body-photo") { openBodyPhoto(); return; }
   else if (d.act === "continue") { continueGame(); return; }
+  else if (d.act === "offline") { openOfflineHelp(); return; }
   else if (d.dd) { const sel = S.deduceSel = (S.deduceSel || []).includes(d.dd) ? S.deduceSel.filter(x => x !== d.dd) : (S.deduceSel || []).concat(d.dd).slice(-2); }
   else if (d.act === "deduce") { deduce(...(S.deduceSel || [])); }
   else if (d.act === "pause") { openPause(); return; }
