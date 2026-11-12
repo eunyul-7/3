@@ -812,6 +812,7 @@ body.shake main { animation: op-shake2 .4s; }
 .continue-box { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 6px 0 4px; padding: 12px 14px; border: 1px solid var(--lamp); border-radius: 8px; background: rgba(226,178,92,.08); }
 .continue-btn { font-size: 18px; }
 .off-card { width: min(440px, 100%); }
+.off-note { color: #e2b25c !important; }
 .off-way { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; } .off-way b { color: var(--lamp); } .off-way p { margin: 0; font-size: 13.5px; color: var(--muted); }
 .coat-row { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 4px; width: 100%; }
 .coat-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 8px; }
@@ -4037,7 +4038,7 @@ function openOfflineHelp() {
   ov.innerHTML = `<div class="photo-card off-card" role="dialog" aria-label="데이터 없이 하기">
     <h3 style="margin:0">📥 데이터 없이 하기</h3>
     <p class="hint" style="margin:0">그림·소리·목소리는 모두 게임 안에서 만들어서, 한 번 저장해 두면 인터넷 없이도 처음부터 끝까지 할 수 있어요. 기록·업적·이어하기도 휴대폰에 그대로 남아요.</p>
-    <div class="off-way"><b>방법 1 · 파일로 저장</b><p>아래 버튼으로 게임 파일(약 0.5MB)을 받아 두고, 데이터가 없을 때 그 파일을 브라우저로 여세요.</p><button class="btn" data-off="file">📥 게임 파일 저장</button></div>
+    <div class="off-way"><b>방법 1 · 파일로 저장</b><p>아래 버튼으로 게임 파일(약 0.5MB)을 받아 두고, 데이터가 없을 때 그 파일을 브라우저로 여세요.</p>${window.top === window ? `<button class="btn" data-off="file">📥 게임 파일 저장</button>` : `<p class="off-note">이 미리보기 화면에서는 파일 저장이 막혀 있어요. Claude 대화창에서 보내 드린 <b>index.html</b> 파일이나, GitHub 저장소의 <b>index.html</b>을 받아서 쓰세요.</p>`}</div>
     <div class="off-way"><b>방법 2 · 앱처럼 설치</b><p>게임 웹 주소로 열었을 때, 브라우저 메뉴의 <b>‘홈 화면에 추가’</b>(아이폰은 공유 ⬆ → 홈 화면에 추가)를 누르면 앱처럼 아이콘이 생기고, 한 번 연 뒤로는 데이터 없이도 열려요.</p></div>
     <p class="hint" style="margin:0">글꼴만 인터넷에서 받아 오는데, 없으면 휴대폰 기본 글꼴로 보여요.</p>
     <button class="btn ghost photo-close">닫기 ✕</button></div>`;
