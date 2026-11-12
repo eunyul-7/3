@@ -809,6 +809,17 @@ body.shake main { animation: op-shake2 .4s; }
 .coat-chip i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(255,255,255,.3); display: inline-block; }
 .coat-chip:disabled { opacity: .45; }
 .coat-ab { font-size: 10.5px; color: #9bdc6a; margin-left: 4px; }
+.showdown { position: fixed; inset: 0; z-index: 85; background: radial-gradient(ellipse at 50% 30%, #2a1418, #07080b 70%); display: grid; grid-template-rows: auto auto auto 1fr; gap: 10px; padding: 14px max(14px, calc(50vw - 460px)); overflow: auto; animation: ph-in .3s both; }
+.showdown.hit { animation: sd-shake .35s; } @keyframes sd-shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+.sd-head { display: flex; align-items: center; gap: 12px; } .sd-head b { font-size: 20px; color: #e2b25c; } .sd-head span { color: var(--muted); }
+.sd-hearts { margin-left: auto; color: #ff5a6a !important; font-size: 22px; letter-spacing: 2px; } .sd-hearts i { color: #555; font-style: normal; }
+.sd-stage { min-height: 220px; }
+.sd-ask { margin: 0; font-size: 16px; } .sd-ask b { color: #ff8b7d; } .sd-ask small { color: var(--muted); }
+.dd-pick { display: flex; flex-wrap: wrap; gap: 6px; } .dd-pick .chip.on { outline: 2px solid var(--lamp); background: rgba(226,178,92,.15); }
+.sd-ev { display: flex; flex-wrap: wrap; gap: 6px; align-content: start; } .sd-ev .chip { font-size: 14px; padding: 7px 12px; }
+.showdown .ac-stamp { position: fixed; z-index: 2; }
+body.in-showdown .slam-word, body.in-showdown .clue-card, body.in-showdown .toast { z-index: 95; }
+@media (orientation: landscape) and (max-height: 560px) { .showdown { grid-template-columns: 1.1fr 1fr; grid-template-rows: auto 1fr; padding: 8px 12px; } .sd-head { grid-column: 1 / -1; } .sd-stage { min-height: 0; grid-row: 2 / span 3; } .sd-ev { overflow: auto; } }
 .vet-card { width: min(440px, 100%); border-color: #e2b25c; box-shadow: 0 0 0 2px rgba(226,178,92,.3), 0 20px 50px rgba(0,0,0,.6); animation: vet-in .5s cubic-bezier(.2,1.4,.4,1) both; }
 @keyframes vet-in { from { transform: translateY(30px) scale(.9); opacity: 0; } }
 .vet-tag { font-size: 12px; font-weight: 800; color: #1a1a1a; background: #e2b25c; border-radius: 4px; padding: 3px 8px; justify-self: start; }
@@ -2435,7 +2446,7 @@ const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, fou
   locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], patrol: [], patrolNotes: {}, team: null, patrolPick: null, teamPick: null, depts: null, deptJobs: {}, sheet: false, stars: [], whispers: {}, visited: [], reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
   chances: 1, penalties: 0, decided: false, advice: {}, cleared: [], persona: {}, heart: {}, secrets: [], lastLine: null, dlg: null, wrongAccuse: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
-  copAsk: {}, coat: "", coatUsed: {}, mode: "pixel", pos: null, dir: null, autopsyDone: false, autopsy: null, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
+  copAsk: {}, coat: "", coatUsed: {}, deductions: [], deduceTried: [], deduceSel: [], mode: "pixel", pos: null, dir: null, autopsyDone: false, autopsy: null, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
@@ -3607,11 +3618,59 @@ function accuseScene(done) {
   ev.forEach((e, i) => at(t1 + 1700 + i * 700, () => { const d = document.createElement("div"); d.className = "ac-card"; d.innerHTML = `<small>증거 ${i + 1}</small><b>${esc(e.name)}</b>`; ov.querySelector("#ac-ev").appendChild(d); Sound.clue(); }));
   const t2 = t1 + 1900 + ev.length * 700 + 400;
   at(t2, () => {
-    if (ok) say(target.name, lie ? `…${lie.lie.reply.slice(0, 70)}${lie.lie.reply.length > 70 ? "…" : ""} …그래요. 제가 했어요.` : "……다 끝났군요. 제가 했습니다.", "them");
+    if (ok) say(target.name, "…웃기지 마세요. 그걸로 제가 범인이라고요? 좋아요, 하나하나 반박해 드리죠.", "them");
     else say(target.name, "제가요? 말도 안 돼요. …증거가 그것뿐인가요?", "them");
   });
+  if (ok) { at(t2 + 2800, finish); return; }   /* 맞으면 바로 최종 추궁으로 */
   at(t2 + 2600, () => { const st = ov.querySelector("#ac-stamp"); st.className = "ac-stamp on " + (ok ? "ok" : "no"); st.textContent = ok ? "체포" : "오판"; ok ? Sound.verdict(true) : Sound.wrong(); });
   at(t2 + 4600, finish);
+}
+
+/* ===================== ⚖ 최종 추궁: 범인의 반박을 증거로 하나씩 무너뜨린다 =====================
+   범인이 반박하면, 그 말과 맞지 않는 증거를 내민다. 틀리면 ♥ 하나가 깨진다. ♥가 다 깨지면 자백은 못 받는다. */
+function showdown(done) {
+  const c = C(), sid = c.answer.culprit, cul = c.suspects[sid];
+  const used = new Set(), R = [];
+  for (const q of cul.qs) if (q.lie && R.length < 2) { R.push({ claim: q.a, need: q.lie.clues, reply: q.lie.reply }); q.lie.clues.forEach(k => used.add(k)); }
+  const fin = c.key.filter(k => !used.has(k));
+  R.push({ claim: "그래서요? 제가 그 사람을 해쳤다는 결정적인 증거라도 있나요? 없으면 저는 돌아가겠어요.", need: fin.length ? fin : c.key, reply: "……. 그건…." });
+  let i = 0, hearts = 3, busy = false;
+  const ov = document.createElement("div"); ov.className = "showdown"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "최종 추궁");
+  document.body.appendChild(ov); document.body.classList.add("in-showdown");
+  const end = won => {
+    S.showdown = { won, hearts };
+    const conf = (cul.qs.find(q => q.lie) || {}).lie;
+    const last = won ? `…${conf ? conf.reply.slice(0, 60) : ""} …그래요. 다 제가 한 일이에요.` : "……증거가 부족하군요. 저는 더 이상 아무 말도 하지 않겠습니다.";
+    draw(won ? "shock" : "smug", last, true);
+    const st = document.createElement("div"); st.className = "ac-stamp on " + (won ? "ok" : "no"); st.textContent = won ? "자백" : "묵비권"; ov.appendChild(st);
+    won ? Sound.verdict(true) : Sound.wrong();
+    setTimeout(() => { ov.remove(); document.body.classList.remove("in-showdown"); done(); }, 3600);
+  };
+  const draw = (react, line, final) => {
+    const r = R[Math.min(i, R.length - 1)];
+    ov.innerHTML = `<div class="sd-head"><b>⚖ 최종 추궁</b><span>${final ? "결말" : `반박 ${i + 1} / ${R.length}`}</span><span class="sd-hearts">${"♥".repeat(hearts)}<i>${"♡".repeat(3 - hearts)}</i></span></div>
+      <div class="stage sd-stage ${react}" style="--wall:${themeOf().wallC || "#3a3346"}">${bigSprite(cul.name, cul.role)}
+        ${react === "shock" ? `<i class="sweat"></i><i class="sweat s2"></i><b class="stage-fx">!!</b>` : react === "smug" ? `<b class="stage-fx smug">…</b>` : ""}
+        <div class="speech vn"><div class="line them"><span class="who-tag">${esc(cul.name)}</span><p>“${esc(line)}”</p></div></div></div>
+      ${final ? "" : `<p class="sd-ask">이 말과 <b>맞지 않는 증거</b>를 내밀어라! <small>틀리면 ♥ 하나가 깨져요</small></p>
+      <div class="sd-ev">${S.found.map(id => `<button class="chip" data-sd="${id}">${esc(c.clues[id].name)}</button>`).join("") || `<p class="hint">찾은 증거가 없다…</p>`}</div>
+      ${S.found.length ? "" : `<button class="btn ghost" data-sd="__none">아무것도 내밀 수 없다</button>`}`}`;
+    if (!final) Sound.babble(line, voiceOf(cul.name, cul.role).base);
+  };
+  draw("talk", R[0].claim);
+  ov.addEventListener("click", e => {
+    const b = e.target.closest("[data-sd]"); if (!b || busy) return;
+    const r = R[i], id = b.dataset.sd;
+    if (r.need.includes(id)) {
+      busy = true; slam("이의 있음!", c.clues[id].name); Sound.lie(); flash();
+      draw("shock", r.reply, true);
+      setTimeout(() => { busy = false; i += 1; if (i >= R.length) end(true); else draw("talk", R[i].claim); }, 2600);
+    } else {
+      hearts -= 1; Sound.wrong(); ov.classList.remove("hit"); void ov.offsetWidth; ov.classList.add("hit");
+      if (hearts <= 0) { busy = true; draw("smug", "하하, 그게 증거라고요? 이제 그만하시죠.", true); setTimeout(() => end(false), 1800); return; }
+      draw("smug", `‘${id === "__none" ? "…" : c.clues[id].name}’? 그게 무슨 상관이죠? …다시 말하지만, ${r.claim.slice(0, 50)}${r.claim.length > 50 ? "…" : ""}`);
+    }
+  });
 }
 
 /* ---------- 효과음: 파일 없이 Web Audio로 합성 ---------- */
@@ -6137,6 +6196,41 @@ function drawBoard() {
   svg.innerHTML = lines.join("");
 }
 addEventListener("resize", () => { if (S.tab === "notes") drawBoard(); });
+/* ===================== 🧩 단서 연결: 두 단서를 이어 추리를 만든다 ===================== */
+function cluePoints(id) {   /* 이 단서가 가리키는 용의자들 */
+  const c = C(), k = c.clues[id], out = new Set();
+  for (const [sid, p] of Object.entries(c.suspects)) {
+    if (k.room === sid || (c.rooms[k.room] && c.rooms[k.room].name.startsWith(p.name))) out.add(sid);
+    if (k.text.includes(p.name) || k.name.includes(p.name)) out.add(sid);
+    if (p.qs.some(q => q.lie && q.lie.clues.includes(id))) out.add(sid);
+  }
+  return out;
+}
+function deduce(a, b) {
+  if (!a || !b || a === b || S.decided) return;
+  S.deductions = S.deductions || []; S.deduceTried = S.deduceTried || [];
+  const key = [a, b].sort().join("|"); if (S.deduceTried.includes(key)) return;
+  S.deduceTried.push(key);
+  const c = C(), A = cluePoints(a), B = cluePoints(b), both = [...A].filter(x => B.has(x));
+  if (both.length) {
+    const names = both.map(x => c.suspects[x].name).join("·");
+    const d = { a, b, sids: both, text: `‘${c.clues[a].name}’와(과) ‘${c.clues[b].name}’ — 둘 다 ${names} 쪽을 가리킨다.` };
+    S.deductions.push(d); slam("추리 성립!", names); Sound.clue(); flash();
+    S.events.push({ bad: false, msg: `🧩 추리 — ${d.text}` });
+  } else {
+    S.timeLeft = Math.max(0, S.timeLeft - 5);
+    toast(`<b>이어지지 않는다</b> — ‘${esc(c.clues[a].name)}’와(과) ‘${esc(c.clues[b].name)}’ 사이엔 공통점이 없다. (−5초)`, true); Sound.wrong();
+  }
+  S.deduceSel = [];
+}
+function renderDeduce() {
+  const c = C(), sel = S.deduceSel || [], ds = S.deductions || [];
+  return `<section class="panel deduce"><h3>🧩 단서 연결 <span class="hint" style="font-size:13px">두 단서를 골라 이어 보세요. 같은 사람을 가리키면 추리가 성립해요 (틀리면 −5초 · 성립한 추리 하나마다 점수 +2, 최대 3개)</span></h3>
+    ${S.found.length >= 2 ? `<div class="dd-pick">${S.found.map(id => `<button class="chip${sel.includes(id) ? " on" : ""}" data-dd="${id}" aria-pressed="${sel.includes(id)}">${esc(c.clues[id].name)}</button>`).join("")}</div>
+    <div class="btn-row" style="margin:6px 0 0"><button class="btn" data-act="deduce" ${sel.length === 2 && !S.decided ? "" : "disabled"}>${sel.length === 2 ? `‘${esc(c.clues[sel[0]].name)}’ + ‘${esc(c.clues[sel[1]].name)}’ 연결하기` : `단서 ${2 - sel.length}개를 더 고르세요`}</button></div>` : `<p class="empty">단서를 2개 이상 찾으면 연결해 볼 수 있다.</p>`}
+    ${ds.length ? `<div class="event-log">${ds.map(d => `<p class="good">🧩 ${esc(d.text)}</p>`).join("")}</div>` : ""}
+  </section>`;
+}
 function renderNotes() {
   const c = C();
   const clues = S.found.length
@@ -6152,6 +6246,7 @@ function renderNotes() {
     ${renderBoard()}
     ${S.autopsy ? `<section class="panel"><h3>과학수사대 감식 소견 · 사건 정리</h3><p><b>사인:</b> ${esc(S.autopsy.cause)}</p>${S.autopsy.body ? `<p class="hint">${esc(S.autopsy.body)}</p>` : ""}
       <div class="event-log">${Object.entries(c.suspects).map(([sid, p]) => { const ev = evidenceAgainst(sid); return `<p class="${ev.length ? "" : "good"}"><b>${esc(p.name)}</b> — ${ev.length ? `걸리는 증거: ${ev.map(x => `‘${esc(x.name)}’${x.asked ? "" : " (관련 질문 아직 안 함)"}`).join(", ")}` : "지금까지 증거와 어긋나는 말은 없음"}</p>`; }).join("")}</div></section>` : ""}
+    ${renderDeduce()}
     <section class="panel"><h3>시간표</h3><div class="timeline">${tl}</div></section>
     ${S.secrets.length ? `<section class="panel"><h3>숨은 증언</h3><div class="event-log">${S.secrets.map(x => `<p class="good"><b>${esc(x.name)}</b> ${esc(x.text)}</p>`).join("")}</div></section>` : ""}
     ${S.events.length ? `<section class="panel"><h3>방해와 도움</h3><div class="event-log">${S.events.map(e => `<p class="${e.bad ? "" : "good"}">${esc(e.msg)}</p>`).join("")}</div></section>` : ""}
@@ -6196,8 +6291,11 @@ function judge() {
   const evGood = pk.evidence.filter(e => c.key.includes(e)).length;
   let score = 40 + (ok.m ? 15 : 0) + (ok.w ? 15 : 0) + Math.min(evGood, 3) * 5 + Math.min(S.broken.length, 3) * 3 + Math.min(S.turns, 6) - S.wrong * 2
     + DIFF[S.diff].bonus + (S.timeLeft > 0 ? 5 : 0) + (S.accCaught ? 4 : 0) + Math.min(S.secrets.length, 2) * 2 - S.wrongAccuse * 10;
+  if (S.showdown) score += S.showdown.won ? 4 + S.showdown.hearts * 2 : -15;   /* 최종 추궁 */
+  score += Math.min((S.deductions || []).length, 3) * 2;   /* 단서 연결 */
   score = Math.max(0, Math.min(100, score));
-  const grade = score >= 92 ? "S" : score >= 78 ? "A" : score >= 62 ? "B" : "C";
+  let grade = score >= 92 ? "S" : score >= 78 ? "A" : score >= 62 ? "B" : "C";
+  if (S.showdown && !S.showdown.won && (grade === "S" || grade === "A")) grade = "B";   /* 자백을 못 받으면 최고 B */
   S.result = { ...ok, evGood, score, grade };
   S.screen = "result";
   saveRecord(c.id, grade);
@@ -6280,7 +6378,9 @@ function renderResult() {
       ${row("동기", R.m, R.m ? "정답" : "오답")}
       ${row("수법", R.w, R.w ? "정답" : "오답")}
       ${row("결정적 증거", R.evGood > 0, `${R.evGood} / ${Math.max(pk.evidence.length, 1)} 유효`)}
+      ${S.showdown ? row("최종 추궁", S.showdown.won, S.showdown.won ? `자백 받음 · 남은 ♥ ${S.showdown.hearts}` : "자백 실패 (최고 B 등급)") : ""}
       ${row("무너뜨린 거짓말", S.broken.length > 0, `${S.broken.length}개`)}
+      ${row("단서 연결 추리", (S.deductions || []).length > 0, `${(S.deductions || []).length}개`)}
       ${row("숨은 증언", S.secrets.length > 0, `${S.secrets.length}개`)}
       ${row("틀린 추리", S.penalties === 0, `${S.penalties}회 (−${S.penalties * PENALTY_SEC}초)`)}
       ${S.wrongAccuse ? row("잘못된 지목", false, `${S.wrongAccuse}회`) : ""}
@@ -6374,6 +6474,8 @@ app.addEventListener("click", e => {
   else if ("coat" in d) { PLAYER_COAT = d.coat; try { localStorage.setItem("midnight-coat", PLAYER_COAT); } catch (e) {} const pv = document.getElementById("me-preview"); if (pv) pv.innerHTML = mePreview(); const mm = document.getElementById("me-member"); if (mm && mm.querySelector(".pxface")) mm.querySelector(".pxface").outerHTML = pixelFace(pname(), 64, "", true); return; }
   else if (d.act === "body-photo") { openBodyPhoto(); return; }
   else if (d.act === "continue") { continueGame(); return; }
+  else if (d.dd) { const sel = S.deduceSel = (S.deduceSel || []).includes(d.dd) ? S.deduceSel.filter(x => x !== d.dd) : (S.deduceSel || []).concat(d.dd).slice(-2); }
+  else if (d.act === "deduce") { deduce(...(S.deduceSel || [])); }
   else if (d.act === "pause") { openPause(); return; }
   else if (d.act === "newgame") { const bx = document.querySelector(".newgame-confirm"); if (bx) bx.hidden = false; return; }
   else if (d.act === "newgame-yes") { try { localStorage.removeItem(SAVE_KEY); } catch (err) {} S = fresh(); S.screen = "files"; render(); window.scrollTo(0, 0); return; }
@@ -6464,7 +6566,10 @@ app.addEventListener("submit", e => {
   e.preventDefault();
   if (e.target.id === "name-form") { Sound.init(); savePlayer(); S.screen = "files"; render(); Sound.thunder(); flash(); return; }
   const pk = S.pick; if (!(pk.culprit && pk.motive && pk.method)) return;
-  accuseScene(() => { judge(); render(); window.scrollTo(0, 0); });
+  accuseScene(() => {
+    const go = () => { judge(); render(); window.scrollTo(0, 0); };
+    if (pk.culprit === C().answer.culprit) showdown(go); else go();
+  });
 });
 
 /* ===================== 비 효과 ===================== */
