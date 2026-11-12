@@ -1,11 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
-  <rect width="64" height="64" rx="12" fill="#11171c"/>
-  <rect x="10" y="14" width="34" height="40" rx="3" fill="#e2b25c"/>
-  <rect x="10" y="14" width="14" height="6" fill="#c9963e"/>
-  <rect x="15" y="27" width="22" height="3" fill="#6b4a1e"/>
-  <rect x="15" y="33" width="18" height="3" fill="#6b4a1e"/>
-  <rect x="15" y="39" width="14" height="3" fill="#6b4a1e"/>
-  <circle cx="42" cy="38" r="10" fill="none" stroke="#f1ece2" stroke-width="4"/>
-  <rect x="48" y="45" width="5" height="12" rx="2" fill="#f1ece2" transform="rotate(-45 50 51)"/>
-  <rect x="46" y="8" width="8" height="8" rx="1" fill="#e23a3a"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges">
+<rect width="32" height="32" fill="#141018"/>
+<rect x="4" y="5" width="24" height="22" fill="#c9a46a"/><rect x="4" y="5" width="10" height="3" fill="#a8844c"/><rect x="4" y="8" width="24" height="19" fill="#d8b47a"/>
+<rect x="7" y="12" width="14" height="2" fill="#6b4a1e"/><rect x="7" y="16" width="10" height="2" fill="#6b4a1e"/>
+<rect x="14" y="17.5" width="13" height="7" fill="none" stroke="#d32b2b" stroke-width="1.5" transform="rotate(-12 21 21)"/>
+<text x="20.5" y="22.8" font-family="sans-serif" font-weight="900" font-size="4.2" fill="#d32b2b" text-anchor="middle" transform="rotate(-12 21 21)">CASE</text>
+<g transform="rotate(-18 16 28)"><rect x="-2" y="26" width="36" height="4" fill="#f2c230"/><g fill="#1a1a1a"><rect x="1" y="26" width="3" height="4"/><rect x="8" y="26" width="3" height="4"/><rect x="15" y="26" width="3" height="4"/><rect x="22" y="26" width="3" height="4"/><rect x="29" y="26" width="3" height="4"/></g></g>
 </svg>
