@@ -808,6 +808,8 @@ body.shake main { animation: op-shake2 .4s; }
 .coat-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; padding: 3px 8px; }
 .coat-chip i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(255,255,255,.3); display: inline-block; }
 .coat-chip:disabled { opacity: .45; }
+.coat-ab { font-size: 10.5px; color: #9bdc6a; margin-left: 4px; }
+.coat-badge { font-size: 11px; color: #9bdc6a; border: 1px solid rgba(155,220,106,.5); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
 .title-chip { font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--lamp-dim); color: var(--lamp); vertical-align: middle; }
 .ach.unl.on { border-color: #9bdc6a; background: rgba(155,220,106,.07); }
 .continue-box { flex-direction: column; align-items: flex-start; }
@@ -2357,11 +2359,11 @@ const ACH = [
 ];
 /* ---------- 🎁 업적 보상: 업적을 따면 새 콘텐츠가 열린다 ---------- */
 const UNLOCKS = [
-  { id: "coat_black", kind: "coat", icon: "🧥", name: "검은 롱코트", desc: "주인공 옷", need: "s", cloth: "#1d2026" },
-  { id: "coat_red", kind: "coat", icon: "🧥", name: "붉은 트렌치코트", desc: "주인공 옷", need: "hard", cloth: "#7a2a26" },
-  { id: "coat_gray", kind: "coat", icon: "🧥", name: "회색 정장", desc: "주인공 옷", need: "acc", cloth: "#5a5e66" },
-  { id: "coat_navy", kind: "coat", icon: "🧥", name: "남색 점퍼", desc: "주인공 옷", need: "student", cloth: "#283552" },
-  { id: "coat_white", kind: "coat", icon: "🧥", name: "흰 코트", desc: "주인공 옷", need: "all4", cloth: "#d9d4c8" },
+  { id: "coat_black", kind: "coat", icon: "🧥", name: "검은 롱코트", desc: "능력: 틀린 모순 지적 한 번은 시간이 안 줄어요", ab: "틀린 모순 지적 1번 봐줌", need: "s", cloth: "#1d2026" },
+  { id: "coat_red", kind: "coat", icon: "🧥", name: "붉은 트렌치코트", desc: "능력: 사건 시작할 때 턴 +2", ab: "턴 +2", need: "hard", cloth: "#7a2a26" },
+  { id: "coat_gray", kind: "coat", icon: "🧥", name: "회색 정장", desc: "능력: 증거를 망치는 방해가 덜 일어나요", ab: "방해 30% 줄임", need: "acc", cloth: "#5a5e66" },
+  { id: "coat_navy", kind: "coat", icon: "🧥", name: "남색 점퍼", desc: "능력: ‘마음 열기’ 말투를 한 번 잘못 골라도 다시 고를 수 있어요", ab: "마음 열기 1번 더", need: "student", cloth: "#283552" },
+  { id: "coat_white", kind: "coat", icon: "🧥", name: "흰 코트", desc: "능력: 수사 시간 +1분", ab: "시간 +1분", need: "all4", cloth: "#d9d4c8" },
   { id: "nightmare", kind: "diff", icon: "🌑", name: "악몽 난이도", desc: "시간 8분·지목 기회 1번·가짜 물건과 방해가 가장 많고 점수 보너스가 가장 큰 난이도", need: "hard" },
   { id: "secret", kind: "setting", icon: "🗝", name: "비밀 무대 3곳", desc: "무작위 사건에 ‘별빛분교’, ‘중앙경찰서 증거보관실’, ‘폐쇄된 지하철역’이 나와요", need: "r5" },
   { id: "legend", kind: "member", icon: "🎖", name: "전설의 형사 유진혁", desc: "팀 고르기의 강력팀장 자리에 고를 수 있어요. 어떤 사건이든 ⭐ 인재", need: "count:8" },
@@ -2377,6 +2379,9 @@ function isUnlocked(id) {
 const unlockNeed = u => u.need.startsWith("count:") ? `업적 ${u.need.slice(6)}개 달성` : `업적 ‘${(ACH.find(a => a.id === u.need) || {}).name}’`;
 const playerTitle = () => { const n = Object.keys(loadAch()).length; return TITLES.filter(([k]) => n >= k).pop()[1]; };
 let PLAYER_COAT = (() => { try { return localStorage.getItem("midnight-coat") || ""; } catch (e) { return ""; } })();
+/* 지금 입은 옷 (해금된 것만) — 사건을 시작할 때 S.coat에 고정된다 */
+const wornCoat = () => { const u = UNLOCKS.find(x => x.id === PLAYER_COAT); return u && isUnlocked(u.id) ? u.id : ""; };
+const coatOn = id => (S.coat || "") === id;
 const coatColor = () => { const u = UNLOCKS.find(x => x.id === PLAYER_COAT); return u && isUnlocked(u.id) ? u.cloth : "#8a6a48"; };
 /* 사건이 끝나면 기록하고, 새로 딴 업적을 돌려준다 */
 function logCase(win, grade) {
@@ -2425,7 +2430,7 @@ const fresh = () => ({ screen: "title", caseId: null, turns: 0, maxTurns: 0, fou
   locks: {}, silence: {}, tampered: [], events: [], sinceEvent: 0, helps: 0, sinceHelp: 0, hints: [], randomCase: null, rebuts: [], patrol: [], patrolNotes: {}, team: null, patrolPick: null, teamPick: null, depts: null, deptJobs: {}, sheet: false, stars: [], whispers: {}, visited: [], reads: {}, clearedQ: [], marked: [], counter: {}, press: {}, pressOpen: [], lost: [], cleared2: 0, introDone: false,
   chances: 1, penalties: 0, decided: false, advice: {}, cleared: [], persona: {}, heart: {}, secrets: [], lastLine: null, dlg: null, wrongAccuse: 0,
   vars: [], varTalked: [], varNotes: {}, accCaught: false, accWrong: [],
-  copAsk: {}, mode: "pixel", pos: null, dir: null, autopsyDone: false, autopsy: null, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
+  copAsk: {}, coat: "", coatUsed: {}, mode: "pixel", pos: null, dir: null, autopsyDone: false, autopsy: null, fakes: {}, fakeSeed: 0, diff: "easy", timed: false, timeLeft: 0, timeMax: 0, actions: 0, missions: [], dispatched: [],
   pick: { culprit: "", motive: "", method: "", evidence: [] }, result: null });
 let S = fresh();
 const C = () => S.caseId === "random" ? S.randomCase : caseById(S.caseId);
@@ -2798,6 +2803,10 @@ function openHeart(sid, tone) {
     S.secrets.push({ sid, name: p.name, text: hint });
     S.lastLine = { sid, q: TONES.find(t => t.id === tone).line, a: hint, kind: "secret" };
     toast(`<b>마음을 열었다</b> — ${esc(p.name)}의 숨은 증언을 들었다.`); Sound.clue(); flash();
+  } else if (coatOn("coat_navy") && !(S.coatUsed.navy || {})[sid]) {
+    S.coatUsed.navy = { ...(S.coatUsed.navy || {}), [sid]: true };
+    S.lastLine = { sid, q: TONES.find(t => t.id === tone).line, a: "“…글쎄요. 그런 말투는 좀.” 아직 완전히 닫히진 않았다.", kind: "deflect" };
+    toast(`<b>🧥 남색 점퍼</b> — 친근한 차림 덕에 한 번 더 다가갈 수 있다. 다른 말투를 골라 보자.`); S.dlg = null; spend(); return;
   } else {
     S.heart[sid] = "closed";
     S.lastLine = { sid, q: TONES.find(t => t.id === tone).line, a: "“…그런 식이면 더 할 말 없습니다.” 굳게 입을 다물었다.", kind: "closed" };
@@ -2948,8 +2957,9 @@ function patrolMove() {
 }
 function beginCase() {
   const d = DIFF[S.diff];
-  S.turns = S.maxTurns = d.turns;
-  S.timed = true; S.timeLeft = S.timeMax = d.time;
+  S.coat = wornCoat(); S.coatUsed = {};
+  S.turns = S.maxTurns = d.turns + (coatOn("coat_red") ? 2 : 0);
+  S.timed = true; S.timeLeft = S.timeMax = d.time + (coatOn("coat_white") ? 60 : 0);
   S.chances = d.chances;
   S.vars = d.villains ? makeVars() : [];
   S.fakes = makeFakes(); S.fakeSeed = Math.random();
@@ -3216,7 +3226,7 @@ function maybeSabotage() {
   if (!cfg || p < cfg.start || p > 1) return;
   const late = p > cfg.late;
   if (S.sinceEvent < (late ? cfg.cd - 1 : cfg.cd)) return;
-  if (Math.random() > cfg.base + cfg.k * p) return;
+  if (Math.random() > (cfg.base + cfg.k * p) * (coatOn("coat_gray") ? 0.7 : 1)) return;   /* 회색 정장: 방해 30% 줄임 */
   sabotage(late);
 }
 function sabotage(late) {
@@ -3929,7 +3939,7 @@ function render() {
           <div class="pips">${pips}</div>
           <span class="mono">결단까지 <b>${S.turns}</b>턴</span>
           <span class="mono timer" id="timer">남은 시간 <b>${mmss(S.timeLeft)}</b></span>
-          <span class="diff-chip">${DIFF[S.diff].label}${S.chances > 1 ? ` · 지목 기회 ${S.chances}` : ""}</span>
+          <span class="diff-chip">${DIFF[S.diff].label}${S.chances > 1 ? ` · 지목 기회 ${S.chances}` : ""}</span>${S.coat ? `<span class="coat-badge" title="${esc((UNLOCKS.find(u => u.id === S.coat) || {}).desc || "")}">🧥 ${esc((UNLOCKS.find(u => u.id === S.coat) || {}).ab || "")}</span>` : ""}
         </div>
       </div>
       <nav class="tabs" role="tablist">${tabs}<button class="tab quit pause-btn" data-act="pause" ${interro ? "disabled" : ""}>⏸ 중지</button>${soundBtn()}</nav>
@@ -4132,9 +4142,9 @@ function renderOpening() {
 function mePreview() {
   const g = playerGender(), auto = PLAYER_G === "auto";
   const btn = (v, t) => `<button type="button" class="chip" data-pg="${v}" aria-pressed="${PLAYER_G === v}">${t}</button>`;
-  const coats = [{ id: "", name: "기본 갈색 코트", cloth: "#8a6a48" }].concat(UNLOCKS.filter(u => u.kind === "coat"));
+  const coats = [{ id: "", name: "기본 갈색 코트", cloth: "#8a6a48", ab: "능력 없음" }].concat(UNLOCKS.filter(u => u.kind === "coat"));
   const coatBtn = u => { const on = !u.id || isUnlocked(u.id), sel = (PLAYER_COAT || "") === u.id && on;
-    return `<button type="button" class="chip coat-chip" data-coat="${u.id}" aria-pressed="${sel}" ${on ? "" : "disabled"} title="${esc(on ? u.name : unlockNeed(u) + " 하면 열려요")}"><i style="background:${on ? u.cloth : "#333"}"></i>${on ? esc(u.name) : "🔒"}</button>`; };
+    return `<button type="button" class="chip coat-chip" data-coat="${u.id}" aria-pressed="${sel}" ${on ? "" : "disabled"} title="${esc(on ? (u.desc || u.name) : unlockNeed(u) + " 하면 열려요")}"><i style="background:${on ? u.cloth : "#333"}"></i>${on ? esc(u.name) + (u.ab ? `<small class="coat-ab">${esc(u.ab)}</small>` : "") : "🔒"}</button>`; };
   return `${pixelFace(pname(), 48, "", true)}<span><b>${g === "f" ? "여자" : "남자"} ${PLAYER_RANK}</b> <span class="title-chip">${esc(playerTitle())}</span>${auto ? " · 이름을 보고 정했어요" : ""}</span>
     <span class="chips">${btn("auto", "자동")}${btn("f", "여자")}${btn("m", "남자")}</span>
     <span class="chips coat-row"><small class="hint">옷:</small>${coats.map(coatBtn).join("")}</span>`;
@@ -6263,7 +6273,8 @@ function confront(qid, clueId) {
     S.lastLine = { sid, q: `‘${clueName}’을(를) 들이밀었다.`, a: p.deflect, kind: "deflect" };
     toast(`${esc(EUN(p.name))} 꿈쩍도 하지 않는다.`, true); Sound.wrong();
     spend();
-    penalty("틀린 추리였다");
+    if (coatOn("coat_black") && !S.coatUsed.black) { S.coatUsed.black = true; toast("<b>🧥 검은 롱코트</b> — 침착하게 넘겼다. 이번엔 시간이 줄지 않았다."); }
+    else penalty("틀린 추리였다");
   }
 }
 app.addEventListener("click", e => {
