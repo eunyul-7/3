@@ -414,6 +414,41 @@ legend { font-family: var(--f-display); font-weight: 700; font-size: 17px; paddi
   .room-bar b { font-size: 19px; }
 }
 .room-nav { display: grid; gap: 6px; }
+/* ===== 큰 화면 모드 (현장 조사): 지도가 창 높이를 꽉 채운다 =====
+   헤더는 한 줄로 줄이고, 방 이름은 지도 위에 얹고, 지도는 남는 높이 전부를 쓴다 */
+@media (min-width: 900px), (orientation: landscape) and (max-height: 560px) and (min-width: 560px) {
+  body.field { padding: 6px 10px 6px; }
+  body.field .wrap { max-width: none; gap: 6px; }
+  body.field .board { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 0 0 4px; }
+  body.field .board-top { display: contents; }
+  body.field .board-top > div:first-child { order: 1; flex: none; }
+  body.field .board-top > div:first-child .label { display: none; }
+  body.field .board-top h2 { font-size: 18px; margin: 0; white-space: nowrap; }
+  body.field .tabs { order: 2; flex: 1 1 auto; border: 0; margin: 0; padding: 0; flex-wrap: nowrap; }
+  body.field .clock { order: 3; flex: none; flex-wrap: nowrap; gap: 8px; }
+  body.field .board > .alerts { order: 4; flex-basis: 100%; }
+  body.field .playfield { margin-top: 0; gap: 6px; }
+  body.field .play-grid { grid-template-columns: minmax(0, 1fr) clamp(240px, 21vw, 330px); gap: 12px; align-items: start; }
+  body.field .play-main { position: relative; }
+  body.field .room-bar { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 4; pointer-events: none;
+    background: rgba(8,10,14,.72); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; padding: 3px 14px; white-space: nowrap; }
+  body.field .room-bar b { font-size: 16px; }
+  body.field .play-main .pxview { width: min(100%, calc((100dvh - 64px) * 11 / 8)); justify-self: center; }
+  body.field .play-side { max-height: calc(100dvh - 64px); }
+}
+@media (min-width: 900px) and (max-width: 1500px) { body.field .pips { display: none; } }
+@media (orientation: landscape) and (max-height: 560px) and (min-width: 560px) {
+  body.field .board-top h2 { font-size: 15px; } body.field .tab, body.field .sound-btn { padding: 3px 7px; font-size: 12px; }
+  body.field .clock .mono { font-size: 11px; } body.field .diff-chip, body.field .pips { display: none; }
+  body.field .play-side .pad-act .btn { padding: 8px 10px; font-size: 13.5px; } body.field .play-side .room-nav .room { padding: 4px 8px; }
+  body.field .play-main .pxview { width: min(100%, calc((100dvh - 54px) * 11 / 8)); }
+  body.field .play-side { max-height: calc(100dvh - 56px); overflow-y: auto; }
+  body.field .play-side .pad-row { flex-direction: column; align-items: stretch; }
+  body.field .play-side .room-nav { display: grid; } body.field .play-side .room-nav .nav-rooms { display: grid; grid-template-columns: 1fr; gap: 3px; }
+  body.field .play-side .desc { display: none; }
+}
+/* 휴대폰 세로: 지도를 화면 가로 끝까지 */
+@media (max-width: 559px) { body.field .playfield .pxview { width: calc(100% + 24px); margin-inline: -12px; max-width: none; border-radius: 0; } }
 .nav-floor { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .nav-floor .label { min-width: 3.5em; }
 .nav-rooms { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -3765,6 +3800,7 @@ function render() {
   const talking = S.tab === "people" && !S.decided;
   document.body.classList.toggle("playing", S.tab === "rooms" || talking);
   document.body.classList.toggle("talking", talking);
+  document.body.classList.toggle("field", S.tab === "rooms");   /* 현장 조사: 화면을 꽉 채우는 큰 지도 */
   if (S.tab === "rooms") PX.mount(document.getElementById("pxview")); else PX.clearKeys();
   fitTalk();
   if (S.screen === "game" && S.tab === "notes") requestAnimationFrame(drawBoard);
