@@ -958,6 +958,26 @@ body.lowfx .stage.talk .stage-sprite, body.lowfx .co-wave i, body.lowfx .police-
 .stage.soft .stage-sprite { animation: st-soft 1.8s ease-in-out infinite; } @keyframes st-soft { 50% { transform: translateY(-4px) scale(1.02); } }
 .stage.silent .stage-sprite { animation: none; }
 #app main.swap-in { animation: swap-in .35s cubic-bezier(.2,1,.3,1) both; } @keyframes swap-in { from { opacity: 0; transform: translateX(24px); } }
+.pxview.drama { overflow: hidden; }
+/* 말풍선이 있으니 아래 자막 칸은 숨긴다 (해설은 화면 아래 띠에 자막으로) */
+.drama-scene > .intro-cap { display: none !important; }
+.dr-narr { position: absolute; z-index: 5; left: 50%; bottom: 1.5%; transform: translateX(-50%); width: 92%; text-align: center; color: #f1ece2; font-family: var(--f-display); font-size: clamp(11px, 1.6vw, 16px); font-style: italic; text-shadow: 0 1px 3px #000; pointer-events: none; animation: narr-in .6s ease-out both; }
+@keyframes narr-in { from { opacity: 0; transform: translate(-50%, 6px); } }
+.pxview.drama > canvas { transition: transform .9s cubic-bezier(.3,.9,.3,1), transform-origin .9s ease; }
+.pxview.drama .lb-top, .pxview.drama .lb-bot { position: absolute; left: 0; right: 0; height: 9%; background: #000; z-index: 4; pointer-events: none; animation: lb-in .8s ease-out both; }
+.pxview.drama .lb-top { top: 0; } .pxview.drama .lb-bot { bottom: 0; animation-name: lb-in2; }
+@keyframes lb-in { from { transform: translateY(-100%); } } @keyframes lb-in2 { from { transform: translateY(100%); } }
+.dr-bub { position: absolute; z-index: 5; transform: translate(-50%, -100%); max-width: min(62%, 340px); background: #fffdf6; color: #1a1220; border: 2px solid #1a1220; border-radius: 10px; padding: 5px 9px 6px; font-size: clamp(11px, 1.5vw, 15px); line-height: 1.4; box-shadow: 3px 3px 0 rgba(0,0,0,.35); pointer-events: none; animation: bub-pop .35s cubic-bezier(.2,1.6,.4,1) both; transition: left .25s, top .25s; }
+.dr-bub::after { content: ""; position: absolute; left: 50%; bottom: -9px; width: 12px; height: 12px; background: #fffdf6; border-right: 2px solid #1a1220; border-bottom: 2px solid #1a1220; transform: translateX(-50%) rotate(45deg); }
+.dr-bub b { display: block; font-size: .78em; color: #8a2a1a; margin-bottom: 1px; }
+.dr-bub.shout { border-width: 3px; font-weight: 700; background: #fff3c4; } .dr-bub.shout::after { background: #fff3c4; }
+.dr-bub.phone { left: 50% !important; top: 14% !important; transform: translate(-50%, 0); background: #2a0d0d; color: #ffd9d4; border-color: #e23a3a; font-style: italic; } .dr-bub.phone::after { display: none; } .dr-bub.phone b { color: #ff7a6b; }
+.dr-bub.free { left: 50% !important; top: 18% !important; transform: translate(-50%, 0); } .dr-bub.free::after { display: none; }
+@keyframes bub-pop { from { transform: translate(-50%, -100%) scale(.4); opacity: 0; } }
+.dr-bub.phone, .dr-bub.free { animation-name: bub-pop2; } @keyframes bub-pop2 { from { transform: translate(-50%, 0) scale(.6); opacity: 0; } }
+.ep-card { position: absolute; z-index: 6; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; pointer-events: none; animation: ep-card 2.6s ease-in-out both; text-shadow: 3px 3px 0 #000; }
+.ep-card small { display: block; letter-spacing: .5em; font-size: 11px; color: #e2b25c; } .ep-card b { font-family: var(--f-display); font-size: clamp(22px, 4vw, 40px); }
+@keyframes ep-card { 0% { opacity: 0; transform: translate(-50%, -40%); } 15%, 75% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; } }
 .wipe { position: fixed; inset: 0; z-index: 9000; pointer-events: none; background: linear-gradient(100deg, transparent 0 30%, #0b0e13 30% 70%, transparent 70%); background-size: 300% 100%; animation: wipe .5s cubic-bezier(.6,0,.4,1) both; }
 .wipe::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 0 28%, #e2b25c 28% 30%, transparent 30% 70%, #e2b25c 70% 72%, transparent 72%); background-size: 300% 100%; animation: wipe .6s cubic-bezier(.6,0,.4,1) both; }
 @keyframes wipe { from { background-position: 100% 0; } to { background-position: 0 0; } }
@@ -4617,6 +4637,39 @@ function renderFiles() {
 }
 
 /* ===================== 시작 장면: 경찰서에서 전화를 받고 출동 ===================== */
+/* ===================== 🎬 픽셀 드라마 연출 =====================
+   컷신에서 말하는 사람 머리 위에 말풍선을 띄우고, 카메라가 그 사람 쪽으로 다가가며, 위아래에 영화 같은 검은 띠를 둔다. */
+const DRAMA = {
+  pos: {},   /* 이번 프레임의 인물 위치 (타일 단위) */
+  track(name, x, y) { this.pos[name] = [x, y]; },
+  ensure(view) {
+    if (!view || view.querySelector(".lb-top")) return;
+    view.insertAdjacentHTML("beforeend", `<div class="lb-top"></div><div class="lb-bot"></div><div class="dr-bub" hidden></div><div class="dr-narr" hidden></div>`);
+  },
+  say(view, who, text, opt = {}) {
+    if (!view) return; this.ensure(view);
+    const bub = view.querySelector(".dr-bub"), narr = view.querySelector(".dr-narr");
+    /* 말하는 사람이 없으면(해설) 아래 검은 띠 위에 영화 자막처럼 */
+    if (!who) { bub.hidden = true; view.dataset.speaker = ""; narr.hidden = !text; narr.textContent = text || ""; narr.style.animation = "none"; void narr.offsetWidth; narr.style.animation = ""; return; }
+    narr.hidden = true;
+    bub.hidden = false; bub.className = "dr-bub" + (opt.phone ? " phone" : "") + (opt.shout ? " shout" : "");
+    bub.innerHTML = `<b>${esc(who)}</b>${esc(text.length > 64 ? text.slice(0, 64) + "…" : text)}`;
+    bub.style.animation = "none"; void bub.offsetWidth; bub.style.animation = "";
+    view.dataset.speaker = opt.phone ? "" : who;
+    this.frame(view, true);
+  },
+  frame(view, force) {   /* 매 프레임: 말풍선을 말하는 사람 머리 위로, 카메라를 그쪽으로 */
+    if (!view) return;
+    const who = view.dataset.speaker, bub = view.querySelector(".dr-bub"), cv = view.querySelector("canvas");
+    if (!bub || !cv) return;
+    const p = who && this.pos[who];
+    if (!p) { if (!bub.classList.contains("phone")) { cv.style.transform = ""; } if (!bub.hidden && !bub.classList.contains("phone")) bub.classList.add("free"); return; }
+    bub.classList.remove("free");
+    const L = (p[0] + .5) / 11 * 100, T = p[1] / 8 * 100;
+    bub.style.left = Math.max(14, Math.min(86, L)) + "%"; bub.style.top = Math.max(8, T - 2) + "%";
+    if (!LOWFX) { cv.style.transformOrigin = `${L}% ${Math.min(80, T + 10)}%`; cv.style.transform = "scale(1.18)"; }
+  },
+};
 const INTRO = (() => {
   const TS = 16, W = 176, H = 128, ANN = 17;   /* ANN: 팀에 알림 */
   /* 출동 직전, 데려온 부서마다 한마디씩 (부서 특징대로) */
@@ -4734,10 +4787,13 @@ const INTRO = (() => {
       if (p.player && !out && t >= 20.4 && t < 23) dy = Math.floor(t * 6) % 2 ? -1 : 0;
       return { p, x, y, dir, moving, dy };
     }).filter(e => e.y < 9.2).sort((a, b) => a.y - b.y);
+    DRAMA.pos = {};
     for (const e of ents) {
       const sp = charSprites(e.p.name, "", !!e.p.player), f = e.moving ? [0, 1, 0, 2][Math.floor(t * 8) % 4] : 0;
       g.drawImage(sp[e.dir][f], Math.round(e.x * TS), Math.round(e.y * TS + TS - 20 + e.dy));
+      DRAMA.track(e.p.name, e.x, e.y);
     }
+    DRAMA.frame(document.getElementById("intro-view"));
     /* 서하루가 전화를 받는 동안 수화기 */
     if (t >= 4.6 && t < ANN) { g.fillStyle = "#b8322b"; g.fillRect(4 * TS + 12, 4 * TS - 3, 3, 6); }
     /* 통화 중: 수화기에서 새어 나오는 목소리 표시 */
@@ -4752,7 +4808,8 @@ const INTRO = (() => {
     const isMe = b.who === pname();
     el.className = "intro-cap" + (b.who ? "" : " narr");
     el.className = "intro-cap" + (b.who ? "" : " narr") + (b.tag ? " phone" : "");
-    if (b.who) { const v = voiceOf(b.who, b.role || "", isMe); if (b.tag) Sound.speak(b.text, v.base, v.female, true); else Sound.babble(b.text, v.base); }   /* 인물 목소리 (신고자는 전화 목소리) */
+    if (b.who) { const v = voiceOf(b.who, b.role || "", isMe); if (b.tag) Sound.speak(b.text, v.base, v.female, true); else Sound.babble(b.text, v.base); }
+    DRAMA.say(document.getElementById("intro-view"), b.who ? (b.tag ? "📞 " + b.who : b.who) : "", b.text, { phone: !!b.tag, shout: /!$/.test(b.text) });   /* 인물 목소리 (신고자는 전화 목소리) */
     el.innerHTML = b.who ? `${pixelFace(b.who, 40, b.role || "", isMe)}<div><b>${b.tag ? `${esc(b.tag)} · ${esc(b.who)}` : `${esc(b.who)}${isMe ? " " + PLAYER_RANK : rankOf(b.who) ? " " + rankOf(b.who) : ""}`}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
   }
   function sounds(t) {
@@ -4870,10 +4927,13 @@ const ENDING = (() => {
       }
       return { a, x, y, dir, moving, dy };
     }).filter(e => e.y < 9.2).sort((p, q) => p.y - q.y);
+    DRAMA.pos = {};
     for (const e of ents) {
       const sps = charSprites(e.a.name, e.a.role || "", !!e.a.player), f = e.moving ? [0, 1, 0, 2][Math.floor(t * 8) % 4] : 0;
       g.drawImage(sps[e.dir][f], Math.round(e.x * TS), Math.round(e.y * TS + TS - 20 + e.dy));
+      DRAMA.track(e.a.name, e.x, e.y);
     }
+    DRAMA.frame(document.getElementById("end-view"));
     if (sp.party && t >= sp.party) {
       const cols = ["#ffd36b", "#ff7a6b", "#7fd1a0", "#78a8ff", "#e98cff", "#ffffff"];
       for (let i = 0; i < 46; i++) {
@@ -4900,6 +4960,7 @@ const ENDING = (() => {
     const isMe = b.who === pname(), role = Object.values(C().suspects).find(p => p.name === b.who);
     el.className = "intro-cap" + (b.who ? "" : " narr");
     if (b.who) Sound.babble(b.text, voiceOf(b.who, role ? role.role : "", isMe).base);
+    DRAMA.say(document.getElementById("end-view"), b.who || "", b.text, { shout: /!$/.test(b.text) });
     el.innerHTML = b.who ? `${pixelFace(b.who, 40, role ? role.role : "", isMe)}<div><b>${esc(b.who)}${isMe ? " " + PLAYER_RANK : TITLE()[b.who] ? " " + TITLE()[b.who] : rankOf(b.who) ? " " + rankOf(b.who) : ""}</b><p>${esc(b.text)}</p></div>` : `<p>${esc(b.text)}</p>`;
   }
   function sounds(t) {
@@ -4930,8 +4991,8 @@ function renderBrief() {
     app.innerHTML = `
     <section class="intro">
       <span class="label">${c.tag}</span>
-      <div class="intro-scene">
-        <div class="pxview" id="intro-view" aria-label="강력팀 사무실에서 신고 전화를 받는 장면"><span class="intro-sign">강력팀</span></div>
+      <div class="intro-scene drama-scene">
+        <div class="pxview drama" id="intro-view" aria-label="강력팀 사무실에서 신고 전화를 받는 장면"><span class="intro-sign">강력팀</span><div class="ep-card"><small>EPISODE</small><b>${esc(c.title)}</b></div></div>
         <div class="intro-cap narr" id="intro-cap" aria-live="polite"><p>…</p></div>
         <div class="btn-row"><button class="btn ghost" data-act="skip-intro">건너뛰기</button>${soundBtn()}</div>
       </div>
@@ -6630,8 +6691,8 @@ function renderGameOver() {
     </section>` : "";
   app.innerHTML = `<section class="verdict gameover">
     <span class="label">${esc(pname())} ${PLAYER_RANK} · ${c.title}</span>
-    <div class="intro-scene end-scene">
-      <div class="pxview" id="end-view" aria-label="범인을 놓친 뒤 강력팀이 서로를 위로하는 장면"><span class="intro-sign">강력팀</span></div>
+    <div class="intro-scene end-scene drama-scene">
+      <div class="pxview drama" id="end-view" aria-label="범인을 놓친 뒤 강력팀이 서로를 위로하는 장면"><span class="intro-sign">강력팀</span></div>
       <div class="intro-cap narr" id="end-cap" aria-live="polite"><p>…</p></div>
     </div>
     <div class="grade fail">GAME OVER</div>
@@ -6666,8 +6727,8 @@ function renderResult() {
   const next = c.random ? null : caseById(nextCaseId());
   app.innerHTML = `<section class="verdict">
     <span class="label">${esc(pname())} ${PLAYER_RANK} · ${c.title} · 수사 결과</span>
-    <div class="intro-scene end-scene">
-      <div class="pxview" id="end-view" aria-label="범인을 체포하고 강력팀이 축하하는 장면"><span class="intro-sign">강력팀</span></div>
+    <div class="intro-scene end-scene drama-scene">
+      <div class="pxview drama" id="end-view" aria-label="범인을 체포하고 강력팀이 축하하는 장면"><span class="intro-sign">강력팀</span></div>
       <div class="intro-cap narr" id="end-cap" aria-live="polite"><p>…</p></div>
     </div>
     <div class="grade">${R.grade}</div>
