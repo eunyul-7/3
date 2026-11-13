@@ -981,7 +981,19 @@ body.lowfx .stage .stage-sprite { animation: none !important; }
 .speech.vn .line.them .who-tag { display: inline-block; background: #c9a24e; color: #15110e; padding: 1px 10px; border-radius: 3px; font-weight: 700; margin: -2px 0 4px; }
 .speech.vn .line.them.broken { border-color: #ff4b4b; } .speech.vn .line.them.broken .who-tag { background: #ff4b4b; color: #fff; }
 .speech.vn .line.them.secret { border-color: #7fd1a0; } .speech.vn .line.them.secret .who-tag { background: #7fd1a0; }
-.stage.new .line.them p { animation: vn-type 1.1s steps(36) both; }
+.stage.new .line.them p { animation: vn-type var(--type, 1.1s) steps(36) both; }
+.stage .line.them::after { content: "▼"; position: absolute; right: 10px; bottom: 4px; font-size: 10px; color: var(--lamp); animation: vn-next .8s steps(2) infinite; }
+.stage.new .line.them::after { animation: vn-next .8s steps(2) infinite, op-fade .2s var(--type, 1.1s) both; }
+.stage .line.them { position: relative; }
+@keyframes vn-next { 50% { opacity: 0; transform: translateY(2px); } }
+.stage.enter .stage-sprite { animation: st-enter .55s cubic-bezier(.2,1.3,.4,1) both, st-breathe 3.2s .55s ease-in-out infinite; }
+@keyframes st-enter { from { transform: translateX(-120%); opacity: 0; } }
+.stage.enter .speech { animation: st-bubble .45s .25s cubic-bezier(.2,1.5,.4,1) both; } @keyframes st-bubble { from { transform: scale(.6); opacity: 0; } }
+.clue-card { animation: cc-spin .55s cubic-bezier(.2,1.4,.4,1) both, cc-out .5s 1.8s ease-in forwards !important; }
+@keyframes cc-spin { 0% { transform: translateX(60px) rotateY(90deg) scale(.6); opacity: 0; } 60% { transform: rotateY(-12deg) scale(1.05); opacity: 1; } 100% { transform: rotate(-2deg); } }
+.cc-spark { position: absolute; color: #e2b25c; font-style: normal; font-size: 18px; pointer-events: none; animation: cc-burst .8s ease-out both; text-shadow: 0 0 6px #fff7c0; }
+.cc-spark.s1 { left: -8px; top: -10px; } .cc-spark.s2 { right: -6px; top: 30%; animation-delay: .1s; } .cc-spark.s3 { left: 30%; bottom: -12px; animation-delay: .2s; font-size: 14px; }
+@keyframes cc-burst { 0% { transform: scale(0) rotate(0); opacity: 0; } 40% { transform: scale(1.4) rotate(90deg); opacity: 1; } 100% { transform: scale(.6) rotate(180deg); opacity: 0; } }
 @keyframes vn-type { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 body.talking .person-head .portrait { display: none; }
 @media (max-width: 720px) {
@@ -3457,6 +3469,7 @@ function addClue(id) {
   popCard(`<span class="cc-tag">🔎 증거 발견${key ? " · 결정적일지도!" : ""}</span><b>${esc(c.clues[id].name)}</b><small>${esc(c.clues[id].text.slice(0, 54))}${c.clues[id].text.length > 54 ? "…" : ""}</small>`, key ? "gold" : "");
   Sound.clue(); if (key) setTimeout(() => Sound.help(), 180);
   if (id === "body") setTimeout(openBodyPhoto, 900);
+  try { PX.emote("me", "❗"); } catch (e) {}
   if (id === "body" && drugInfo()) setTimeout(() => popCard(`<span class="cc-tag">💊 약물 의심</span><b>약물 흔적이 보인다</b><small>${deptOn("drug") ? "마약팀에게 이 단서를 물어보면 무슨 약인지, 몸에 어떻게 해로운지 알려 줘요." : "약물은 마약팀 전문이에요. (이번엔 마약팀을 안 데려왔어요)"}</small>`, "unlock"), 2600);   /* 시신을 처음 살피면 감식 사진을 바로 보여 준다 */
   /* 이 단서로 열리는 숨겨진 진술 */
   const who = Object.values(c.suspects).filter(p => p.qs.some(q => q.need === id && !has(S.asked, q.id))).map(p => p.name);
@@ -3664,7 +3677,7 @@ function openBodyPhoto() {
 const hasHidden = sid => { const p = C().suspects[sid]; return !!p && p.qs.some(q => q.need && has(S.found, q.need) && !has(S.asked, q.id)); };
 /* ===================== 연출: 증거 카드 · 모순 쾅 · 방 제목 · 범인 지목 ===================== */
 function popCard(html, cls = "") {
-  const el = document.createElement("div"); el.className = "clue-card " + cls; el.innerHTML = html;
+  const el = document.createElement("div"); el.className = "clue-card " + cls; el.innerHTML = html + `<i class="cc-spark s1">✦</i><i class="cc-spark s2">✦</i><i class="cc-spark s3">✧</i>`;
   document.body.appendChild(el); setTimeout(() => el.remove(), 2300);
 }
 function slam(word, sub = "", cls = "") {
@@ -5462,6 +5475,8 @@ const PX = (() => {
   const keys = {};
   const me = { fx: 5, fy: 6, dir: "up", path: null, after: null, seg: null, frameT: 0, frame: 0 };
   let npcs = [], hint = null;
+  const emotes = {};
+  function emote(who, ch, ms = 1300) { emotes[who] = { ch, born: performance.now(), until: performance.now() + ms }; }
   const helpers = {};
   const SPEED = 4.6;   /* 칸/초 */
 
@@ -5732,7 +5747,7 @@ const PX = (() => {
   function act(t) {
     if (!t) return;
     if (t.kind === "obj") { if (doSearch(t.ref.spot)) render(); }
-    else if (t.kind === "ally") openCopAsk(t.who, t.name);   /* 경찰에게 말 걸기: 단서를 물어볼 수 있다 */
+    else if (t.kind === "ally") { emote(t.name, "💬"); emote("me", "❓", 900); openCopAsk(t.who, t.name); }   /* 경찰에게 말 걸기: 단서를 물어볼 수 있다 */
     else if (t.kind === "person" && t.ref.kind === "h") openCopAsk(t.ref.id.slice(2), t.ref.name);
     else if (t.kind === "person") { S.tab = "people"; S.suspect = t.ref.id; S.dlg = null; render(); window.scrollTo(0, 0); }
   }
@@ -5796,6 +5811,26 @@ const PX = (() => {
     if (buddy.on) ents.push({ y: buddy.fy - .01, draw: () => drawSprite(charSprites(N.seo, "순경"), buddy.dir, buddy.frameT, buddy.fx, buddy.fy) });
     ents.push({ y: me.fy, draw: () => drawSprite(charSprites(pname(), "", true), me.dir, me.frameT, me.fx, me.fy) });
     ents.sort((a, b) => a.y - b.y).forEach(e => e.draw());
+    /* 감정 말풍선: 머리 위로 톡 튀어나왔다가 사라진다 */
+    const posOf = who => who === "me" ? me : who === N.seo && buddy.on ? buddy : (npcs.find(n => n.p.name === who) || Object.values(helpers).find(h => h.room === S.room && h.p.name === who) || null);
+    const nowMs = performance.now();
+    for (const [who, em] of Object.entries(emotes)) {
+      if (nowMs > em.until) { delete emotes[who]; continue; }
+      const at = posOf(who); if (!at) continue;
+      const age = (nowMs - em.born) / 1000, pop = age < .15 ? age / .15 : 1, hop = age < .3 ? Math.sin(age / .3 * Math.PI) * 3 : 0;
+      const x = Math.round((at.fx + .5) * TS), y = Math.round(at.fy * TS + TS - 24 - hop);
+      g.save(); g.translate(x, y); g.scale(pop, pop);
+      g.fillStyle = "#fffdf6"; g.strokeStyle = "#1a1220"; g.lineWidth = 1;
+      g.beginPath(); g.roundRect ? g.roundRect(-6, -7, 12, 11, 3) : g.rect(-6, -7, 12, 11); g.fill(); g.stroke();
+      g.beginPath(); g.moveTo(-2, 4); g.lineTo(0, 7); g.lineTo(2, 4); g.fill(); g.stroke();
+      g.font = "8px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#1a1220"; g.fillText(em.ch, 0, -1.5);
+      g.restore();
+    }
+    /* 긴장한 사람은 가끔 식은땀 (범인·거짓말쟁이는 조금 더 자주, 다른 사람도 가끔) */
+    if (!S.decided) for (const n of npcs) {
+      const sid = n.p.id, c0 = C(), tense = sid === c0.answer.culprit ? 0.0008 : 0.0005;
+      if (!emotes[n.p.name] && Math.hypot(me.fx - n.fx, me.fy - n.fy) < 4 && Math.random() < tense) emote(n.p.name, "💦", 1400);
+    }
     /* 손전등 같은 조명 */
     const lx = (me.fx + .5) * TS, ly = (me.fy + .5) * TS, grd = g.createRadialGradient(lx, ly, 10, lx, ly, 120);
     grd.addColorStop(0, "rgba(255,220,160,0.06)"); grd.addColorStop(.35, "rgba(6,9,13,0.12)"); grd.addColorStop(1, "rgba(6,9,13,0.5)");
@@ -5899,6 +5934,7 @@ const PX = (() => {
   }
 
   return {
+    emote,
     mount(el) {
       host = el; if (!el) return;
       if (!cv) {
@@ -6378,10 +6414,11 @@ function renderPeople(out) {
         <span class="duo">함께 심문: ${pixelFace(N.han, 20)}${N.han} 경위 · ${pixelFace(N.mo, 20)}${N.mo} 경사</span></div></div>
       ${(() => {
         const react = sl ? "silent" : !L ? "idle" : L.kind === "broken" ? "shock" : L.kind === "secret" ? "soft" : (L.kind === "deflect" || L.kind === "closed") ? "smug" : "talk";
-        const key = L ? sid + "|" + L.q + "|" + L.a : sid, fresh = S._shown !== key; S._shown = key;
+        const key = L ? sid + "|" + L.q + "|" + L.a : sid, fresh = S._shown !== key, enter = S._shownSid !== sid; S._shown = key; S._shownSid = sid;
         if (fresh && L && L.a && !sl) setTimeout(() => Sound.babble(L.a, voiceOf(p.name, p.role).base), 120);   /* 용의자 목소리 */
         const th = themeOf();
-        return `<div class="stage ${react}${fresh ? " new" : ""}" style="--wall:${th.wallC || "#3a3346"}">
+        const tl = L ? Math.min(90, (L.a || "").length) : 16;
+        return `<div class="stage ${react}${fresh ? " new" : ""}${enter ? " enter" : ""}" style="--wall:${th.wallC || "#3a3346"};--type:${(tl * 0.045 + .3).toFixed(2)}s;--steps:${tl}">
           ${bigSprite(p.name, p.role)}
           ${react === "shock" ? `<i class="sweat"></i><i class="sweat s2"></i><b class="stage-fx">!!</b>` : react === "smug" ? `<b class="stage-fx smug">…</b>` : react === "soft" ? `<b class="stage-fx soft">♥</b>` : ""}
           <div class="speech vn">${speech}</div>
