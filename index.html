@@ -3356,7 +3356,7 @@ function forensicPresent(sid) {
   if (!hit) { toast(`과학수사대 — “지금 모은 증거로는 ${esc(p.name)} 씨에게 내밀 게 없습니다. ${evidenceAgainst(sid).length ? "먼저 관련된 걸 물어보세요." : "증거를 더 찾아 주세요."}”`, true); return; }
   S.dlg = null;
   S.broken.push(hit.q.id); addTl(hit.q.lie.tl);
-  S.lastLine = { sid, who: "과학수사 경사 " + N.yoon, q: isStudent(p.role) ? `(서류철을 펼친다) “감식 결과야. ‘${hit.name}’ — 아까 ‘${hit.q.a}’라고 했지? 이건 어떻게 된 건지 말해 줄래?”` : `(서류철을 펼친다) “감식 결과와 정리한 증거입니다. ‘${hit.name}’ — ‘${hit.q.a}’라고 하셨죠? 이건 어떻게 설명하시겠습니까?”`, a: hit.q.lie.reply, kind: "broken" };
+  S.lastLine = { sid, who: "과학수사 경사 " + N.yoon, q: isStudent(p.role) ? `“감식 결과야. ‘${hit.name}’ — 아까 ‘${hit.q.a}’라고 했지? 이건 어떻게 된 건지 말해 줄래?”` : `“감식 결과와 정리한 증거입니다. ‘${hit.name}’ — ‘${hit.q.a}’라고 하셨죠? 이건 어떻게 설명하시겠습니까?”`, a: hit.q.lie.reply, kind: "broken" };
   S.events.push({ bad: false, msg: `과학수사대가 ${p.name}에게 ‘${hit.name}’${jt(hit.name, "을", "를")} 내밀어 진술을 무너뜨렸다.` });
   toast(`<b>과학수사대의 증거 제시</b> — ${esc(EUN(p.name))} 진술을 바꿨다!`); Sound.lie(); flash(); slam("모순!", `${p.name}의 진술이 무너졌다`);
   spend();
@@ -4764,12 +4764,12 @@ const INTRO = (() => {
       { t: 0, who: "", text: `${callTime()}. 강력팀 사무실.` },
       { t: 2.4, who: "", text: "따르릉— 따르릉—" },
       { t: 4.6, who: N.seo, text: `네, 강력팀 ${N.seo} 순경입니다.` },
-      k ? { t: 6.2, who: k.name, role: k.role, tag: "📞 신고자 (전화 속 목소리)", text: `(숨을 몰아쉬며) 여, 여보세요…! 여기 ${where()} ‘${place()}’인데요… ${k.room}에서 ${k.victim} 쓰러져 있어요… 숨을, 숨을 안 쉬어요…!` }
-        : { t: 6.2, who: "", text: "(수화기 너머 다급한 목소리) 사람이… 사람이 쓰러져 있어요…!" },
+      k ? { t: 6.2, who: k.name, role: k.role, tag: "📞 신고자 (전화 속 목소리)", text: `여, 여보세요…! 여기 ${where()} ‘${place()}’인데요… ${k.room}에서 ${k.victim} 쓰러져 있어요… 숨을, 숨을 안 쉬어요…!` }
+        : { t: 6.2, who: "", text: "사람이… 사람이 쓰러져 있어요…!" },
       { t: 10.4, who: N.seo, text: "진정하세요. 지금 바로 갑니다. 신고하시는 분 성함이 어떻게 되세요?" },
       k ? { t: 12.6, who: k.name, role: k.role, tag: "📞 신고자 (전화 속 목소리)", text: `${k.name}… ${jo(k.job, "이에요", "예요")}. 제가… 제가 처음 봤어요…` } : null,
       { t: 14.6, who: N.seo, text: "아무것도 만지지 마시고, 아무도 들여보내지 마세요. 그 자리에 계세요!" },
-      { t: 17, who: N.seo, text: `(수화기를 내려놓으며) 선배님들! ${where()} ‘${place()}’에서 살인 사건 신고입니다!${k ? ` 신고자는 ${k.job} ${k.name} 씨예요.` : ""}` },
+      { t: 17, who: N.seo, text: `선배님들! ${where()} ‘${place()}’에서 살인 사건 신고입니다!${k ? ` 신고자는 ${k.job} ${k.name} 씨예요.` : ""}` },
       { t: 20.4, who: leadName(), text: `가자. ${pname()} 형사, 이번 사건은 자네가 맡게. 처음 본 사람 말부터 들어 봐.` },
       { t: 23, who: inCrew("han") && N.han !== leadName() ? N.han : null, text: "용의자 심문은 저희 수사팀 둘이 같이 들어가죠." },
       ...shouts().map((x, i) => ({ t: SH0 + i * SHD, who: x.who, text: x.text })),
@@ -6391,18 +6391,18 @@ function whisper(sid, slot) {
     const lies = asked.filter(q => q.lie), truths = asked.filter(q => !q.lie);
     const right = r < (starSlot("seo") ? 1 : .75);
     const q = lies.length && (right || !truths.length) ? lies[0] : (truths[0] || asked[0]);
-    text = `(귓속말) 선배님, 방금 들은 것 중엔 ‘${q.q}’에 한 대답이 제일 수상해요.`;
+    text = `선배님, 방금 들은 것 중엔 ‘${q.q}’에 한 대답이 제일 수상해요.`;
   } else if (slot === "gong") {
     const right = PERSONAS[S.persona[sid]].right, wrong = TONES.map(t => t.id).filter(t => t !== right);
     const pick = r < (starSlot("gong") ? 1 : .8) ? right : wrong[0];
-    text = `(귓속말) 이 사람은 ‘${TONES.find(t => t.id === pick).label}’ 식으로 다가가야 입을 열 겁니다. 제 감으로는요.`;
+    text = `이 사람은 ‘${TONES.find(t => t.id === pick).label}’ 식으로 다가가야 입을 열 겁니다. 제 감으로는요.`;
   } else if (slot === "byun") {
     const ev = evidenceAgainst(sid);
-    text = ev.length ? `(귓속말) 이 사람과 엮인 증거는 ‘${ev[0].name}’예요.${ev[0].asked ? " 이미 물어본 대답과 어긋나요. 들이밀어 보세요." : ` ‘${ev[0].q.q}’ 쪽을 물어보면 걸릴 거예요.`}`
-      : "(귓속말) 아직 이 사람과 엮인 증거는 못 찾았어요. 현장을 더 봐야겠어요.";
+    text = ev.length ? `이 사람과 엮인 증거는 ‘${ev[0].name}’예요.${ev[0].asked ? " 이미 물어본 대답과 어긋나요. 들이밀어 보세요." : ` ‘${ev[0].q.q}’ 쪽을 물어보면 걸릴 거예요.`}`
+      : "아직 이 사람과 엮인 증거는 못 찾았어요. 현장을 더 봐야겠어요.";
   } else {
     const n = (S.patrolNotes || {})[sid];
-    text = n ? `(귓속말) 제가 지켜봤는데, ${n.text}` : "(귓속말) 계속 지켜보고 있는데 아직 특별한 건 없습니다.";
+    text = n ? `제가 지켜봤는데, ${n.text}` : "계속 지켜보고 있는데 아직 특별한 건 없습니다.";
   }
   S.whispers[key] = text;
   S.lastLine = { sid, who: `${rankOf(name)} ${name}`, q: text, a: "“…뭘 그렇게 속닥거리세요?”", kind: "rebut-miss" };
